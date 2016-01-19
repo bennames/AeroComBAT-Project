@@ -1,0 +1,5 @@
+Intalling MayaVi
+To install mayavi, simply launch the anaconda command prompt, and type:
+conda install mayavi
+This will prompt you to install several packages. Enter y to install and
+you should be set!
