@@ -1,13 +1,18 @@
 # =============================================================================
-# HEPHAESTUS VALIDATION 4 - MESHER AND CROSS-SECTIONAL ANALYSIS
+# HEPHAESTUS VALIDATION 6 - CROSS-SECTION REFERENCE AXIS TRANSFORMATION
 # =============================================================================
 
 # IMPORTS:
+
+import sys
+import os
+
+sys.path.append(os.path.abspath('..'))
+
 from Structures import MaterialLib, Laminate, XSect, TBeam, SuperBeam
 from AircraftParts import Airfoil
 import numpy as np
-
-# HODGES XSECTION VALIDATION
+from tabulate import tabulate
 
 # Add the material property
 matLib = MaterialLib()
@@ -18,9 +23,10 @@ matLib.addMat(2,'AS43501-6*','trans_iso',[20.6e6,1.42e6,.34,.42,.87e6,0.],.005)
 c2 = 0.53
 xdim2 = [-0.8990566037735849,0.8990566037735849]
 af2 = Airfoil(c2,name='box')
+xdim2_off = [0.,1.7981132075471697]
 
 
-
+'''
 # B1 Box beam (0.5 x 0.923 in^2 box with laminate schedule [15]_6)
 n_i_B1 = [6]
 m_i_B1 = [2]
@@ -36,7 +42,7 @@ xsect_B1.xSectionAnalysis()
 xsect_B1.printStiffMat()
 strn = np.array([0.,0.,0.,0.,0.,1.0])
 xsect_B1.strn2dspl(strn,figName='Validation Case B1',contour_Total_T=True)
-
+'''
 
 # Layup 1 Box beam (0.5 x 0.923 in^2 box with laminate schedule [0]_6)
 n_i_Lay1 = [6]
@@ -51,8 +57,32 @@ laminates_Lay1 = [lam1_Lay1,lam2_Lay1,lam3_Lay1,lam4_Lay1]
 xsect_Lay1 = XSect(af2,xdim2,laminates_Lay1,matLib,typeXsect='box',meshSize=2)
 xsect_Lay1.xSectionAnalysis()
 xsect_Lay1.printStiffMat()
-xsect_Lay1.strn2dspl(strn,figName='Validation Case Layup 1',contour_Total_T=True)
+#xsect_Lay1.strn2dspl(strn,figName='Validation Case Layup 1',contour_Total_T=True)
 
+xsect_Lay1_off = XSect(af2,xdim2_off,laminates_Lay1,matLib,typeXsect='box',meshSize=2)
+xsect_Lay1_off.xSectionAnalysis()
+
+Ktmp = xsect_Lay1_off.K
+
+print('\n\nThe cross-section stiffness matrix is:')
+print(tabulate(np.around(Ktmp,decimals=2),tablefmt="fancy_grid"))
+
+xsc,ysc = xsect_Lay1_off.genXYSC()
+xsc = -xsc
+ysc = -ysc
+T1 = np.array([[1.,0.,0.,0.,0.,-ysc],[0.,1.,0.,0.,0.,xsc],[0.,0.,1.,ysc,-xsc,0.],[0.,0.,0.,1.,0.,0.],[0.,0.,0.,0.,1.,0.],[0.,0.,0.,0.,0.,1.]])
+T2 = np.array([[1.,0.,0.,0.,0.,0.],[0.,1.,0.,0.,0.,0.],[0.,0.,1.,0.,0.,0.],[0.,0.,-ysc,1.,0.,0.],[0.,0.,xsc,0.,1.,0.],[ysc,-xsc,0.,0.,0.,1.]])
+Ktrans = np.dot(np.linalg.inv(T2),np.dot(Ktmp,T1))
+print('\n\nThe cross-section stiffness matrix is:')
+print(tabulate(np.around(Ktrans,decimals=2),tablefmt="fancy_grid"))
+
+
+X_Lay1 = xsect_Lay1.X
+Xtmp = xsect_Lay1_off.X
+diff = (X_Lay1-Xtmp)/X_Lay1*100
+
+
+'''
 # Layup 2 Box beam (0.5 x 0.923 in^2 box with laminate schedule [30,0]_3)
 n_i_Lay2 = [1,1,1,1,1,1]
 m_i_Lay2 = [2,2,2,2,2,2]
@@ -95,5 +125,5 @@ xsect_Lay3 = XSect(af2,xdim2,laminates_Lay3,matLib,typeXsect='box',meshSize=2)
 xsect_Lay3.xSectionAnalysis()
 xsect_Lay3.printStiffMat()
 xsect_Lay3.strn2dspl(strn,figName='Validation Case Layup 3',contour_Total_T=True)
-
+'''
 

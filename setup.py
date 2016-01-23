@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 import AeroComBAT
 
 setup(
@@ -6,7 +6,7 @@ setup(
     description=AeroComBAT.__doc__,
     author='Ben Names',
     author_email='bennames@vt.edu',
-    py_modules=['AeroComBAT'],
+    packages=['AeroComBAT','validations'],
     version='0.2.1',
     license='MIT',
     install_requires=[

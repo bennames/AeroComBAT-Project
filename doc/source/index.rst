@@ -11,6 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
+   FEM
    structures
 
 Indices and tables

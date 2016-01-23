@@ -1,5 +1,6 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<!doctype html>
 
 
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -8,7 +9,7 @@
     
     <title>The Structures Module &mdash; AeroComBAT 0.2.1 documentation</title>
     
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -23,14 +24,75 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
     <link rel="top" title="AeroComBAT 0.2.1 documentation" href="index.html" />
-    <link rel="prev" title="Welcome to AeroComBAT’s documentation!" href="index.html" />
-   
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
-
+    <link rel="prev" title="The FEM Interface Module" href="FEM.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
   </head>
-  <body role="document">  
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="FEM.html" title="The FEM Interface Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Structures Module</a><ul>
+<li><a class="reference internal" href="#node">NODE</a></li>
+<li><a class="reference internal" href="#material">MATERIAL</a></li>
+<li><a class="reference internal" href="#cquad4">CQUAD4</a></li>
+<li><a class="reference internal" href="#material-library">MATERIAL LIBRARY</a></li>
+<li><a class="reference internal" href="#ply">PLY</a></li>
+<li><a class="reference internal" href="#laminate">LAMINATE</a></li>
+<li><a class="reference internal" href="#mesher">MESHER</a></li>
+<li><a class="reference internal" href="#cross-section">CROSS-SECTION</a></li>
+<li><a class="reference internal" href="#timoshenko-beam">TIMOSHENKO BEAM</a></li>
+<li><a class="reference internal" href="#super-beam">SUPER-BEAM</a></li>
+<li><a class="reference internal" href="#wing-section">WING SECTION</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="FEM.html"
+                        title="previous chapter">The FEM Interface Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/structures.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
 
     <div class="document">
       <div class="documentwrapper">
@@ -39,7 +101,90 @@
             
   <div class="section" id="module-AeroComBAT.Structures">
 <span id="the-structures-module"></span><h1>The Structures Module<a class="headerlink" href="#module-AeroComBAT.Structures" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="node">
+<p>This module contains a library of classes devoted to structural analysis.</p>
+<p>The primary purpose of this library is to fascilitate the ROM (reduced order
+modeling) of structures that can simplified to beams. The real power of this
+library comes from it&#8217;s the XSect class. This class can create and analyze
+a cross-section, allowing the user to accurately model a nonhomogeneous
+(made of multiple materials) anisotropic (materials that behave anisotropically
+such as composites) complex cross-sections.</p>
+<p>It should be noted that classes are ordered by model complexity. The further
+down the structures.py library, the more complex the objects, often requiring
+multiple of their predecessors. For example, the CQUAD4 class requires four
+node objects and a material object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">SUMARRY OF THE CLASSES:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>Node</cite>: Creates a node object with 3D position.</p>
+</li>
+<li><p class="first"><cite>Material</cite>: Creates a material object, generating the 3D constitutive relations.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>MicroMechanics</cite>: Class to fascilitate the calculation of composite stiffnesses</dt>
+<dd><p class="first last">using micro-mechanical models where fibers are long and continuous.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>CQUAD4</cite>: Creates a 2D linear quadrilateral element, mainly used to fascilitate    cross-sectional analysis, this class could be modified in future updates</dt>
+<dd><p class="first last">such that they could also be used to create plate or laminate element
+objects as well.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>MaterialLib</cite>: Creates a material library object meant to hold many material</dt>
+<dd><p class="first last">objects.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>Ply</cite>: Creates ply objects which are used in the building of a laminate object.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Laminate</cite>: Creates laminate objects which could be used for CLT (classical</dt>
+<dd><p class="first last">lamination theory) analysis as well as to be used in building a beam
+cross-section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>XSect</cite>: Creates a cross-section object which can be used in the ROM of a beam</dt>
+<dd><p class="first last">with a non-homogeneous anisotropic cross-section. Currently only supports
+simple box beam cross-section (i.e., four laminates joined together to form
+a box), however outer mold lines can take the shape of airfoil profiles.
+See the Airfoil class in AircraftParts.py for more info.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>TBeam</cite>: Creates a single Timoshenko beam object for FEA.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>SuperBeam</cite>: Creates a super beam object. This class is mainly used to automate</dt>
+<dd><p class="first last">the creation of many connected TBeam objects to be used late for FEA.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>WingSection</cite>: A class which creates and holds many super beams, each of which</dt>
+<dd><p class="first last">could have different cross-sections. It also helps to dimensionalize
+plates for simple closed-form composite buckling load aproximations.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently the inclusion of thermal strains are not supported for any
+structural model.</p>
+</div>
+<span class="target" id="module-AeroComBAT.Structures"></span><div class="section" id="node">
 <h2>NODE<a class="headerlink" href="#node" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="AeroComBAT.Structures.Node">
@@ -245,7 +390,7 @@ relations. Regardless of the analysis</p>
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt><a href="#id1"><span class="problematic" id="id2">`</span></a>mat_constants (1xX Array[Float]): The requisite number of material</dt>
+<dt><cite>mat_constants (1xX Array[Float])</cite>: The requisite number of material</dt>
 <dd><p class="first last">constants required for any structural analysis. Note, this
 array includes the material density. For example, an isotropic
 material needs 2 elastic material constants, so the total
@@ -298,12 +443,20 @@ matricies if requested.</p>
 </tr>
 </tbody>
 </table>
-<ul class="simple">
-<li><cite>compliance (str)</cite>: A boolean input to signify if the compliance</li>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>compliance (str)</cite>: A boolean input to signify if the compliance</dt>
+<dd><p class="first last">matrix should be printed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>stiffness (str)</cite>: A boolean input to signify if the stiffness matrix</dt>
+<dd><p class="first last">should be printed.</p>
+</dd>
+</dl>
+</li>
 </ul>
-<p>matrix should be printed.
-- <cite>stiffness (str)</cite>: A boolean input to signify if the stiffness matrix
-should be printed.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -506,7 +659,7 @@ provided the master coordinates eta and xi.</p>
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Xi and eta can both vary between -1 and 1 res[ectively.</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
 </div>
 </dd></dl>
 
@@ -775,7 +928,7 @@ coordinates eta and xi.</p>
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Xi and eta can both vary between -1 and 1 res[ectively.</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
 </div>
 </dd></dl>
 
@@ -806,11 +959,11 @@ coordinates eta and xi.</p>
 </tbody>
 </table>
 <ul class="simple">
-<li><a href="#id3"><span class="problematic" id="id4">`</span></a>(float)&#8217;: The y-coordinate within the element.</li>
+<li><a href="#id1"><span class="problematic" id="id2">`</span></a>(float)&#8217;: The y-coordinate within the element.</li>
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Xi and eta can both vary between -1 and 1 res[ectively.</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
 </div>
 </dd></dl>
 
@@ -981,7 +1134,7 @@ held by the material library with the same MID.</p>
 </tbody>
 </table>
 <ul class="simple">
-<li><a href="#id5"><span class="problematic" id="id6">`</span></a>(obj): A material object associated with the key MID</li>
+<li><a href="#id3"><span class="problematic" id="id4">`</span></a>(obj): A material object associated with the key MID</li>
 </ul>
 </dd></dl>
 
@@ -1181,7 +1334,7 @@ the material ID, fiber orientation and ply thickness.</p>
 </tbody>
 </table>
 <ul class="simple">
-<li><a href="#id7"><span class="problematic" id="id8">`</span></a>(str): Printed tabulated summary of the ply.</li>
+<li><a href="#id5"><span class="problematic" id="id6">`</span></a>(str): Printed tabulated summary of the ply.</li>
 </ul>
 </dd></dl>
 
@@ -1781,7 +1934,7 @@ mesh the cross-section properly then!</p>
 <li><p class="first"><cite>matlib (obj)</cite>: A material library</p>
 </li>
 <li><dl class="first docutils">
-<dt><cite>typeXsect (str)</cite>: The general shape the cross-section should take.</dt>
+<dt><cite>typeXSect (str)</cite>: The general shape the cross-section should take.</dt>
 <dd><p class="first last">Note that currently only a box beam profile is supported.
 More shapes and the ability to add stiffeners to the
 cross-section will come in later updates.</p>
@@ -2642,7 +2795,7 @@ are supported.</p>
 <code class="descname">getBeamCoord</code><span class="sig-paren">(</span><em>x_nd</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#SuperBeam.getBeamCoord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.SuperBeam.getBeamCoord" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine the global coordinate along superbeam.</p>
 <p>Provided the non-dimensional coordinate along the beam, this method
-returns the gloval coordinate at that point.</p>
+returns the global coordinate at that point.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -2669,6 +2822,49 @@ returns the gloval coordinate at that point.</p>
 </table>
 <ul class="simple">
 <li><cite>(1x3 np.array[float])</cite>: The global coordinate corresponding to x_nd</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Structures.SuperBeam.getEIDatx">
+<code class="descname">getEIDatx</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#SuperBeam.getEIDatx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.SuperBeam.getEIDatx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the beam EID at a non-dimensional x-location in the superbeam.</p>
+<p>Provided the non-dimensional coordinate along the beam, this method
+returns the global beam element EID, as well as the local non-
+dimensional coordinate within the specific beam element.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>x (float)</cite>: The non-dimensional coordinate within the super-beam</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>EID (int)</cite>: The EID of the element containing the non-dimensional</dt>
+<dd><p class="first last">coordinate provided.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>local_x_nd (float)</cite>: The non-dimensional coordinate within the beam</dt>
+<dd><p class="first last">element associated with the provided non-dimensional coordinate
+within the beam.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </dd></dl>
 
@@ -2708,9 +2904,113 @@ internal forces and moments at those nodes.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="AeroComBAT.Structures.SuperBeam.printSummary">
+<code class="descname">printSummary</code><span class="sig-paren">(</span><em>decimals=8</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#SuperBeam.printSummary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.SuperBeam.printSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints out characteristic information about the super beam.</p>
+<p>This method by default prints out the EID, XID, SBID and the NIDs along
+with the nodes associated coordinates. Upon request, it can also print
+out the beam element stiffness, geometric stiffness, mass matricies and
+distributed force vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>nodeCoord (bool)</cite>: A boolean to determine if the node coordinate</dt>
+<dd><p class="first last">information should also be printed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Ke (bool)</cite>: A boolean to determine if the element stiffness matrix</dt>
+<dd><p class="first last">should be printed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Keg (bool)</cite>: A boolean to determine if the element gemoetric</dt>
+<dd><p class="first last">stiffness matrix should be printed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Me (bool)</cite>: A boolean to determine if the element mass matrix</dt>
+<dd><p class="first last">should be printed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Fe (bool)</cite>: A boolean to determine if the element distributed force</dt>
+<dd><p class="first last">and moment vector should be printed.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>(str)</cite>: Printed summary of the requested attributes.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
 <dt id="AeroComBAT.Structures.SuperBeam.writeDisplacements">
 <code class="descname">writeDisplacements</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#SuperBeam.writeDisplacements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.SuperBeam.writeDisplacements" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write internal displacements and rotations to file</p>
+<dd><p>Write internal displacements and rotations to file.</p>
+<p>For every node within the superbeam, this method will tabulate all of
+the displacements and rotations and then write them to a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>fileName (str)</cite>: The name of the file where the data will be written.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>analysis_name (str)</cite>: The name of the analysis for which the</dt>
+<dd><p class="first last">displacements and rotations are being surveyed.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>fileName (file)</cite>: This method doesn&#8217;t actually return a file, rather</dt>
+<dd><p class="first last">it writes the data to a file named &#8220;fileName&#8221; and saves it to the
+working directory.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Structures.SuperBeam.writeForcesMoments">
+<code class="descname">writeForcesMoments</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#SuperBeam.writeForcesMoments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.SuperBeam.writeForcesMoments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write internal force and moments to file.</p>
 <p>For every node within the superbeam, this method will tabulate all of
 the forces and moments and then write them to a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -2721,13 +3021,401 @@ the forces and moments and then write them to a file.</p>
 </tr>
 </tbody>
 </table>
-<ul class="simple">
-<li><cite>fileName (str)</cite>: The name of the file where the data will be written.</li>
-</ul>
-<dl class="docutils">
-<dt>analysis_name (str): The name of the analysis for which the</dt>
-<dd>displacements and rotations are being surveyed.</dd>
+<ul>
+<li><p class="first"><cite>fileName (str)</cite>: The name of the file where the data will be written.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>analysis_name (str)</cite>: The name of the analysis for which the</dt>
+<dd><p class="first last">forces and moments are being surveyed.</p>
+</dd>
 </dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>fileName (file)</cite>: This method doesn&#8217;t actually return a file, rather</dt>
+<dd><p class="first last">it writes the data to a file named &#8220;fileName&#8221; and saves it to the
+working directory.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="wing-section">
+<h2>WING SECTION<a class="headerlink" href="#wing-section" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.Structures.WingSection">
+<em class="property">class </em><code class="descclassname">AeroComBAT.Structures.</code><code class="descname">WingSection</code><span class="sig-paren">(</span><em>x1</em>, <em>x2</em>, <em>chord</em>, <em>name</em>, <em>x0_spar</em>, <em>xf_spar</em>, <em>laminates</em>, <em>matLib</em>, <em>noe</em>, <em>SSBID=0</em>, <em>SNID=0</em>, <em>SEID=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#WingSection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.WingSection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a wing section object.</p>
+<p>This class instantiates a wing section object which is intended to
+represent the section of a wing enclosed by two ribs. This allows primarily
+for two different things: it allows the user to vary the cross-section
+design of the wing by enabling different designs in each wing section, as
+well as enabling the user to estimate the static stability of the laminates
+that make up the wing-section design.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>Airfoils (Array[obj])</cite>: This array contains all of the airfoils used</dt>
+<dd><p class="first last">over the wing section. This attribute exists primarily to fascilitate
+the meshing process and is subject to change.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>XSects (Array[obj])</cite>: This array contains all of the cross-section</dt>
+<dd><p class="first last">objects used in the wing section. If the cross-section is constant
+along the length of the wing section, this array length is 1.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>SuperBeams (Array[obj])</cite>: This array contains all of the superbeam</dt>
+<dd><p class="first last">objects used in the wing section. If the cross-section is constant
+along the length of the wing section, this array length is 1.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>xdim (1x2 Array[float])</cite>: This array contains the non-dimensional</dt>
+<dd><p class="first last">starting and ending points of the wing section spar. They are
+non-dimensionalized by the chord length.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Laminates (Array[obj])</cite>: This array contains the laminate objects used</dt>
+<dd><p class="first last">by the cross-sections in the wing section.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>x1 (1x3 np.array[float])</cite>: The starting coordinate of the wing section.</p>
+</li>
+<li><p class="first"><cite>x2 (1x3 np.array[float])</cite>: The ending coordinate of the wing section.</p>
+</li>
+<li><p class="first"><cite>XIDs (Array[int])</cite>: This array containts the integer cross-section IDs</p>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>plotRigid</cite>: This method plots the rigid wing section in 3D space.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>plotDispl</cite>: Provided an analysis name, this method will deformed state</dt>
+<dd><p class="first last">of the wing section. It is also capable of plotting cross-section
+criteria, such as displacement, stress, strain, or failure criteria.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">While it is possible to use multiple cross-section within the
+wing section, this capability is only to be utilized for tapering cross
+sections, not changing the cross-section type or design (such as by
+changing the laminates used to make the cross-sections). Doing so would
+invalidate the ritz method buckling solutions applied to the laminate
+objects.</p>
+</div>
+<dl class="method">
+<dt id="AeroComBAT.Structures.WingSection.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>x1</em>, <em>x2</em>, <em>chord</em>, <em>name</em>, <em>x0_spar</em>, <em>xf_spar</em>, <em>laminates</em>, <em>matLib</em>, <em>noe</em>, <em>SSBID=0</em>, <em>SNID=0</em>, <em>SEID=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#WingSection.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.WingSection.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a wing section object</p>
+<p>This wing section object is in some way an organizational object. It
+holds a collection of superbeam objects which in general could all use
+different cross-sections. One could for example use several super-beams
+in order to simlate a taper within a wing section descretely. These
+objects will also be used in order to determine the buckling span of
+the laminate objects held within the cross-section.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>x1 (1x3 np.array[float])</cite>: The starting coordinate of the wing</dt>
+<dd><p class="first last">section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x2 (1x3 np.array[float])</cite>: The ending coordinate of the wing</dt>
+<dd><p class="first last">section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>chord (func)</cite>: A function that returns the chord length along a wing</dt>
+<dd><p class="first last">provided the scalar length from the wing origin to the desired
+point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>name (str)</cite>: The name of the airfoil to be used to mesh the</dt>
+<dd><p class="first last">cross-section. This is subject to change since the meshing process
+is only a placeholder.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x0_spar (float)</cite>: The non-dimensional starting location of the cross</dt>
+<dd><p class="first last">section. This value is non-dimensionalized by the local chord
+length.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>xf_spar (float)</cite>: The non-dimensional ending location of the cross</dt>
+<dd><p class="first last">section. This value is non-dimensionalized by the local chord
+length.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>laminates (Array[obj])</cite>: This array contains the laminate objects to</dt>
+<dd><p class="first last">be used in order to mesh the cross-section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>matLib (obj)</cite>: This material library object contains all of the</dt>
+<dd><p class="first last">materials to be used in meshing the cross-sections used by the
+wing section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>noe (float)</cite>: The number of beam elements to be used in the wing per</dt>
+<dd><p class="first last">unit length.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>SSBID (int)</cite>: The starting superbeam ID in the wing section.</p>
+</li>
+<li><p class="first"><cite>SNID (int)</cite>: The starting node ID in the wing section.</p>
+</li>
+<li><p class="first"><cite>SEID (int)</cite>: The starting element ID in the wing section.</p>
+</li>
+<li><p class="first"><cite>SXID (int)</cite>: The starting cross-section ID in the wing section.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>numSupBeams (int)</cite>: The number of different superbeams to be used</dt>
+<dd><p class="first last">in the wing section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>typeXSect (str)</cite>: The type of cross-section used by the wing</dt>
+<dd><p class="first last">section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>meshSize (int)</cite>: The maximum aspect ratio an element can have within</dt>
+<dd><p class="first last">the cross-sections used by the wing sections.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>ref_ax (str)</cite>: The reference axis used by the cross-section. This is</dt>
+<dd><p class="first last">axis about which the loads will be applied on the wing section.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The chord function could take the shape of: 
+chord = lambda y: (ctip-croot)*y/b_s+croot</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Structures.WingSection.plotDispl">
+<code class="descname">plotDispl</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#WingSection.plotDispl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.WingSection.plotDispl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the deformed wing section object in 3D space.</p>
+<p>Provided an analysis name, this method will plot the results from the
+corresponding analysis including beam/cross-section deformation, and
+stress, strain, or failure criteria within the sampled cross-sections.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>figName (str)</cite>: The name of the plot to be generated. If one is not</dt>
+<dd><p class="first last">provided a semi-random name will be generated.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>environment (str)</cite>: The name of the environment to be used when</dt>
+<dd><p class="first last">plotting. Currently only the &#8216;mayavi&#8217; environment is supported.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>clr (1x3 tuple(int))</cite>: This tuple represents the RGB values that the</dt>
+<dd><p class="first last">beam reference axis will be colored with.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>numXSects (int)</cite>: This is the number of cross-sections that will be</dt>
+<dd><p class="first last">plotted and evenly distributed throughout the beam.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>contour (str)</cite>: The contour to be plotted on the sampled cross</dt>
+<dd><p class="first last">sections.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>contLim (1x2 Array[float])</cite>: The lower and upper limits for the</dt>
+<dd><p class="first last">contour color plot.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>warpScale (float)</cite>: The visual multiplication factor to be applied</dt>
+<dd><p class="first last">to the cross-sectional warping displacement.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>displScale (float)</cite>: The visual multiplication factor to be applied</dt>
+<dd><p class="first last">to the beam displacements and rotations.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>analysis_name (str)</cite>: The analysis name corresponding to the results</dt>
+<dd><p class="first last">to pe visualized.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>mode (int)</cite>: For modal analysis, this corresponds to the mode-shape</dt>
+<dd><p class="first last">which is desired to be plotted.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>(figure)</cite>: This method returns a 3D plot of the rigid wing section.</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">In order to limit the size of data stored in memory, the
+local cross-sectional data is not stored. As a result, for every
+additional cross-section that is plotted, the time required to plot
+will increase substantially.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Structures.WingSection.plotRigid">
+<code class="descname">plotRigid</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Structures.html#WingSection.plotRigid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Structures.WingSection.plotRigid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the rigid wing section object in 3D space.</p>
+<p>This method is exceptionally helpful when building up a model and
+debugging it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>figName (str)</cite>: The name of the plot to be generated. If one is not</dt>
+<dd><p class="first last">provided a semi-random name will be generated.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>environment (str)</cite>: The name of the environment to be used when</dt>
+<dd><p class="first last">plotting. Currently only the &#8216;mayavi&#8217; environment is supported.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>clr (1x3 tuple(int))</cite>: This tuple represents the RGB values that the</dt>
+<dd><p class="first last">beam reference axis will be colored with.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>numXSects (int)</cite>: This is the number of cross-sections that will be</dt>
+<dd><p class="first last">plotted and evenly distributed throughout the beam.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>(figure)</cite>: This method returns a 3D plot of the rigid wing section.</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">In order to limit the size of data stored in memory, the
+local cross-sectional data is not stored. As a result, for every
+additional cross-section that is plotted, the time required to plot
+will increase substantially.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -2739,70 +3427,26 @@ the forces and moments and then write them to a file.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">The Structures Module</a><ul>
-<li><a class="reference internal" href="#node">NODE</a></li>
-<li><a class="reference internal" href="#material">MATERIAL</a></li>
-<li><a class="reference internal" href="#cquad4">CQUAD4</a></li>
-<li><a class="reference internal" href="#material-library">MATERIAL LIBRARY</a></li>
-<li><a class="reference internal" href="#ply">PLY</a></li>
-<li><a class="reference internal" href="#laminate">LAMINATE</a></li>
-<li><a class="reference internal" href="#mesher">MESHER</a></li>
-<li><a class="reference internal" href="#cross-section">CROSS-SECTION</a></li>
-<li><a class="reference internal" href="#timoshenko-beam">TIMOSHENKO BEAM</a></li>
-<li><a class="reference internal" href="#super-beam">SUPER-BEAM</a></li>
-</ul>
-</li>
-</ul>
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Welcome to AeroComBAT&#8217;s documentation!</a></li>
-  </ul></li>
-</ul>
-</div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/structures.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2015, Ben Names.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
-      
-      |
-      <a href="_sources/structures.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="FEM.html" title="The FEM Interface Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
   </body>
 </html>

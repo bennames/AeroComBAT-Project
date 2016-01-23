@@ -1,0 +1,774 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The FEM Interface Module &mdash; AeroComBAT 0.2.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.2.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 0.2.1 documentation" href="index.html" />
+    <link rel="next" title="The Structures Module" href="structures.html" />
+    <link rel="prev" title="Welcome to AeroComBAT’s documentation!" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="structures.html" title="The Structures Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to AeroComBAT’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The FEM Interface Module</a><ul>
+<li><a class="reference internal" href="#model">MODEL</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to AeroComBAT&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="structures.html"
+                        title="next chapter">The Structures Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/FEM.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-AeroComBAT.FEM">
+<span id="the-fem-interface-module"></span><h1>The FEM Interface Module<a class="headerlink" href="#module-AeroComBAT.FEM" title="Permalink to this headline">¶</a></h1>
+<p>This module contains a basic environment for conducting finite element analysis.</p>
+<p>The primary purpose of this library is to fascilitate the creation of a FEM
+within the AeroComBAT package.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">SUMARRY OF THE CLASSES:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>Model</cite>: The Model class has two main purposes. The first is that it is meant</dt>
+<dd><p class="first last">to serve as an organizational class. Once an aircraft part has been loaded
+into the model by using the addAircraftPart() method, the aircraft part
+can be loaded and constrained by the user. Once all parts have been loaded
+into the model and all loads and constraints have been applied, the user
+can choose to execute the plotRigidModel() method to visualize the model
+and make sure it accurately represents their problem. If the model appears
+as it should, the user can elect to run a static, buckling, normal mode,
+static aeroelastic, or dynamic flutter analysis.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently the only avaliable part in the AeroComBAT package are wing
+parts, however this is likely to change as parts such as masses, fuselages
+and other types of aircraft parts are added.</p>
+</div>
+<span class="target" id="module-AeroComBAT.FEM"></span><div class="section" id="model">
+<h2>MODEL<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.FEM.Model">
+<em class="property">class </em><code class="descclassname">AeroComBAT.FEM.</code><code class="descname">Model</code><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Model which is used to organize and analyze FEM.</p>
+<p>The primary used of Model objects are to organize FEM&#8217;s and analyze them.
+The Model object doesn&#8217;t create any finite elements. Instead, it loads
+aircraft parts which contain various types of finite element structural
+models as well as aerodynamic models. The type of model will depend on the
+type of aircraft part added. Once all of the models are created and added
+to the model object, the model object will serve as the analysis primary
+interface used to manipulate the generated model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>Kg (DOFxDOF np.array[float])</cite>: This is the global stiffness matrix.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Kgr ((DOF-CON)x(DOF-CON) np.array[float])</cite>: This is the global reduced</dt>
+<dd><p class="first last">stiffness matrix. In other words, the global stiffness matrix with the
+rows and columns corresponding to the constraints (CON) removed.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>Fg (DOFx1 np.array[float])</cite>: The global force vector.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Fgr ((DOF-CON)x1 np.array[float])</cite>: The global reduced force vector. In</dt>
+<dd><p class="first last">other words, the global force vector with the rows corresponding to the
+constraints (CON) removed.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>Mg (DOFxDOF np.array[float])</cite>: The global mass matrix.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Mgr ((DOF-CON)x(DOF-CON) np.array[float])</cite>: The global reduced mass</dt>
+<dd><p class="first last">matrix. In other words, the global mass matrix with the rows and
+columns corresponding to the constraints (CON) removed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Qg (DOFx1 np.array[float])</cite>: The global force boundary condition vector.</dt>
+<dd><p class="first last">This is where all of the nodal loads are stored before the system is
+assembled.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nids (Array[int])</cite>: This array contains all of the node IDs used within</dt>
+<dd><p class="first last">the model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nodeDict (dict[NID,node])</cite>: This dictionary is a mapping of the node IDs</dt>
+<dd><p class="first last">used within the model to the corresponding node objects.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>elems (Array[obj])</cite>: This array contains all of the element objects used</dt>
+<dd><p class="first last">in the model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>const (dict[NID,Array[DOF])</cite>: This dictionary is a mapping of the node</dt>
+<dd><p class="first last">IDs constrained and the corresponding degrees of freedom that are
+constrained.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>parts (Array[int])</cite>: This array contains all of the part IDs</dt>
+<dd><p class="first last">corresponding to the parts that have been added to the model.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>addElements</cite>: A method to add individual elements to the model.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>addAircraftParts</cite>: A method to add an Aircraft part to the model. This</dt>
+<dd><p class="first last">is a much more effective method than addElements as when a part is
+added, the model can utilize all of the organizational and post
+processing methods built into the part.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>resetPointLoads</cite>: A convenient way to reset all of the nodal loads in</dt>
+<dd><p class="first last">the model to zero.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>resetResults</cite>: A convenient way to clear the results in all of the</dt>
+<dd><p class="first last">elements from a previous analysis. This method is subject to change as
+the way in which results are stored is likely to change.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>applyLoads</cite>: A method to apply nodal loads as well as distributed loads</dt>
+<dd><p class="first last">to a range of elements, all of the elements in a part, or all of the
+elements in the model.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>applyConstraints</cite>: A method to apply nodal constraints to the model.</p>
+</li>
+<li><p class="first"><cite>staticAnalysis</cite>: A method which conducts a linear static analysis.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>normalModesAnalysis</cite>: A method which conducts a normal modes analysis on</dt>
+<dd><p class="first last">the model.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>plotRigidModel</cite>: A method to plot and visualize the model.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>plotDeformedModel</cite>: A method to plot and visualize the results from an</dt>
+<dd><p class="first last">analysis on the model.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When constraining nodes, only 0 displacement and rotation
+constraints are currently supported.</p>
+</div>
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.addAircraftParts">
+<code class="descname">addAircraftParts</code><span class="sig-paren">(</span><em>parts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.addAircraftParts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.addAircraftParts" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method to add an array of aircraft parts to the model.</p>
+<p>This method is a robust version of addElements. provided an array of
+part objects, this method will add the parts to the model. This
+includes adding all of the elements and nodes to the model, as well as
+a few other pieces of information.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>parts (Array[obj])</cite>: An array of part objects.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.addElements">
+<code class="descname">addElements</code><span class="sig-paren">(</span><em>elemarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.addElements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.addElements" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method to add elements to the model.</p>
+<p>Provided an array of elements, this method can add those elements to
+the model for analysis. This is a rather rudementary method as the post
+processing methods utilized by the parts are not at the users disposal
+for the elements added to the model in this way.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>elemarray (Array[obj])</cite>: Adds all of the elements in the array to</dt>
+<dd><p class="first last">the model.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently supported elements include: SuperBeam, Tbeam.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.applyConstraints">
+<code class="descname">applyConstraints</code><span class="sig-paren">(</span><em>NID</em>, <em>const</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.applyConstraints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.applyConstraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method for applying nodal constraints to the model.</p>
+<p>This method is the primary method for applying nodal constraints to the
+model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>NID (int)</cite>: The node ID of the node to be constrained.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>const (str, np.array[int])</cite>: const can either take the form of a</dt>
+<dd><p class="first last">string in order to take advantage of the two most common
+constraints being &#8216;pin&#8217; or &#8216;fix&#8217;. If a different constraint needs
+to be applied, const could also be a numpy array listing the DOF
+(integers 1-6) to be constrained.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.applyLoads">
+<code class="descname">applyLoads</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.applyLoads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.applyLoads" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method to apply nodal and distributed loads to the model.</p>
+<p>This method allows the user to apply nodal loads to nodes and
+distributed loads to elements within the model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>f (func)</cite>: A function which, provided the provided a length 3 numpy</dt>
+<dd><p class="first last">array representing a point in space, calculates the distributed
+load value at that point. See an example below:</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>F (dict[NID,1x6 np.array[float]])</cite>: A dictionary mapping a node ID</dt>
+<dd><p class="first last">to the loads to be applied at that node ID.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>allElems (bool)</cite>: A boolean value used to easily load all of the</dt>
+<dd><p class="first last">elements which have been added to the model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>PIDs (Array[int])</cite>: An array containing part ID&#8217;s, signifying that</dt>
+<dd><p class="first last">all elements used by that part should be loaded.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>eids (Array[int])</cite>: An array containing all of the element ID&#8217;s</dt>
+<dd><p class="first last">corresponding to all of the elements which should be loaded.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<p>Distributed load function example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+   <span class="n">vx</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="mf">2.1</span>
+   <span class="n">vy</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+   <span class="n">pz</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">tz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mi">10</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+   <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">pz</span><span class="p">,</span><span class="n">tz</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Nodal load dictionary example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">F</span><span class="p">[</span><span class="n">NID</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">Qx</span><span class="p">,</span><span class="n">Qy</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">Mx</span><span class="p">,</span><span class="n">My</span><span class="p">,</span><span class="n">T</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.normalModesAnalysis">
+<code class="descname">normalModesAnalysis</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.normalModesAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.normalModesAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conducts normal mode analysis.</p>
+<p>This method conducts normal mode analysis on the model. This will
+calculate all of the unknown frequency eigenvalues and eigenvectors for
+the model, which can be plotted later.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>analysis_name (str)</cite>: The string name to be associated with this</dt>
+<dd><p class="first last">analysis. By default, this is chosen to be &#8216;analysis_untitled&#8217;.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There are internal loads that are calculated and stored
+within the model elements, however be aware that these loads are
+meaningless and are only retained as a means to display cross
+section warping.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.plotDeformedModel">
+<code class="descname">plotDeformedModel</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.plotDeformedModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.plotDeformedModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the deformed model.</p>
+<p>This method plots the deformed model results for a given analysis in
+the mayavi environement.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>analysis_name (str)</cite>: The string identifier of the analysis.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>figName (str)</cite>: The name of the figure. This is &#8216;Rigid Model&#8217; by</dt>
+<dd><p class="first last">default.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>clr (1x3 tuple(int))</cite>: The color tuple or RGB values to be used for</dt>
+<dd><p class="first last">plotting the reference axis for all beam elements. By default this
+color is black.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>numXSects (int)</cite>: The number of cross-sections desired to be plotted</dt>
+<dd><p class="first last">for all wing sections. The default is 2.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>contour (str)</cite>: A string keyword to determine what analysis should</dt>
+<dd><p class="first last">be plotted.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>contLim (1x2 Array[float])</cite>: An array containing the lower and upper</dt>
+<dd><p class="first last">contour limits.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>warpScale (float)</cite>: The scaling factor used to magnify the cross</dt>
+<dd><p class="first last">section warping displacement factor.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>displScale (float)</cite>: The scaling fator used to magnify the beam</dt>
+<dd><p class="first last">element displacements and rotations.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>mode (int)</cite>: If the analysis name refers to a modal analysis, mode</dt>
+<dd><p class="first last">refers to which mode from that analysis should be plotted.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>mayavi figure</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.plotRigidModel">
+<code class="descname">plotRigidModel</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.plotRigidModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.plotRigidModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the rigid model.</p>
+<p>This method plots the rigid model in the mayavi environement.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>figName (str)</cite>: The name of the figure. This is &#8216;Rigid Model&#8217; by</dt>
+<dd><p class="first last">default.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>clr (1x3 tuple(int))</cite>: The color tuple or RGB values to be used for</dt>
+<dd><p class="first last">plotting the reference axis for all beam elements. By default this
+color is black.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>numXSects (int)</cite>: The number of cross-sections desired to be plotted</dt>
+<dd><p class="first last">for all wing sections. The default is 2.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>mayavi figure</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.resetPointLoads">
+<code class="descname">resetPointLoads</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.resetPointLoads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.resetPointLoads" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method to reset the point loads applied to the model.</p>
+<p>This is a good method to reset the nodal loads applied to a model. This
+method will be useful when attempting to apply a series different
+analysis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.resetResults">
+<code class="descname">resetResults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.resetResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.resetResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method to reset the results in a model.</p>
+<p>This is a good method to reset the results in the model from a given
+analysis. This method will be useful when attempting to apply a series
+different analysis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.staticAnalysis">
+<code class="descname">staticAnalysis</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.staticAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.staticAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear static analysis.</p>
+<p>This method conducts a linear static analysis on the model. This will
+calculate all of the unknown displacements in the model, and save not
+only dispalcements, but also internal forces and moments in all of the
+beam elements.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>analysis_name (str)</cite>: The string name to be associated with this</dt>
+<dd><p class="first last">analysis. By default, this is chosen to be &#8216;analysis_untitled&#8217;.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="structures.html" title="The Structures Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to AeroComBAT’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,6 +1,8 @@
 The Structures Module
 --------------------- 
 
+.. automodule:: AeroComBAT.Structures
+
 .. module:: AeroComBAT.Structures
 
 NODE

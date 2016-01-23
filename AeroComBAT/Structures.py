@@ -1,6 +1,5 @@
 # structures.py
 # Author: Ben Names
-# Company: Structural Design and Analysis, Inc.
 """
 This module contains a library of classes devoted to structural analysis.
 
@@ -16,33 +15,36 @@ down the structures.py library, the more complex the objects, often requiring
 multiple of their predecessors. For example, the CQUAD4 class requires four
 node objects and a material object.
 
-SUMARRY OF THE CLASSES:
--`Node`: Creates a node object with 3D position.
--`Material`: Creates a material object, generating the 3D constitutive relations.
--`MicroMechanics`: Class to fascilitate the calculation of composite stiffnesses
+:SUMARRY OF THE CLASSES:
+- `Node`: Creates a node object with 3D position.
+- `Material`: Creates a material object, generating the 3D constitutive relations.
+- `MicroMechanics`: Class to fascilitate the calculation of composite stiffnesses
     using micro-mechanical models where fibers are long and continuous.
--`CQUAD4`: Creates a 2D linear quadrilateral element, mainly used to fascilitate\
+- `CQUAD4`: Creates a 2D linear quadrilateral element, mainly used to fascilitate\
     cross-sectional analysis, this class could be modified in future updates
     such that they could also be used to create plate or laminate element
     objects as well.
--`MaterialLib`: Creates a material library object meant to hold many material
+- `MaterialLib`: Creates a material library object meant to hold many material
     objects.
--`Ply`: Creates ply objects which are used in the building of a laminate object.
--`Laminate`: Creates laminate objects which could be used for CLT (classical
+- `Ply`: Creates ply objects which are used in the building of a laminate object.
+- `Laminate`: Creates laminate objects which could be used for CLT (classical
     lamination theory) analysis as well as to be used in building a beam
     cross-section.
--`XSect`: Creates a cross-section object which can be used in the ROM of a beam
+- `XSect`: Creates a cross-section object which can be used in the ROM of a beam
     with a non-homogeneous anisotropic cross-section. Currently only supports
     simple box beam cross-section (i.e., four laminates joined together to form
     a box), however outer mold lines can take the shape of airfoil profiles.
     See the Airfoil class in AircraftParts.py for more info.
--`TBeam`: Creates a single Timoshenko beam object for FEA.
--`SuperBeam`: Creates a super beam object. This class is mainly used to automate
+- `TBeam`: Creates a single Timoshenko beam object for FEA.
+- `SuperBeam`: Creates a super beam object. This class is mainly used to automate
     the creation of many connected TBeam objects to be used late for FEA.
--`WingSection`: A class which creates and holds many super beams, each of which
+- `WingSection`: A class which creates and holds many super beams, each of which
     could have different cross-sections. It also helps to dimensionalize
     plates for simple closed-form composite buckling load aproximations.
-    
+
+
+.. Note:: Currently the inclusion of thermal strains are not supported for any
+    structural model.
 """
 __docformat__ = 'restructuredtext'
 # =============================================================================
@@ -168,7 +170,7 @@ class Material:
         - `name (str)`: Name of the material.
         - `matType (str)`: The type of the material. Supported material types
             are "iso", "trans_iso", and "ortho".
-        - `mat_constants (1xX Array[Float]): The requisite number of material
+        - `mat_constants (1xX Array[Float])`: The requisite number of material
             constants required for any structural analysis. Note, this
             array includes the material density. For example, an isotropic
             material needs 2 elastic material constants, so the total
@@ -285,9 +287,9 @@ class Material:
         
         :Args:
         - `compliance (str)`: A boolean input to signify if the compliance
-        matrix should be printed.
+            matrix should be printed.
         - `stiffness (str)`: A boolean input to signify if the stiffness matrix
-        should be printed.
+            should be printed.
         
         :Returns:
         - String print out containing the material name, as well as material
@@ -611,7 +613,7 @@ class CQUAD4:
         :Returns:
         - `float`: The x-coordinate within the element.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         xs = self.xs
@@ -630,7 +632,7 @@ class CQUAD4:
         :Returns:
         - `(float)': The y-coordinate within the element.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         ys = self.ys
@@ -650,7 +652,7 @@ class CQUAD4:
         :Returns:
         - `(3x6 np.array[float])`: The stress-resutlant transformation array.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         return np.array([[1.,0,0,0,0,-self.y(eta,xi)],\
@@ -670,7 +672,7 @@ class CQUAD4:
         - `Jmat (3x3 np.array[float])`: The stress-resutlant transformation
             array.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         xs = self.xs
@@ -697,7 +699,7 @@ class CQUAD4:
         - `Nmat (3x12 np.array[float])`: The shape-function value weighting
             matrix.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         Nmat = np.zeros([3,12])
@@ -726,7 +728,7 @@ class CQUAD4:
         - `dNdxi_mat (3x12 np.array[float])`: The gradient of the shape-
             function value weighting matrix with respect to xi.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         dNdxi_mat = np.zeros([3,12])
@@ -755,7 +757,7 @@ class CQUAD4:
         - `dNdeta_mat (3x12 np.array[float])`: The gradient of the shape-
             function value weighting matrix with respect to eta.
             
-        .. Note:: Xi and eta can both vary between -1 and 1 res[ectively.
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
         """
         dNdeta_mat = np.zeros([3,12])
@@ -1807,7 +1809,7 @@ class XSect:
             array! It will referrence this object multiple times and not
             mesh the cross-section properly then!
         - `matlib (obj)`: A material library
-        - `typeXsect (str)`: The general shape the cross-section should take.
+        - `typeXSect (str)`: The general shape the cross-section should take.
             Note that currently only a box beam profile is supported.
             More shapes and the ability to add stiffeners to the
             cross-section will come in later updates.
@@ -1821,7 +1823,7 @@ class XSect:
         #Save the cross-section ID
         self.XID = XID
         # Save the cross-section type:
-        self.typeXsect = kwargs.pop('typeXsect','box')
+        self.typeXSect = kwargs.pop('typeXSect','box')
         # Meshing aspect ratio
         meshSize = kwargs.pop('meshSize',4)
         # Initialize plotting color for the cross-section
@@ -1838,9 +1840,9 @@ class XSect:
         
         mesher = Mesher()
         # Begin the meshing process for a box beam cross-section profile
-        if self.typeXsect=='box':
+        if self.typeXSect=='box':
             mesher.boxBeam(self,meshSize,x0,xf,matlib)
-        if self.typeXsect=='circle':
+        if self.typeXSect=='circle':
             r = kwargs.pop('r',self.airfoil.c)
             mesher.cylindricalTube(self,r,meshSize,x0,xf,matlib)
             
@@ -2116,6 +2118,7 @@ class XSect:
         """
         # Initialize the applied force
         frc = kwargs.pop('force',np.zeros((6,1)))
+        frc = np.reshape(frc,(6,1))
         # Calculate the force applied at the origin of the cross-section
         th = np.dot(np.linalg.inv(self.T2),frc)
         # Generate nodal warping displacements
@@ -2135,9 +2138,9 @@ class XSect:
             for j in range(0,4):
                 tmpNID = elem.NIDs[j]
                 # Save warping displacement
-                uelem[3*j:3*j+3,0] = u[3*tmpNID:3*tmpNID+3,0]
+                uelem[3*j:3*j+3] = u[3*tmpNID:3*tmpNID+3]
                 # Save warping gradient
-                dudzelem[3*j:3*j+3,0] = dudz[3*tmpNID:3*tmpNID+3,0]
+                dudzelem[3*j:3*j+3] = dudz[3*tmpNID:3*tmpNID+3]
             # Initialize strain vectors
             tmpEps = np.zeros((6,4))
             # Initialize stress vectors
@@ -2229,7 +2232,7 @@ class XSect:
         """
         # Print xsect info:
         print('XSect: %d' %(self.XID))
-        print('Type of cross-section is: '+self.typeXsect)
+        print('Type of cross-section is: '+self.typeXSect)
         print('The OML selected is: '+self.airfoil.name)
         # Print the 6x6 stiffnes matrix?
         stiffMat = kwargs.pop('stiffMat',False)
@@ -3425,43 +3428,145 @@ class WingSection:
     that make up the wing-section design.
     
     :Attributes:
-    - `Airfoils (Array[obj])`: This array contains all of the airfoils used over
-        the wing section. This primarily exists for the purpose
-    x1
-    x2
+    - `Airfoils (Array[obj])`: This array contains all of the airfoils used
+        over the wing section. This attribute exists primarily to fascilitate
+        the meshing process and is subject to change.
+    - `XSects (Array[obj])`: This array contains all of the cross-section
+        objects used in the wing section. If the cross-section is constant
+        along the length of the wing section, this array length is 1.
+    - `SuperBeams (Array[obj])`: This array contains all of the superbeam
+        objects used in the wing section. If the cross-section is constant
+        along the length of the wing section, this array length is 1.
+    - `xdim (1x2 Array[float])`: This array contains the non-dimensional
+        starting and ending points of the wing section spar. They are
+        non-dimensionalized by the chord length.
+    - `Laminates (Array[obj])`: This array contains the laminate objects used
+        by the cross-sections in the wing section.
+    - `x1 (1x3 np.array[float])`: The starting coordinate of the wing section.
+    - `x2 (1x3 np.array[float])`: The ending coordinate of the wing section.
+    - `XIDs (Array[int])`: This array containts the integer cross-section IDs
+    
+    :Methods:
+    - `plotRigid`: This method plots the rigid wing section in 3D space.
+    - `plotDispl`: Provided an analysis name, this method will deformed state
+        of the wing section. It is also capable of plotting cross-section
+        criteria, such as displacement, stress, strain, or failure criteria.
+        
+    
+    
+    .. Warning:: While it is possible to use multiple cross-section within the
+        wing section, this capability is only to be utilized for tapering cross
+        sections, not changing the cross-section type or design (such as by
+        changing the laminates used to make the cross-sections). Doing so would
+        invalidate the ritz method buckling solutions applied to the laminate
+        objects.
     
     """
-    def __init__(self,chord,name,x0_spar,x1_spar,laminates,matLib,x1,x2,noe_density,SBID,snid1=1,sEID=1,**kwargs):
+    def __init__(self,x1,x2,chord,name,x0_spar,xf_spar,laminates,matLib,noe,SSBID=0,SNID=0,SEID=0,**kwargs):
+        """Creates a wing section object
+        
+        This wing section object is in some way an organizational object. It
+        holds a collection of superbeam objects which in general could all use
+        different cross-sections. One could for example use several super-beams
+        in order to simlate a taper within a wing section descretely. These
+        objects will also be used in order to determine the buckling span of
+        the laminate objects held within the cross-section.
+        
+        :Args:
+        - `x1 (1x3 np.array[float])`: The starting coordinate of the wing
+            section.
+        - `x2 (1x3 np.array[float])`: The ending coordinate of the wing
+            section.
+        - `chord (func)`: A function that returns the chord length along a wing
+            provided the scalar length from the wing origin to the desired
+            point.
+        - `name (str)`: The name of the airfoil to be used to mesh the
+            cross-section. This is subject to change since the meshing process
+            is only a placeholder.
+        - `x0_spar (float)`: The non-dimensional starting location of the cross
+            section. This value is non-dimensionalized by the local chord
+            length.
+        - `xf_spar (float)`: The non-dimensional ending location of the cross
+            section. This value is non-dimensionalized by the local chord
+            length.
+        - `laminates (Array[obj])`: This array contains the laminate objects to
+            be used in order to mesh the cross-section.
+        - `matLib (obj)`: This material library object contains all of the
+            materials to be used in meshing the cross-sections used by the
+            wing section.
+        - `noe (float)`: The number of beam elements to be used in the wing per
+            unit length.
+        - `SSBID (int)`: The starting superbeam ID in the wing section.
+        - `SNID (int)`: The starting node ID in the wing section.
+        - `SEID (int)`: The starting element ID in the wing section.
+        - `SXID (int)`: The starting cross-section ID in the wing section.
+        - `numSupBeams (int)`: The number of different superbeams to be used
+            in the wing section.
+        - `typeXSect (str)`: The type of cross-section used by the wing
+            section.
+        - `meshSize (int)`: The maximum aspect ratio an element can have within
+            the cross-sections used by the wing sections.
+        - `ref_ax (str)`: The reference axis used by the cross-section. This is
+            axis about which the loads will be applied on the wing section.
+        
+        .. Note:: The chord function could take the shape of: 
+            chord = lambda y: (ctip-croot)*y/b_s+croot
+        """
         self.Airfoils = []
         self.XSects = []
         self.SuperBeams = []
-        self.xdim = [x0_spar,x1_spar]
+        self.xdim = [x0_spar,xf_spar]
         self.laminates = laminates
         self.x1 = x1
         self.x2 = x2
         self.XIDs = []
         numSupBeams = kwargs.pop('numSuperBeams',1)
-        typeXsect = kwargs.pop('typeXsect','box')
+        typeXSect = kwargs.pop('typeXSect','box')
         meshSize = kwargs.pop('meshSize',4)
-        sXID = kwargs.pop('sXID',0)
+        SXID = kwargs.pop('SXID',0)
         ref_ax = kwargs.pop('ref_ax','shearCntr')
-        xs = np.linspace(x1,x2,numSupBeams+1)
-        tmpsnid1 = snid1
-        tmpsEID = sEID
+        t = np.linspace(0,1,numSupBeams+1)
+        xs = x1+t*(x2-x1)
+        tmpsnid1 = SNID
+        tmpsEID = SEID
         for i in range(0,numSupBeams):
-            self.Airfoils += [Airfoil(chord((xs[i]+xs[i+1])/2.),name=name)]
-            x0tmp = np.array([0,0,xs[i]])
-            xftmp = np.array([0,0,xs[i+1]])
-            tmpXsect = XSect(sXID+i,self.Airfoils[i],self.xdim,\
-                laminates[4*i:4*i+4],matLib,typeXsect=typeXsect,meshSize=meshSize)
+            sbeam_mid = np.linalg.norm((xs[i]+xs[i+1])/2.)
+            self.Airfoils += [Airfoil(chord(sbeam_mid),name=name)]
+            tmpXsect = XSect(SXID+i,self.Airfoils[i],self.xdim,\
+                laminates,matLib,typeXSect=typeXSect,meshSize=meshSize)
             tmpXsect.xSectionAnalysis(ref_ax=ref_ax)
             self.XSects += [tmpXsect]
             self.XIDs += [tmpXsect.XID]
-            noe = int(noe_density*(abs(xs[i]-xs[i+1])))
-            self.SuperBeams += [SuperBeam(x0tmp,xftmp,self.XSects[i],noe,SBID+i,sNID=tmpsnid1,sEID=tmpsEID)]
+            sbeam_len = np.linalg.norm(xs[i+1]-xs[i])
+            noe = int(noe*sbeam_len)
+            self.SuperBeams += [SuperBeam(xs[i],xs[i+1],self.XSects[i],noe,\
+                SSBID+i,sNID=tmpsnid1,sEID=tmpsEID)]
             tmpsnid1 = max(self.SuperBeams[i].nodes.keys())
             tmpsEID = max(self.SuperBeams[i].elems.keys())+1
     def plotRigid(self,**kwargs):
+        """Plots the rigid wing section object in 3D space.
+        
+        This method is exceptionally helpful when building up a model and
+        debugging it.
+        
+        :Args:
+        - `figName (str)`: The name of the plot to be generated. If one is not
+            provided a semi-random name will be generated.
+        - `environment (str)`: The name of the environment to be used when
+            plotting. Currently only the 'mayavi' environment is supported.
+        - `clr (1x3 tuple(int))`: This tuple represents the RGB values that the
+            beam reference axis will be colored with.
+        - `numXSects (int)`: This is the number of cross-sections that will be
+            plotted and evenly distributed throughout the beam.
+            
+        :Returns:
+        - `(figure)`: This method returns a 3D plot of the rigid wing section.
+            
+        .. Warning:: In order to limit the size of data stored in memory, the
+            local cross-sectional data is not stored. As a result, for every
+            additional cross-section that is plotted, the time required to plot
+            will increase substantially.
+        """
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Select the plotting environment you'd like to choose
         environment = kwargs.pop('environment','mayavi')
@@ -3486,6 +3591,42 @@ class WingSection:
                     # The below lines are for loaded/displaced beams:
                     sbeam.xsect.plotRigid(figName=figName,beam_axis=xbar,x=xtmp)
     def plotDispl(self,**kwargs):
+        """Plots the deformed wing section object in 3D space.
+        
+        Provided an analysis name, this method will plot the results from the
+        corresponding analysis including beam/cross-section deformation, and
+        stress, strain, or failure criteria within the sampled cross-sections.
+        
+        :Args:
+        - `figName (str)`: The name of the plot to be generated. If one is not
+            provided a semi-random name will be generated.
+        - `environment (str)`: The name of the environment to be used when
+            plotting. Currently only the 'mayavi' environment is supported.
+        - `clr (1x3 tuple(int))`: This tuple represents the RGB values that the
+            beam reference axis will be colored with.
+        - `numXSects (int)`: This is the number of cross-sections that will be
+            plotted and evenly distributed throughout the beam.
+        - `contour (str)`: The contour to be plotted on the sampled cross
+            sections.
+        - `contLim (1x2 Array[float])`: The lower and upper limits for the
+            contour color plot.
+        - `warpScale (float)`: The visual multiplication factor to be applied
+            to the cross-sectional warping displacement.
+        - `displScale (float)`: The visual multiplication factor to be applied
+            to the beam displacements and rotations.
+        - `analysis_name (str)`: The analysis name corresponding to the results
+            to pe visualized.
+        - `mode (int)`: For modal analysis, this corresponds to the mode-shape
+            which is desired to be plotted.
+            
+        :Returns:
+        - `(figure)`: This method returns a 3D plot of the rigid wing section.
+            
+        .. Warning:: In order to limit the size of data stored in memory, the
+            local cross-sectional data is not stored. As a result, for every
+            additional cross-section that is plotted, the time required to plot
+            will increase substantially.
+        """
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Select the plotting environment you'd like to choose
         environment = kwargs.pop('environment','mayavi')

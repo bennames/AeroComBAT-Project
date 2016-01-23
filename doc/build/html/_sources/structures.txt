@@ -1,5 +1,7 @@
 The Structures Module
----------------------
+--------------------- 
+
+.. automodule:: AeroComBAT.Structures
 
 .. module:: AeroComBAT.Structures
 
@@ -61,4 +63,10 @@ SUPER-BEAM
 ++++++++++
 
 .. autoclass:: SuperBeam
-   :members: __init__, getBeamCoord, printInternalForce, writeDisplacements, getEIDatx, printSummary
+   :members: __init__, getBeamCoord, printInternalForce, writeDisplacements, writeForcesMoments, getEIDatx, printSummary
+
+WING SECTION
+++++++++++++
+
+.. autoclass:: WingSection
+   :members: __init__, plotRigid, plotDispl

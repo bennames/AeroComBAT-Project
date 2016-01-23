@@ -1,0 +1,809 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>AeroComBAT.FEM &mdash; AeroComBAT 0.2.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.2.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 0.2.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for AeroComBAT.FEM</h1><div class="highlight"><pre>
+<span class="c"># FEM.py</span>
+<span class="c"># Author: Ben Names</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains a basic environment for conducting finite element analysis.</span>
+
+<span class="sd">The primary purpose of this library is to fascilitate the creation of a FEM</span>
+<span class="sd">within the AeroComBAT package.</span>
+
+<span class="sd">:SUMARRY OF THE CLASSES:</span>
+<span class="sd">- `Model`: The Model class has two main purposes. The first is that it is meant</span>
+<span class="sd">    to serve as an organizational class. Once an aircraft part has been loaded</span>
+<span class="sd">    into the model by using the addAircraftPart() method, the aircraft part</span>
+<span class="sd">    can be loaded and constrained by the user. Once all parts have been loaded</span>
+<span class="sd">    into the model and all loads and constraints have been applied, the user</span>
+<span class="sd">    can choose to execute the plotRigidModel() method to visualize the model</span>
+<span class="sd">    and make sure it accurately represents their problem. If the model appears</span>
+<span class="sd">    as it should, the user can elect to run a static, buckling, normal mode,</span>
+<span class="sd">    static aeroelastic, or dynamic flutter analysis.</span>
+<span class="sd">    </span>
+<span class="sd">.. Note:: Currently the only avaliable part in the AeroComBAT package are wing</span>
+<span class="sd">    parts, however this is likely to change as parts such as masses, fuselages</span>
+<span class="sd">    and other types of aircraft parts are added.</span>
+<span class="sd">    </span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__docformat__</span> <span class="o">=</span> <span class="s">&#39;restructuredtext&#39;</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># IMPORT ANACONDA ASSOCIATED MODULES</span>
+<span class="c"># =============================================================================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sci</span>
+<span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+<span class="kn">import</span> <span class="nn">mayavi.mlab</span> <span class="kn">as</span> <span class="nn">mlab</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># DEFINE AeroComBAT FEM CLASS</span>
+<span class="c"># =============================================================================</span>
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates a Model which is used to organize and analyze FEM.</span>
+<span class="sd">    </span>
+<span class="sd">    The primary used of Model objects are to organize FEM&#39;s and analyze them.</span>
+<span class="sd">    The Model object doesn&#39;t create any finite elements. Instead, it loads</span>
+<span class="sd">    aircraft parts which contain various types of finite element structural</span>
+<span class="sd">    models as well as aerodynamic models. The type of model will depend on the</span>
+<span class="sd">    type of aircraft part added. Once all of the models are created and added</span>
+<span class="sd">    to the model object, the model object will serve as the analysis primary</span>
+<span class="sd">    interface used to manipulate the generated model.</span>
+<span class="sd">    </span>
+<span class="sd">    :Attributes:</span>
+<span class="sd">    - `Kg (DOFxDOF np.array[float])`: This is the global stiffness matrix.</span>
+<span class="sd">    - `Kgr ((DOF-CON)x(DOF-CON) np.array[float])`: This is the global reduced</span>
+<span class="sd">        stiffness matrix. In other words, the global stiffness matrix with the</span>
+<span class="sd">        rows and columns corresponding to the constraints (CON) removed.</span>
+<span class="sd">    - `Fg (DOFx1 np.array[float])`: The global force vector.</span>
+<span class="sd">    - `Fgr ((DOF-CON)x1 np.array[float])`: The global reduced force vector. In</span>
+<span class="sd">        other words, the global force vector with the rows corresponding to the</span>
+<span class="sd">        constraints (CON) removed.</span>
+<span class="sd">    - `Mg (DOFxDOF np.array[float])`: The global mass matrix.</span>
+<span class="sd">    - `Mgr ((DOF-CON)x(DOF-CON) np.array[float])`: The global reduced mass</span>
+<span class="sd">        matrix. In other words, the global mass matrix with the rows and</span>
+<span class="sd">        columns corresponding to the constraints (CON) removed.</span>
+<span class="sd">    - `Qg (DOFx1 np.array[float])`: The global force boundary condition vector.</span>
+<span class="sd">        This is where all of the nodal loads are stored before the system is</span>
+<span class="sd">        assembled.</span>
+<span class="sd">    - `nids (Array[int])`: This array contains all of the node IDs used within</span>
+<span class="sd">        the model.</span>
+<span class="sd">    - `nodeDict (dict[NID,node])`: This dictionary is a mapping of the node IDs</span>
+<span class="sd">        used within the model to the corresponding node objects.</span>
+<span class="sd">    - `elems (Array[obj])`: This array contains all of the element objects used</span>
+<span class="sd">        in the model.</span>
+<span class="sd">    - `const (dict[NID,Array[DOF])`: This dictionary is a mapping of the node</span>
+<span class="sd">        IDs constrained and the corresponding degrees of freedom that are</span>
+<span class="sd">        constrained.</span>
+<span class="sd">    - `parts (Array[int])`: This array contains all of the part IDs</span>
+<span class="sd">        corresponding to the parts that have been added to the model.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    :Methods:</span>
+<span class="sd">    - `addElements`: A method to add individual elements to the model.</span>
+<span class="sd">    - `addAircraftParts`: A method to add an Aircraft part to the model. This</span>
+<span class="sd">        is a much more effective method than addElements as when a part is</span>
+<span class="sd">        added, the model can utilize all of the organizational and post</span>
+<span class="sd">        processing methods built into the part.</span>
+<span class="sd">    - `resetPointLoads`: A convenient way to reset all of the nodal loads in</span>
+<span class="sd">        the model to zero.</span>
+<span class="sd">    - `resetResults`: A convenient way to clear the results in all of the</span>
+<span class="sd">        elements from a previous analysis. This method is subject to change as</span>
+<span class="sd">        the way in which results are stored is likely to change.</span>
+<span class="sd">    - `applyLoads`: A method to apply nodal loads as well as distributed loads</span>
+<span class="sd">        to a range of elements, all of the elements in a part, or all of the</span>
+<span class="sd">        elements in the model.</span>
+<span class="sd">    - `applyConstraints`: A method to apply nodal constraints to the model.</span>
+<span class="sd">    - `staticAnalysis`: A method which conducts a linear static analysis.</span>
+<span class="sd">    - `normalModesAnalysis`: A method which conducts a normal modes analysis on</span>
+<span class="sd">        the model.</span>
+<span class="sd">    - `plotRigidModel`: A method to plot and visualize the model.</span>
+<span class="sd">    - `plotDeformedModel`: A method to plot and visualize the results from an</span>
+<span class="sd">        analysis on the model.</span>
+<span class="sd">    </span>
+<span class="sd">    .. Note:: When constraining nodes, only 0 displacement and rotation</span>
+<span class="sd">        constraints are currently supported.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiates the Model object.</span>
+<span class="sd">        </span>
+<span class="sd">        Since this method requires no inputs, the __init__() method is</span>
+<span class="sd">        just a means to initialize attributes to be used later.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Global Stiffness Matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Kg</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Reduced Global Stiffness Matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Kgr</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Global Force Vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fg</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Global Reduced Force Matricies</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fgr</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Global Mass Matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Mg</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Global Reduced Mass Matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Mgr</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Force Boundary Conditions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qg</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># List of node ID&#39;s contained in the model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># Dictionary Mapping Node ID&#39;s to the global stiffness matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># Numpy Object Array Containing all of the Elements in the Global System</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elems</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># The EIDs of the elements in the model.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">EIDs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># Dictionary Mapping Node ID&#39;s to restricted degrees of Freedom</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">const</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># Array of Displacements</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Analysis ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">AID</span><span class="o">=</span><span class="mi">0</span>
+        <span class="c">#TODO: Link AID&#39;s to analysis_names</span>
+        <span class="c"># Parts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">=</span> <span class="p">{}</span>
+<div class="viewcode-block" id="Model.addElements"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.addElements">[docs]</a>    <span class="k">def</span> <span class="nf">addElements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elemarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method to add elements to the model.</span>
+<span class="sd">        </span>
+<span class="sd">        Provided an array of elements, this method can add those elements to</span>
+<span class="sd">        the model for analysis. This is a rather rudementary method as the post</span>
+<span class="sd">        processing methods utilized by the parts are not at the users disposal</span>
+<span class="sd">        for the elements added to the model in this way.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `elemarray (Array[obj])`: Adds all of the elements in the array to</span>
+<span class="sd">            the model.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        .. Note:: Currently supported elements include: SuperBeam, Tbeam.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># For all of the terms in the array elemarray</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">elemarray</span><span class="p">)):</span>
+            <span class="c"># If the ith term is a superbeam</span>
+            <span class="k">if</span> <span class="n">elemarray</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;SuperBeam&#39;</span><span class="p">:</span>
+                <span class="c"># Get all of the elements in the superbeam</span>
+                <span class="n">SBeam</span> <span class="o">=</span> <span class="n">elemarray</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">EID</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">SBeam</span><span class="o">.</span><span class="n">elems</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">EID</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">EIDs</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Element </span><span class="si">%d</span><span class="s"> not added to the model as the EID&#39;</span>\
+                            <span class="s">&#39;corresponds with an element already listed as&#39;</span>\
+                            <span class="s">&#39;already being added to the model.&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">EIDs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">EID</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">elems</span> <span class="o">+=</span> <span class="p">[</span><span class="n">elem</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">nids</span> <span class="o">+=</span> <span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span><span class="p">,</span><span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">elemarray</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;Tbeam&#39;</span><span class="p">:</span>
+                <span class="n">TBeam</span> <span class="o">=</span> <span class="n">elemarray</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">TBeam</span><span class="o">.</span><span class="n">EID</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">EIDs</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Element </span><span class="si">%d</span><span class="s"> not added to the model as the EID&#39;</span>\
+                        <span class="s">&#39;corresponds with an element already listed as&#39;</span>\
+                        <span class="s">&#39;already being added to the model.&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">EIDs</span> <span class="o">+=</span> <span class="n">TBeam</span><span class="o">.</span><span class="n">EID</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">elems</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TBeam</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nids</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TBeam</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span><span class="p">,</span><span class="n">TBeam</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">elemarray</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;EBbeam&#39;</span><span class="p">:</span>
+                <span class="n">EBBeam</span> <span class="o">=</span> <span class="n">elemarray</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">elems</span> <span class="o">+=</span> <span class="p">[</span><span class="n">EBBeam</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nids</span> <span class="o">+=</span> <span class="p">[</span><span class="n">EBBeam</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span><span class="p">,</span><span class="n">EBBeam</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;You have provided an object which is not a supported beam type.&#39;</span><span class="p">)</span>
+        <span class="c"># Remove redundant nodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nids</span><span class="p">)</span>
+        <span class="c"># Create a mapping of global nodes to matrix rows</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nids</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">nids</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="c"># Generate an empty point load vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">6</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nids</span><span class="p">))</span></div>
+<div class="viewcode-block" id="Model.addAircraftParts"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.addAircraftParts">[docs]</a>    <span class="k">def</span> <span class="nf">addAircraftParts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method to add an array of aircraft parts to the model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method is a robust version of addElements. provided an array of</span>
+<span class="sd">        part objects, this method will add the parts to the model. This</span>
+<span class="sd">        includes adding all of the elements and nodes to the model, as well as</span>
+<span class="sd">        a few other pieces of information.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `parts (Array[obj])`: An array of part objects.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">PID</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The part ID </span><span class="si">%d</span><span class="s"> is already associated with a&#39;</span>\
+                    <span class="s">&#39;part which has been added to the model.&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">PID</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;wing&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">wingSect</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">addElements</span><span class="p">(</span><span class="n">wingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">PID</span><span class="p">]</span> <span class="o">=</span> <span class="n">part</span></div>
+<div class="viewcode-block" id="Model.resetPointLoads"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.resetPointLoads">[docs]</a>    <span class="k">def</span> <span class="nf">resetPointLoads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method to reset the point loads applied to the model.</span>
+
+<span class="sd">        This is a good method to reset the nodal loads applied to a model. This</span>
+<span class="sd">        method will be useful when attempting to apply a series different</span>
+<span class="sd">        analysis.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">6</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nids</span><span class="p">))</span></div>
+<div class="viewcode-block" id="Model.resetResults"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.resetResults">[docs]</a>    <span class="k">def</span> <span class="nf">resetResults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method to reset the results in a model.</span>
+
+<span class="sd">        This is a good method to reset the results in the model from a given</span>
+<span class="sd">        analysis. This method will be useful when attempting to apply a series</span>
+<span class="sd">        different analysis.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;wing&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">wingSect</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">sbeam</span> <span class="ow">in</span> <span class="n">wingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">:</span>
+                        <span class="n">sbeam</span><span class="o">.</span><span class="n">xsect</span><span class="o">.</span><span class="n">resetResults</span><span class="p">()</span></div>
+    <span class="k">def</span> <span class="nf">assembleGlobalModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">static4BuckName</span> <span class="o">=</span> <span class="s">&#39;analysis_untitled&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Assembles the global model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method adds all of the element matricies (mass, stiffness, etc.)</span>
+<span class="sd">        to the global matrices, as well as generates the reduced matricies by</span>
+<span class="sd">        applying constraints.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `static4BuckName (str)`: The analysis name of the static analysis</span>
+<span class="sd">            should a corresponding linear buckling analysis be run.</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Determine the degrees of freedom in the model</span>
+        <span class="n">DOF</span> <span class="o">=</span> <span class="mi">6</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nids</span><span class="p">)</span>
+        <span class="c"># Initialize the global stiffness matrix</span>
+        <span class="n">Kg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">DOF</span><span class="p">,</span><span class="n">DOF</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c"># Initialize the global force vector</span>
+        <span class="n">Fg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">DOF</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c"># Initialize the geometric global stiffness matrix</span>
+        <span class="n">Kgg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">DOF</span><span class="p">,</span><span class="n">DOF</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c"># Initialize the global mass matrix</span>
+        <span class="n">Mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">DOF</span><span class="p">,</span><span class="n">DOF</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c"># For all of the elements in the elems array</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">elems</span><span class="p">:</span>
+            <span class="c"># Determine the node ID&#39;s associated with the elem</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span><span class="p">,</span><span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span>
+            <span class="c"># For both NID&#39;s</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
+                <span class="c"># The row in the global matrix (an integer correspoinding to</span>
+                <span class="c"># the NID)</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="c"># Add the elem force vector to the global matrix</span>
+                <span class="n">Fg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">Fg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span> <span class="o">+</span> <span class="n">elem</span><span class="o">.</span><span class="n">Fe</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span> \
+                                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Qg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">],(</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
+                    <span class="c"># Determine the column range for the NID</span>
+                    <span class="n">col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span>
+                    <span class="c"># Add the elem stiffness matrix portion to the global</span>
+                    <span class="c"># stiffness matrix</span>
+                    <span class="n">Kg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>\
+                                                    <span class="o">+</span><span class="n">elem</span><span class="o">.</span><span class="n">Ke</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>
+                    <span class="c"># Determine the axial force in the beam</span>
+                    <span class="k">if</span> <span class="n">static4BuckName</span> <span class="ow">in</span> <span class="n">elem</span><span class="o">.</span><span class="n">F1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">Ploc</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">F1</span><span class="p">[</span><span class="n">static4BuckName</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">Ploc</span><span class="o">=</span><span class="mf">0.</span>
+                    <span class="c"># Add the elem geometric stiffness matrix portion to the</span>
+                    <span class="c"># global stiffness matrix</span>
+                    <span class="n">Kgg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kgg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>\
+                                                    <span class="o">+</span><span class="n">elem</span><span class="o">.</span><span class="n">Keg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span><span class="o">*</span><span class="n">Ploc</span>
+                    <span class="c"># Add the element mass matrix portion to the global mass matrix</span>
+                    <span class="n">Mg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">col</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>\
+                                                    <span class="o">+</span><span class="n">elem</span><span class="o">.</span><span class="n">Me</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="mi">6</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>
+        <span class="c"># Save the global stiffness matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Kg</span> <span class="o">=</span> <span class="n">Kg</span>
+        <span class="c"># Save the global force vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fg</span> <span class="o">=</span> <span class="n">Fg</span>
+        <span class="c"># Save the global geometric stiffness matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Kgg</span> <span class="o">=</span> <span class="n">Kgg</span>
+        <span class="c"># Save the global mass matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Mg</span> <span class="o">=</span> <span class="n">Mg</span>
+        <span class="c"># Determine the list of NIDs to be contrained</span>
+        <span class="n">cnds</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="c"># Initialize the number of equations to be removed from the system</span>
+        <span class="n">deleqs</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c"># For the number of constrained NIDs</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">)):</span>
+            <span class="c"># The row range to be removed associated with the NID</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">cnds</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="c"># Determine which DOF are to be removed</span>
+            <span class="n">tmpcst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">cnds</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="c"># For all of the degrees of freedom to be removed</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">)):</span>
+                <span class="c"># Remove the row associated with the jth DOF for the ith NID</span>
+                <span class="n">Fg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Fg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">Kg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Kg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">Kg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Kg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">Kgg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Kgg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">Kgg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Kgg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">Mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Mg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">Mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">Mg</span><span class="p">,</span><span class="n">row</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpcst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">deleqs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="c"># Incremend the number of deleted equations</span>
+                <span class="n">deleqs</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c"># Save the reduced global force vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fgr</span> <span class="o">=</span> <span class="n">Fg</span>
+        <span class="c"># Save the reduced global stiffness matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Kgr</span> <span class="o">=</span> <span class="n">Kg</span>
+        <span class="c"># Save the reduced global geometric stiffness matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Kggr</span> <span class="o">=</span> <span class="n">Kgg</span>
+        <span class="c"># Save the reduced global mass matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Mgr</span> <span class="o">=</span> <span class="n">Mg</span>
+            
+<div class="viewcode-block" id="Model.applyLoads"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.applyLoads">[docs]</a>    <span class="k">def</span> <span class="nf">applyLoads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method to apply nodal and distributed loads to the model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method allows the user to apply nodal loads to nodes and</span>
+<span class="sd">        distributed loads to elements within the model.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `f (func)`: A function which, provided the provided a length 3 numpy</span>
+<span class="sd">            array representing a point in space, calculates the distributed</span>
+<span class="sd">            load value at that point. See an example below:</span>
+<span class="sd">        - `F (dict[NID,1x6 np.array[float]])`: A dictionary mapping a node ID</span>
+<span class="sd">            to the loads to be applied at that node ID.</span>
+<span class="sd">        - `allElems (bool)`: A boolean value used to easily load all of the</span>
+<span class="sd">            elements which have been added to the model.</span>
+<span class="sd">        - `PIDs (Array[int])`: An array containing part ID&#39;s, signifying that</span>
+<span class="sd">            all elements used by that part should be loaded.</span>
+<span class="sd">        - `eids (Array[int])`: An array containing all of the element ID&#39;s</span>
+<span class="sd">            corresponding to all of the elements which should be loaded.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        Distributed load function example:</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">           def f(x):</span>
+<span class="sd">              vx = (1/10)*10*x[2]**2-7*x[2]-2.1</span>
+<span class="sd">              vy = 10*x[2]**2-7*x[2]</span>
+<span class="sd">              pz = 0</span>
+<span class="sd">              tz = (10*x[2]**2-7*x[2])/10+3*x[0]**2</span>
+<span class="sd">              return np.array([vx,vy,pz,tz])</span>
+<span class="sd">        </span>
+<span class="sd">        Nodal load dictionary example:</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">           F[NID] = np.array([Qx,Qy,P,Mx,My,T])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># TODO: Make it so that local CSYS can be used for load applications. This</span>
+        <span class="c"># Should allow for translation and rotations.</span>
+        <span class="k">def</span> <span class="nf">fdefault</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+                <span class="n">vx</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="n">vy</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="n">pz</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="n">tz</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">pz</span><span class="p">,</span><span class="n">tz</span><span class="p">])</span>
+        <span class="c"># Get the distributed load function</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;f&#39;</span><span class="p">,</span><span class="n">fdefault</span><span class="p">)</span>
+        <span class="c"># Get the descrete load dictionary</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;F&#39;</span><span class="p">)</span>
+        <span class="c"># Keyword to fascilitate applying distributed load to all elements</span>
+        <span class="n">allElems</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;allElems&#39;</span><span class="p">,</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">PIDs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;PIDs&#39;</span><span class="p">,[])</span>
+        <span class="n">eids</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;eids&#39;</span><span class="p">,[])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">PIDs</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">PID</span> <span class="ow">in</span> <span class="n">PIDs</span><span class="p">:</span>
+                <span class="n">part</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="n">PID</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;wing&#39;</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">wingSect</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">superBeam</span> <span class="ow">in</span> <span class="n">wingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">:</span>
+                            <span class="n">eids</span><span class="o">+=</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">EID</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">superBeam</span><span class="o">.</span><span class="n">elems</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">allElems</span><span class="p">:</span>
+            <span class="n">eids</span> <span class="o">+=</span> <span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">EID</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">elems</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">PIDs</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;WARNING: You are atempting to simultaneiously load all&#39;</span>\
+                    <span class="s">&#39;elements within the model as well as all elements in&#39;</span>\
+                    <span class="s">&#39;parts:&#39;</span><span class="p">)</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">PIDs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">eids</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">f</span><span class="o">==</span><span class="n">fdefault</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;WARNING: You are attempting to apply a distributed load&#39;</span>\
+                <span class="s">&#39;without listing EIDs at which to apply those loads.&#39;</span><span class="p">)</span>
+        <span class="c"># Remove rudundant EIDs</span>
+        <span class="n">eids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">eids</span><span class="p">)</span>
+        <span class="c"># For all of the EIDs provided</span>
+        <span class="k">for</span> <span class="n">ID</span> <span class="ow">in</span> <span class="n">eids</span><span class="p">:</span>
+            <span class="c"># For all of the in the model</span>
+            <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">elems</span><span class="p">:</span>
+                <span class="c"># If the applied ID is the elem EID</span>
+                <span class="k">if</span> <span class="n">elem</span><span class="o">.</span><span class="n">EID</span><span class="o">==</span><span class="n">ID</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;Tbeam&#39;</span><span class="p">:</span>
+                        <span class="n">h</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">h</span>
+                        <span class="n">x1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span>
+                        <span class="n">x2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">x</span>
+                        <span class="n">fx</span> <span class="o">=</span> <span class="n">f</span><span class="p">((</span><span class="n">x1</span><span class="o">+</span><span class="n">x2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+                        <span class="n">elem</span><span class="o">.</span><span class="n">applyDistributedLoad</span><span class="p">(</span><span class="n">fx</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;EBbeam&#39;</span><span class="p">:</span>
+                        <span class="n">h</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">h</span>
+                        <span class="n">x1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span>
+                        <span class="n">x2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">x</span>
+                        <span class="n">fx</span> <span class="o">=</span> <span class="n">f</span><span class="p">((</span><span class="n">x1</span><span class="o">+</span><span class="n">x2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+                        <span class="n">elem</span><span class="o">.</span><span class="n">Fe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span>\
+                        <span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">12.</span><span class="p">,</span><span class="o">-</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">12.</span><span class="p">,</span><span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>\
+                        <span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">12.</span><span class="p">,</span>\
+                        <span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">12.</span><span class="p">,</span><span class="n">h</span><span class="o">*</span><span class="n">fx</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">]),(</span><span class="mi">12</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">F</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Determine what global NIDs the point loads are to be applied at</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Qg</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;There are no elements in this model to apply point loads to.&#39;</span><span class="p">)</span>
+            <span class="c"># For the NIDS, populate the global applied force vector</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="n">Ftmp</span> <span class="o">=</span> <span class="n">F</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">Ftmp</span><span class="p">)</span><span class="o">==</span><span class="mi">6</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;When you apply a discrete force to a node&#39;</span>\
+                        <span class="s">&#39;it must be a numpy array of exactly length 3.&#39;</span><span class="p">)</span>
+                <span class="c"># Rearrange the force vector to be consistent with the DOF (u,v,w,thy.thx.thz)</span>
+                <span class="n">Ftmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">Ftmp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Ftmp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Ftmp</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">Ftmp</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">Ftmp</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="n">Ftmp</span><span class="p">[</span><span class="mi">5</span><span class="p">]])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Qg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">Qg</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="n">Ftmp</span></div>
+<div class="viewcode-block" id="Model.applyConstraints"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.applyConstraints">[docs]</a>    <span class="k">def</span> <span class="nf">applyConstraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">NID</span><span class="p">,</span><span class="n">const</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method for applying nodal constraints to the model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method is the primary method for applying nodal constraints to the</span>
+<span class="sd">        model.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `NID (int)`: The node ID of the node to be constrained.</span>
+<span class="sd">        - `const (str, np.array[int])`: const can either take the form of a</span>
+<span class="sd">            string in order to take advantage of the two most common</span>
+<span class="sd">            constraints being &#39;pin&#39; or &#39;fix&#39;. If a different constraint needs</span>
+<span class="sd">            to be applied, const could also be a numpy array listing the DOF</span>
+<span class="sd">            (integers 1-6) to be constrained.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># INPUTS:</span>
+        <span class="c"># nid - The node you want to constrain</span>
+        <span class="c"># const - a numpy array containing integers from 1-6 or a string description.</span>
+        <span class="c"># For example, to pin a beam in all three directions, the const array would look like:</span>
+        <span class="c">#  const = np.array([1,2,3],dtype=int) = &#39;pin&#39;</span>
+        <span class="c"># A fully fixed node constraint would look like:</span>
+        <span class="c">#  const = np.array([1,2,3,4,5,6],dtype=int) = &#39;fix&#39;</span>
+        <span class="n">const</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">const</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">const</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">6</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Too many constraints have been applied than are possible.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">const</span><span class="o">==</span><span class="s">&#39;pin&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">NID</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">const</span><span class="o">==</span><span class="s">&#39;fix&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">NID</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">NID</span><span class="p">]</span><span class="o">=</span><span class="n">const</span></div>
+<div class="viewcode-block" id="Model.staticAnalysis"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.staticAnalysis">[docs]</a>    <span class="k">def</span> <span class="nf">staticAnalysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Linear static analysis.</span>
+<span class="sd">        </span>
+<span class="sd">        This method conducts a linear static analysis on the model. This will</span>
+<span class="sd">        calculate all of the unknown displacements in the model, and save not</span>
+<span class="sd">        only dispalcements, but also internal forces and moments in all of the</span>
+<span class="sd">        beam elements.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `analysis_name (str)`: The string name to be associated with this</span>
+<span class="sd">            analysis. By default, this is chosen to be &#39;analysis_untitled&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">analysis_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;analysis_name&#39;</span><span class="p">,</span><span class="s">&#39;analysis_untitled&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assembleGlobalModel</span><span class="p">()</span>
+        <span class="c"># Prepare the reduced stiffness matrix for efficient LU decomposition solution</span>
+        <span class="n">lu</span><span class="p">,</span><span class="n">piv</span> <span class="o">=</span> <span class="n">sci</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lu_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Kgr</span><span class="p">)</span>
+        <span class="c"># Solve global displacements</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">sci</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lu_solve</span><span class="p">((</span><span class="n">lu</span><span class="p">,</span><span class="n">piv</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">Fgr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ur</span> <span class="o">=</span> <span class="n">u</span>
+        <span class="c"># Generate list of constraint keys</span>
+        <span class="n">ckeys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="c"># For each node constrained</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ckeys</span><span class="p">)):</span>
+            <span class="c"># Establish temporary node constrined</span>
+            <span class="n">tmpconst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">ckeys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="c"># For each DOF contrained on the temporary node</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpconst</span><span class="p">)):</span>
+                <span class="c">#Insert a zero for the &quot;displacement&quot;</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">ckeys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpconst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="mi">0</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">u</span>
+        <span class="c">#Solve for the reaction forces in the elements</span>
+        <span class="c"># For all of the beam elements in the model</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">elems</span><span class="p">:</span>
+            <span class="c"># If the element is a Tbeam</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;Tbeam&#39;</span><span class="p">):</span>
+                <span class="c">#Populate the local nodal displacements:</span>
+                <span class="n">nid1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">nid2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">U1</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>
+                <span class="n">U2</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">saveNodalDispl</span><span class="p">(</span><span class="n">U1</span><span class="p">,</span><span class="n">U2</span><span class="p">,</span><span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_name</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;EBbeam&#39;</span><span class="p">:</span>
+                <span class="n">nid1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">nid2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">U1</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">U2</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">]</span>
+                <span class="c">#Solve for the reaction forces on the first node</span>
+                <span class="n">Ke12</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">Ke</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span>
+                <span class="c">#elem.F1 = np.dot(Ke12,elem.U2)+np.dot(Ke13,elem.U3)</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">F1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ke12</span><span class="p">,</span><span class="n">elem</span><span class="o">.</span><span class="n">U1</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">U2</span><span class="p">)</span>
+                <span class="c">#Solve for the reaction forces on the second node</span>
+                <span class="n">Ke21</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">Ke</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">F2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ke21</span><span class="p">,</span><span class="n">elem</span><span class="o">.</span><span class="n">U1</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">U2</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">bucklingAnalysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">analysis_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;analysis_name&#39;</span><span class="p">,</span><span class="s">&#39;analysis_untitled&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">staticAnalysis</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assembleGlobalModel</span><span class="p">()</span>
+        <span class="n">Fscale</span><span class="p">,</span><span class="n">umode</span> <span class="o">=</span> <span class="n">sci</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Kgr</span><span class="p">,</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Kggr</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">Fscale</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fscale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Fscale</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">umode</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">umode</span><span class="p">[:,</span><span class="n">idx</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c">#Generate list of constraint keys</span>
+        <span class="n">ckeys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="c">#For each node constrained</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ckeys</span><span class="p">)):</span>
+            <span class="c">#Establish temporary node constrined</span>
+            <span class="n">tmpconst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">ckeys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="c">#For each DOF contrained on the temporary node</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpconst</span><span class="p">)):</span>
+                <span class="c">#Insert a zero for the constrained degrees of Freedom</span>
+                <span class="n">umode</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">umode</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">ckeys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpconst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">Fscale</span><span class="p">))),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">umode</span> <span class="o">=</span> <span class="n">umode</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">elems</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;Tbeam&#39;</span><span class="p">:</span>
+                <span class="n">nid1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">nid2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">Umode1</span> <span class="o">=</span> <span class="n">umode</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">Umode2</span> <span class="o">=</span> <span class="n">umode</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span>
+            <span class="k">elif</span> <span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;EBbeam&#39;</span><span class="p">:</span>
+                <span class="n">nid1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">nid2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">Umode1</span> <span class="o">=</span> <span class="n">umode</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">Umode2</span> <span class="o">=</span> <span class="n">umode</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span>
+    <span class="c">#TODO: Create a method to print displacements. Maybe in the NASTRAN .f06 format?</span>
+<div class="viewcode-block" id="Model.normalModesAnalysis"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.normalModesAnalysis">[docs]</a>    <span class="k">def</span> <span class="nf">normalModesAnalysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Conducts normal mode analysis.</span>
+<span class="sd">        </span>
+<span class="sd">        This method conducts normal mode analysis on the model. This will</span>
+<span class="sd">        calculate all of the unknown frequency eigenvalues and eigenvectors for</span>
+<span class="sd">        the model, which can be plotted later.</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `analysis_name (str)`: The string name to be associated with this</span>
+<span class="sd">            analysis. By default, this is chosen to be &#39;analysis_untitled&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        .. Note:: There are internal loads that are calculated and stored</span>
+<span class="sd">            within the model elements, however be aware that these loads are</span>
+<span class="sd">            meaningless and are only retained as a means to display cross</span>
+<span class="sd">            section warping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Create Analysis Name</span>
+        <span class="n">analysis_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;analysis_name&#39;</span><span class="p">,</span><span class="s">&#39;analysis_untitled&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assembleGlobalModel</span><span class="p">()</span>
+        <span class="n">eigs</span><span class="p">,</span><span class="n">umode</span> <span class="o">=</span> <span class="n">sci</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Kgr</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Mgr</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">eigs</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eigs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">eigs</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="n">umode</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">umode</span><span class="p">[:,</span><span class="n">idx</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c">#Generate list of constraint keys</span>
+        <span class="n">ckeys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="c">#For each node constrained</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ckeys</span><span class="p">)):</span>
+            <span class="c">#Establish temporary node constrined</span>
+            <span class="n">tmpconst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">const</span><span class="p">[</span><span class="n">ckeys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="c">#For each DOF contrained on the temporary node</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpconst</span><span class="p">)):</span>
+                <span class="c">#Insert a zero for the constrained degrees of Freedom</span>
+                <span class="n">umode</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">umode</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">ckeys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">*</span><span class="mi">6</span><span class="o">+</span><span class="p">(</span><span class="n">tmpconst</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">eigs</span><span class="p">))),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">umode</span> <span class="o">=</span> <span class="n">umode</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">elems</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">elem</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;Tbeam&#39;</span><span class="p">:</span>
+                <span class="n">nid1</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">nid2</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span>
+                <span class="n">Umode1</span> <span class="o">=</span> <span class="n">umode</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid1</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span>
+                <span class="n">Umode2</span> <span class="o">=</span> <span class="n">umode</span><span class="p">[</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]:</span><span class="mi">6</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nodeDict</span><span class="p">[</span><span class="n">nid2</span><span class="p">]</span><span class="o">+</span><span class="mi">6</span><span class="p">,:]</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">saveNodalDispl</span><span class="p">(</span><span class="n">Umode1</span><span class="p">,</span><span class="n">Umode2</span><span class="p">,</span><span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_name</span><span class="p">)</span></div>
+<div class="viewcode-block" id="Model.plotRigidModel"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.plotRigidModel">[docs]</a>    <span class="k">def</span> <span class="nf">plotRigidModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots the rigid model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method plots the rigid model in the mayavi environement.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `figName (str)`: The name of the figure. This is &#39;Rigid Model&#39; by</span>
+<span class="sd">            default.</span>
+<span class="sd">        - `clr (1x3 tuple(int))`: The color tuple or RGB values to be used for</span>
+<span class="sd">            plotting the reference axis for all beam elements. By default this</span>
+<span class="sd">            color is black.</span>
+<span class="sd">        - `numXSects (int)`: The number of cross-sections desired to be plotted</span>
+<span class="sd">            for all wing sections. The default is 2.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - mayavi figure</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">figName</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;figName&#39;</span><span class="p">,</span><span class="s">&#39;Rigid Model&#39;</span><span class="p">)</span>
+        <span class="c"># Chose the color of the beam, defaults to black, accepts tuple</span>
+        <span class="n">clr</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c"># Chose the number of cross-sections to be plotted. By default this is 2</span>
+        <span class="c"># One at the beggining and one at the end of the super beam</span>
+        <span class="n">numXSects</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;numXSects&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figure</span><span class="o">=</span><span class="n">figName</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;wing&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">sects</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+                    <span class="n">sects</span><span class="o">.</span><span class="n">plotRigid</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="n">figName</span><span class="p">,</span><span class="n">clr</span><span class="o">=</span><span class="n">clr</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="n">numXSects</span><span class="p">)</span></div>
+<div class="viewcode-block" id="Model.plotDeformedModel"><a class="viewcode-back" href="../../FEM.html#AeroComBAT.FEM.Model.plotDeformedModel">[docs]</a>    <span class="k">def</span> <span class="nf">plotDeformedModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots the deformed model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method plots the deformed model results for a given analysis in</span>
+<span class="sd">        the mayavi environement.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        - `analysis_name (str)`: The string identifier of the analysis.</span>
+<span class="sd">        - `figName (str)`: The name of the figure. This is &#39;Rigid Model&#39; by</span>
+<span class="sd">            default.</span>
+<span class="sd">        - `clr (1x3 tuple(int))`: The color tuple or RGB values to be used for</span>
+<span class="sd">            plotting the reference axis for all beam elements. By default this</span>
+<span class="sd">            color is black.</span>
+<span class="sd">        - `numXSects (int)`: The number of cross-sections desired to be plotted</span>
+<span class="sd">            for all wing sections. The default is 2.</span>
+<span class="sd">        - `contour (str)`: A string keyword to determine what analysis should</span>
+<span class="sd">            be plotted.</span>
+<span class="sd">        - `contLim (1x2 Array[float])`: An array containing the lower and upper</span>
+<span class="sd">            contour limits.</span>
+<span class="sd">        - `warpScale (float)`: The scaling factor used to magnify the cross</span>
+<span class="sd">            section warping displacement factor.</span>
+<span class="sd">        - `displScale (float)`: The scaling fator used to magnify the beam</span>
+<span class="sd">            element displacements and rotations.</span>
+<span class="sd">        - `mode (int)`: If the analysis name refers to a modal analysis, mode</span>
+<span class="sd">            refers to which mode from that analysis should be plotted.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        - mayavi figure</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">analysis_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;analysis_name&#39;</span><span class="p">,</span><span class="s">&#39;analysis_untitled&#39;</span><span class="p">)</span>
+        <span class="n">figName</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;figName&#39;</span><span class="p">,</span><span class="s">&#39;Deformed Wing&#39;</span><span class="p">)</span>
+        <span class="c"># Chose the color of the beam, defaults to black, accepts tuple</span>
+        <span class="n">clr</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c"># Chose the number of cross-sections to be plotted. By default this is 2</span>
+        <span class="c"># One at the beggining and one at the end of the super beam</span>
+        <span class="n">numXSects</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;numXSects&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c"># Show a contour</span>
+        <span class="n">contour</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;contour&#39;</span><span class="p">,</span><span class="s">&#39;VonMis&#39;</span><span class="p">)</span>
+        <span class="c"># Stress Limits</span>
+        <span class="n">contLim</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;contLim&#39;</span><span class="p">,[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">])</span>
+        <span class="c"># Establish the warping scaling factor</span>
+        <span class="n">warpScale</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;warpScale&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c"># Establish Beam displacement scaling</span>
+        <span class="n">displScale</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;displScale&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c"># Which mode to plot. Note by default mode=0 implies not plotting an</span>
+        <span class="c"># eigenvalue solution.</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;mode&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figure</span><span class="o">=</span><span class="n">figName</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="s">&#39;wing&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">sects</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+                    <span class="n">sects</span><span class="o">.</span><span class="n">plotDispl</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="n">figName</span><span class="p">,</span><span class="n">clr</span><span class="o">=</span><span class="n">clr</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="n">numXSects</span><span class="p">,</span>\
+                        <span class="n">contLim</span><span class="o">=</span><span class="n">contLim</span><span class="p">,</span><span class="n">warpScale</span><span class="o">=</span><span class="n">warpScale</span><span class="p">,</span><span class="n">displScale</span><span class="o">=</span><span class="n">displScale</span><span class="p">,</span>\
+                        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span><span class="n">analysis_name</span><span class="o">=</span><span class="n">analysis_name</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

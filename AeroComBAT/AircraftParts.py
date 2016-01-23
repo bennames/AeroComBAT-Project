@@ -12,26 +12,80 @@ import mayavi.mlab as mlab
 # WING OPTIMIZATION CLASS
 # =============================================================================
 class Wing:
-    def __init__(self,b_s,croot,ctip,x0_spar,x1_spar,Y_rib,n_ply,m_i,mat_lib,**kwargs):
+    def __init__(self,p1,p2,croot,ctip,x0_spar,xf_spar,Y_rib,n_ply,m_ply,mat_lib,**kwargs):
+        """Creates a wing object.
+        
+        This object represents a wing and contains both structural and
+        aerodynamic models.
+        
+        :Args:
+        - `p1 (1x3 np.array[float])`: The initial x,y,z coordinates of the wing.
+        - `p2 (1x3 np.array[float]`: The final x,y,z coordinates of the wing.
+        - `croot (float)`: The root chord length.
+        - `ctip (float)`: The tip chord length.
+        - `x0_spar (float)`: The non-dimensional starting location of the cross
+            section.
+        - `xf_spar (float)`: The non-dimensional ending location of the cross
+            section.
+        - `Y_rib (1xN Array[float])`: The non-dimensional rib locations within
+            the wing. This dimension is primarily used to create wing-sections
+            which primarily define the buckling span's for laminate objects.
+        - `n_ply (1xM Array[int])`: An array of integer's specifying the number
+            plies to be used in the model. Each integer refers to the number of
+            plies to be used for at a given orientation.
+        - `m_ply (1xM Array[int])`: An array of integer's specifying the
+            material ID to be used for the corresponding number of plies in
+            n_ply at a given orientation.
+        - `mat_lib (obj)`: A material library containing all of the material
+            objets to be used in the model.
+        - `WID (int)`: The integer ID for the wing object.
+        - `name (str)`: The name of the airfoil section to be used for cross
+            section generation.
+        - `wing_SNID (int)`: The first node ID associated with the wing.
+        - `wing_SEID (int)`: The first beam element ID associated with the wing.
+        - `wing_SSBID (int)`: The first superbeam ID associated with the wing.
+        - `SXID (int)`: The starting cross-section ID used by the wing.
+        - `noe (float)`: The number of beam elements to be used in the wing per
+            unit length.
+        - `n_orients (int)`: The number of fiber orientations to be used in
+            each laminate.
+        - `n_lams (int)`: The number of laminates required to mesh the desired
+            cross-section.
+        - `meshSize (float)`: The maximum aspect ratio a 2D element may have in
+            the cross-section.
+        - `ref_ax (str)`: The reference axis to be loaded in the wing.
+        """
+        #The type of the object
+        self.type='wing'
         # Initialize the FEM Model
         self.model = Model()
         # Initialize the array holding wing sections
         self.wingSects = []
-        # Initialize the first Super Beam ID
-        tmp_SB_SEID = kwargs.pop('tmp_SB_SEID',0)
+        # Initialize the wing ID
+        self.PID = kwargs.pop('WID',0)
         # Name of the airfoil section (used to generate the OML shape of the x-section)
         name = kwargs.pop('name','NACA0012')
-        #wing_SNID = kwargs.pop('wing_SNID',1)
+        # The initial starting node ID for the structural generation of the wing
         tmp_SB_SNID = kwargs.pop('wing_SNID',0)
-        tmp_SB_SBID = kwargs.pop('SBID',0)
-        noe_density = kwargs.pop('noe_per_unit_length',10)
+        # The initial beam element EID for the first superbeam ID
+        tmp_SB_SEID = kwargs.pop('wing_SEID',0)
+        # The initial starting superbeam ID
+        tmp_SB_SBID = kwargs.pop('wing_SSBID',0)
+        # The starting cross-section ID
+        SXID = kwargs.pop('SXID',0)
+        # The number of beam elements to be used per unit length
+        noe = kwargs.pop('noe',10)
+        # The number of fiber orientations to be used in each laminate
         n_orients = kwargs.pop('n_orients',4)
+        # The number of laminates required to mesh the desired cross-section
         n_lams = kwargs.pop('n_lams',4)
+        # The maximum aspect ratio a 2D element may have in the cross-section
         meshSize = kwargs.pop('meshSize',4)
-        sXID = kwargs.pop('sXID',0)
+        # The reference axis to be loaded in the wing
         ref_ax = kwargs.pop('ref_ax','shearCntr')
-        # Create a lambda function to calculate average panel chord length on
-        # on the fly.
+        # Calculate the wing span:
+        b_s = np.linalg.norm(p2-p1)
+        # Lambda function to calculate average panel chord length on on the fly.
         chord = lambda y: (ctip-croot)*y/b_s+croot
         # Create wing sections between each rib:
         for i in range(0,len(Y_rib)-1):
@@ -41,29 +95,22 @@ class Wing:
             for j in range(0,n_lams):
                 # Select vectors of thicknesses and MID's:
                 n_i_tmp = n_ply[i*n_lams+n_orients*j:i*n_lams+n_orients*j+n_orients]
-                m_i_tmp = m_i[i*n_lams+n_orients*j:i*n_lams+n_orients*j+n_orients]
+                m_i_tmp = m_ply[i*n_lams+n_orients*j:i*n_lams+n_orients*j+n_orients]
                 section_lams += [Laminate(n_i_tmp,m_i_tmp,mat_lib,sym=True)]
             # Compile all information needed to create xsection and beams
-            # Starting y-coordiante of super beam
-            tmp_x1 = Y_rib[i]
-            # Ending y-coordiante of super beam
-            tmp_x2 = Y_rib[i+1]
-            # Establish tmp SBID as 1+ the max of the last SBID
-            #tmp_SBID = max(self.superBeamDict.keys())+1
-            #tmp_SB_SEID = max(self.elemDict.keys())+1
-            #if len(self.superBeamDict.keys())==1:
-            #    tmp_SB_SNID = wing_SNID
-            #else:
-            #   tmp_SB_SNID = max(self.superBeamDict[tmp_SBID-1].nodes.keys())
-            tmpWingSect = WingSection(chord,name,x0_spar,x1_spar,section_lams,\
-                mat_lib,tmp_x1,tmp_x2,noe_density,tmp_SB_SBID,snid1=tmp_SB_SNID,\
-                sEID=tmp_SB_SEID,meshSize=meshSize,sXID=sXID,ref_ax=ref_ax)
+            # Starting coordiante of super beam
+            tmp_x1 = p1+Y_rib[i]*(p2-p1)
+            # Ending coordiante of super beam
+            tmp_x2 = p1+Y_rib[i+1]*(p2-p1)
+            tmpWingSect = WingSection(tmp_x1,tmp_x2,chord,name,x0_spar,xf_spar,\
+                section_lams,mat_lib,noe,SSBID=tmp_SB_SBID,SNID=tmp_SB_SNID,\
+                SEID=tmp_SB_SEID,meshSize=meshSize,SXID=SXID,ref_ax=ref_ax)
             # Prepare ID values for next iteration
             tmp_SB_SNID = tmpWingSect.SuperBeams[-1].enid
             tmp_SB_SEID = max(tmpWingSect.SuperBeams[-1].elems.keys())+1
-            tmp_SB_SBID = tmpWingSect.SuperBeams[-1].SBID
+            tmp_SB_SBID = tmpWingSect.SuperBeams[-1].SBID+1
             self.wingSects += [tmpWingSect]
-            sXID = max(self.wingSects[i].XIDs)+1
+            SXID = max(self.wingSects[i].XIDs)+1
             self.model.addElements(tmpWingSect.SuperBeams)
     def addConstraint(self,NID,const):
         #INPUTS:

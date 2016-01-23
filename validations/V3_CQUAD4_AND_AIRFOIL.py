@@ -2,9 +2,14 @@
 # HEPHAESTUS VALIDATION 3 - CQUAD4 AND AIRFOIL
 # =============================================================================
 
+import sys
+import os
+
+sys.path.append(os.path.abspath('..'))
+
 # Import Statements
-from Structures import Node, MaterialLib, CQUAD4
-from AircraftParts import Airfoil
+from AeroComBAT.Structures import Node, MaterialLib, CQUAD4
+from AeroComBAT.Aerodynamics import Airfoil
 import numpy as np
 import pylab as pl
 

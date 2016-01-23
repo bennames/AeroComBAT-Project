@@ -1,0 +1,18 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}The FEM Interface Module}{3}{chapter.1}
+\contentsline {section}{\numberline {1.1}MODEL}{3}{section.1.1}
+\contentsline {chapter}{\numberline {2}The Structures Module}{9}{chapter.2}
+\contentsline {section}{\numberline {2.1}NODE}{10}{section.2.1}
+\contentsline {section}{\numberline {2.2}MATERIAL}{10}{section.2.2}
+\contentsline {section}{\numberline {2.3}CQUAD4}{12}{section.2.3}
+\contentsline {section}{\numberline {2.4}MATERIAL LIBRARY}{16}{section.2.4}
+\contentsline {section}{\numberline {2.5}PLY}{17}{section.2.5}
+\contentsline {section}{\numberline {2.6}LAMINATE}{19}{section.2.6}
+\contentsline {section}{\numberline {2.7}MESHER}{20}{section.2.7}
+\contentsline {section}{\numberline {2.8}CROSS-SECTION}{21}{section.2.8}
+\contentsline {section}{\numberline {2.9}TIMOSHENKO BEAM}{25}{section.2.9}
+\contentsline {section}{\numberline {2.10}SUPER-BEAM}{28}{section.2.10}
+\contentsline {section}{\numberline {2.11}WING SECTION}{31}{section.2.11}
+\contentsline {chapter}{\numberline {3}Indices and tables}{35}{chapter.3}
+\contentsline {chapter}{Python Module Index}{37}{section*.68}
+\contentsline {chapter}{Index}{39}{section*.69}
