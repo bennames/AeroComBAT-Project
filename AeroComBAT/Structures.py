@@ -3525,8 +3525,10 @@ class WingSection:
         meshSize = kwargs.pop('meshSize',4)
         SXID = kwargs.pop('SXID',0)
         ref_ax = kwargs.pop('ref_ax','shearCntr')
-        t = np.linspace(0,1,numSupBeams+1)
-        xs = x1+t*(x2-x1)
+        t_vec = np.linspace(0,1,numSupBeams+1)
+        xs = []
+        for t in t_vec:
+            xs+=[x1+t*(x2-x1)]
         tmpsnid1 = SNID
         tmpsEID = SEID
         for i in range(0,numSupBeams):

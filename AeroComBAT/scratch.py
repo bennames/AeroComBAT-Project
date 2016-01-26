@@ -14,7 +14,7 @@ c = 1.
 ctip = c
 croot = c
 L = 20.
-Y_rib = np.linspace(0.,L,2)
+Y_rib = np.linspace(0.,1.,2)
 b_s = np.linalg.norm((Y_rib[0],Y_rib[-1]))
 
 matLib = MaterialLib()
