@@ -95,7 +95,7 @@ class Node:
         if type(nid) is int:
             self.NID = nid
         else:
-            raise TypeError('The node ID given was not an integer.')
+            raise TypeError('The node ID given was not an integer.') #Can the nid be any integer? What about repeats?
         # Initialize the undeformed nodal position
         if len(x)==0:
             self.x = [0.,0.,0.]
@@ -123,7 +123,7 @@ class Node:
         - A printed table including the node ID and it's coordinates
         
         """
-        print(self.summary)
+        print(self.summary) #Quick guess: you could add more getters for versatile access to attributes
 
 class Material:
     """creates a linear elastic material object.
@@ -141,8 +141,8 @@ class Material:
         summary of the important attributes of the object.
     - `t (float)`: A single float which represents the thickness of a ply if
         the material is to be used in a composite.
-    - `rho (float)`: A signle float which represents the density of the
-        material.
+    - `rho (float)`: A single float which represents the density of the
+        materials.
     - `Smat (6x6 numpy Array[float])`: A numpy array representing the
         compliance matrix in the fiber coordinate system.*
     - `Cmat (6x6 numpy Array[float])`: A numpy array representing the
@@ -157,7 +157,7 @@ class Material:
     .. Note:: The CQUAD4 element assumes that the fibers are oriented along
         the (1,0,0) in the global coordinate system.
         
-    """
+    """ # why is thickness defined in material and not ply?
     def __init__(self,MID,name,matType,mat_constants,mat_t,**kwargs):
         """Creates a material object
         
@@ -198,7 +198,7 @@ class Material:
         if type(MID) is int:
             self.MID = MID
         else:
-            raise TypeError('The material ID given was not an integer')
+            raise TypeError('The material ID given was not an integer') #repeats
         # Material Type(string) - isotropic, transversely isotropic, otrthotropic
         self.matType = matType
         # Material Constants(array if floats) - depends on matType
@@ -233,7 +233,7 @@ class Material:
         # ORTHOTROPIC MATERIAL
         elif matType=='ortho' and len(mat_constants)==10:
             # mat_constants expected = [E1,E2,E3,nu_23,nu_13,nu_12,G_23,G_13,G_12,rho]
-            saved_mat_const = mat_constants
+            saved_mat_const = mat_constants #re-order
             E1 = mat_constants[0]
             E2 = mat_constants[1]
             E3 = mat_constants[2]
