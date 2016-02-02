@@ -894,9 +894,26 @@ class CQUAD4:
                         [tmpSig[3],tmpSig[4],tmpSig[5]]])
                     eigs,trash = np.linalg.eig(tmpSigTens)
                     sigData[i,j] = min(eigs)
+                elif crit=='sig_11':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[0]
+                elif crit=='sig_22':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[1]
+                elif crit=='sig_12':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[2]
                 elif crit=='sig_13':
                     tmpSig = sigState[:,tmpInd]
                     sigData[i,j] = tmpSig[3]
+                elif crit=='sig_23':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[4]
+                elif crit=='sig_33':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[5]
+                
+                    
         return sigData
     
     def printSummary(self):
@@ -1611,10 +1628,14 @@ class Mesher:
                         thz_loc = np.rad2deg(np.mean([np.arctan(deltay1/deltax1), np.arctan(deltay2/deltax2)]))
                         MID = xsect.laminates[k].plies[i].MID
                         th = [0,xsect.laminates[k].plies[i].th,thz[k]+thz_loc]
+                        #if newEID in [0,1692,1135,1134,2830,2831]:
+                        #    print(th)
                     # Else if it is vertical:
                     else:
                         MID = xsect.laminates[k].plies[j].MID
                         th = [0,xsect.laminates[k].plies[j].th,thz[k]]
+                        #if newEID in [0,1692,1135,1134,2830,2831]:
+                        #    print(th)
                     elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
                     xsect.laminates[k].EIDmesh[i,j] = newEID
         xsect.elemDict = elemDict
@@ -2369,7 +2390,7 @@ class XSect:
         # The defomation (tranltation and rotation) of the beam node and cross-section
         U = displScale*kwargs.pop('U',np.zeros(6))
         # The unit vector of the beam axis
-        beam_axis = kwargs.pop('beam_axis',np.array([0.,1.,0.]))
+        beam_axis = kwargs.pop('beam_axis',np.array([0.,0.,1.]))
         # The figure name
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Show a contour

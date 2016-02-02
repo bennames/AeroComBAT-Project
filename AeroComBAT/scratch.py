@@ -13,7 +13,8 @@ x2 = 0.8990566037735849
 c = 1.
 ctip = c
 croot = c
-L = 20.
+p1 = np.array([0.,0.,0.])
+p2 = np.array([0.,0.,20.])
 Y_rib = np.linspace(0.,1.,2)
 b_s = np.linalg.norm((Y_rib[0],Y_rib[-1]))
 
@@ -22,13 +23,10 @@ matLib.addMat(1,'AL','iso',[71.7e9,.33,2810],.005)
 matLib.addMat(2,'Weak_mat','iso',[100,.33,10],.005)
 
 n_ply = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-#n_ply = [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
 m_i = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
-noe_dens = 1.25
-wing1 = Wing(b_s,croot,ctip,x1,x2,Y_rib,n_ply,m_i,matLib,name='box',\
-    noe_per_unit_length=noe_dens)#,ref_ax='massCntr'
-wing1.plotRigidWing()
+noe_dens = 2
+wing1 = Wing(p1,p2,croot,ctip,x1,x2,Y_rib,n_ply,m_i,matLib,name='box',noe=noe_dens)
 sbeam1 = wing1.wingSects[0].SuperBeams[0]
 
 # Apply the constraint for the model
