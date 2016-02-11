@@ -97,6 +97,7 @@ class Node:
         else:
             raise TypeError('The node ID given was not an integer.') #Can the nid be any integer? What about repeats?
         # Initialize the undeformed nodal position
+        #TODO: Remove this conditional statements
         if len(x)==0:
             self.x = [0.,0.,0.]
         elif len(x)==1:
@@ -300,6 +301,7 @@ class Material:
         # Print Name
         print(self.name)
         # Print string summary attribute
+        #TODO: Add printSummary fix
         print(self.summary)
         # Print compliance matrix if requested
         if kwargs.pop('compliance',False):
@@ -476,7 +478,7 @@ class CQUAD4:
         - `matLib (obj)`: A material library object containing a dictionary
             with the material corresponding to the provided MID.
         - `xsect (bool)`: A boolean to determine whether this quad element is
-            to be usedfor cross-sectional analysis. Defualt value is True.
+            to be used for cross-sectional analysis. Defualt value is True.
         - `th (1x3 Array[float])`: Array containing the Euler-angles expressing
             how the element constitutive relations should be rotated from
             the material fiber frame to the global CSYS. In degrees.
@@ -912,6 +914,8 @@ class CQUAD4:
                 elif crit=='sig_33':
                     tmpSig = sigState[:,tmpInd]
                     sigData[i,j] = tmpSig[5]
+                elif crit=='none':
+                    sigData[i,j] = 0.
                 
                     
         return sigData
@@ -1641,6 +1645,100 @@ class Mesher:
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
         del xsect.elemDict[-1]
+    def laminate(self,xsect,meshSize,x0,xf,matlib):
+        """Meshes a box beam cross-section.
+        
+        This method is currently the only supported and tested meshing method.
+        The mesher assumes that the laminates in the box beam are oriented such
+        that the top surfaces of the laminate are facing inwards. Therefore if
+        you would like a particular fiber orientation on the outter or inner
+        most surfaces, create your laminate layup schedules appropriately.
+        
+        :Args:
+        - `xsect (obj)`: The cross-section object to be meshed.
+        - `meshSize (int)`: The maximum aspect ratio an element can have
+        - `x0 (float)`: The non-dimensional starting point of the cross-section
+            on the airfoil.
+        - `xf (float)`: The non-dimesnional ending point of the cross-section
+            on the airfoil.
+        - `matlib (obj)`: The material library object used to create CQUAD4
+            elements.
+                
+        :Returns:
+        - None
+            
+        """
+        # INITIALIZE INPUTS
+        # Initialize the node dictionary containing all nodes objects used by
+        # the cross-section
+        nodeDict = {-1:None}
+        # Initialize the element dictionary containing all element objects used
+        # by the cross-section
+        elemDict = {-1:None}
+        # The laminates used to mesh the cross-seciton
+        laminates = xsect.laminates
+        # Initialize the airfoil
+        Airfoil = xsect.airfoil
+        # The chord length of the airfoil profile
+        c = Airfoil.c
+        # Initialize the z location of the cross-section
+        zc = 0
+        
+        # CREATE NODES FOR MESH
+        # Verify that 4 laminate objects have been provides
+        if not len(laminates)==1:
+            raise ValueError('The laminate cross-section was selected, but 1 '\
+                'laminate was not provided')
+        # Determine the number of plies per each laminate
+        laminate = laminates[0]
+        # get the y coordinates of the lamiante
+        ycoords = laminate.Z[::-1]
+        xcoords = np.linspace(-c/2,c/2,c/(min(laminate.t)*meshSize)+1)
+        # Create 2D meshes
+        xmesh,ymesh = np.meshgrid(xcoords,ycoords)
+        # Create z-mesh
+        zmesh = np.zeros((len(xcoords),len(ycoords)))
+        
+        Mesh = np.zeros((len(xcoords),len(ycoords)),dtype=int)
+        
+        for i in range(0,len(xcoords)):
+            for j in range(0,len(ycoords)):
+                newNID = max(nodeDict.keys())+1
+                Mesh[i,j] = newNID
+                nodeDict[newNID] = Node(newNID,[xmesh[i,j],ymesh[i,j],zmesh[i,j]])
+        
+        # Save meshes:
+        laminate.mesh = Mesh
+        laminate.xmesh = xmesh
+        laminate.ymesh = ymesh
+        laminate.zmesh = zmesh
+        
+        xsect.nodeDict = nodeDict
+        
+        #Create Elements
+        ylen = len(ycoords)-1
+        xlen = len(xcoords)-1
+        # Ovearhead for later plotting of the cross-section. Will allow
+        # for discontinuities in the contour should it arise (ie in
+        # stress or strain contours).
+        laminate.plotx = np.zeros((ylen*2,xlen*2))
+        laminate.ploty = np.zeros((ylen*2,xlen*2))
+        laminate.plotz = np.zeros((ylen*2,xlen*2))
+        laminate.plotc = np.zeros((ylen*2,xlen*2))
+        laminate.EIDmesh = np.zeros((ylen,xlen),dtype=int)
+        for i in range(0,ylen):
+            for j in range(0,xlen):
+                newEID = int(max(elemDict.keys())+1)
+                NIDs = [laminate.mesh[i+1,j],laminate.mesh[i+1,j+1],\
+                    laminate.mesh[i,j+1],laminate.mesh[i,j]]
+                nodes = [xsect.nodeDict[NID] for NID in NIDs]
+                MID = xsect.laminates[k].plies[ylen-1-i].MID
+                th = [0,laminate.plies[i].th,0.]
+                elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
+                laminate.EIDmesh[i,j] = newEID
+        xsect.elemDict = elemDict
+        del xsect.nodeDict[-1]
+        del xsect.elemDict[-1]
     def cylindricalTube(self,xsect,r,meshSize,x0,xf,matlib,**kwargs):
         # Initialize the node dictionary, containing all local node objects
         # used by the cross-section
@@ -2055,6 +2153,10 @@ class XSect:
             yref = -self.refAxis[1,0]
         elif ref_ax=='massCntr':
             self.refAxis = np.array([[self.x_m[0]],[self.x_m[1]],[0.]])
+            xref = -self.refAxis[0,0]
+            yref = -self.refAxis[1,0]
+        elif ref_ax=='origin':
+            self.refAxis = np.array([[0.],[0.],[0.]])
             xref = -self.refAxis[0,0]
             yref = -self.refAxis[1,0]
         else:
@@ -2575,6 +2677,7 @@ class Beam(object):
         self.Ke = np.zeros((12,12),dtype=float)
         self.Keg = np.zeros((12,12),dtype=float)
         self.Me = np.zeros((12,12),dtype=float)
+        self.T = np.zeros((12,12),dtype=float)
         # Initialize a dictionary to hold analysis names
         self.analysis_names = []
     def printSummary(self,decimals=8,**kwargs):
@@ -2764,6 +2867,7 @@ class TBeam(Beam):
     - `h (float)`: The magnitude length of the beam element.
     - `xbar (float)`: The unit vector pointing in the direction of the rigid
         beam.
+    - `T (12x12 np.array[float])`:
         
     :Methods:
     - `printSummary`: This method prints out characteristic attributes of the
@@ -2777,7 +2881,7 @@ class TBeam(Beam):
     fictitious and be left as an artifact to fascilitate plotting of warped
     cross-sections. DO NOT rely on this information being meaningful.
     """
-    def __init__(self,x1,x2,xsect,EID=0,SBID=0,nid1=0,nid2=1):
+    def __init__(self,x1,x2,xsect,EID=0,SBID=0,nid1=0,nid2=1,chordVec=np.array([1.,0.,0.])):
         """Instantiates a timoshenko beam element.
         
         This method instatiates a finite element timoshenko beam element.
@@ -2815,6 +2919,15 @@ class TBeam(Beam):
         self.h = h
         # Solve for the beam unit vector
         self.xbar = (x2-x1)/h
+        # Determine the Transformation Matrix
+        zVec = self.xbar
+        yVec = np.cross(zVec,chordVec)/np.linalg.norm(np.cross(zVec,chordVec))
+        xVec = np.cross(yVec,zVec)/np.linalg.norm(np.cross(yVec,zVec))
+        Tsubmat = np.vstack((xVec,yVec,zVec)).T
+        self.T[0:3,0:3] = Tsubmat
+        self.T[3:6,3:6] = Tsubmat
+        self.T[6:9,6:9] = Tsubmat
+        self.T[9:12,9:12] = Tsubmat
         self.xsect = xsect
         # Create a local reference to the cross-section stiffness matrix
         K = xsect.K
@@ -2826,7 +2939,7 @@ class TBeam(Beam):
         C55 = K[4,4];C56 = K[4,5]
         C66 = K[5,5]
         # Initialize the Element Stiffness Matrix
-        self.Ke = np.array([[C11/h,-C12/h,-C13/h,C12/2-C14/h,C11/2-C15/h,-C16/h,-C11/h,C12/h,C13/h,C12/2+C14/h,C11/2+C15/h,C16/h],\
+        self.Kel = np.array([[C11/h,-C12/h,-C13/h,C12/2-C14/h,C11/2-C15/h,-C16/h,-C11/h,C12/h,C13/h,C12/2+C14/h,C11/2+C15/h,C16/h],\
                           [-C12/h,C22/h,C23/h,-C22/2+C24/h,-C12/2+C25/h,C26/h,C12/h,-C22/h,-C23/h,-C22/2-C24/h,-C12/2-C25/h,-C26/h],\
                           [-C13/h,C23/h,C33/h,-C23/2+C34/h,-C13/2+C35/h,C36/h,C13/h,-C23/h,-C33/h,-C23/2-C34/h,-C13/2-C35/h,-C36/h],\
                           [C12/2-C14/h,-C22/2+C24/h,-C23/2+C34/h,-C24+C44/h+C22*h/4,-C14/2-C25/2+C45/h+C12*h/4,-C26/2+C46/h,-C12/2+C14/h,C22/2-C24/h,C23/2-C34/h,-C44/h+C22*h/4,-C14/2+C25/2-C45/h+C12*h/4,C26/2-C46/h],\
@@ -2838,13 +2951,15 @@ class TBeam(Beam):
                           [C12/2+C14/h,-C22/2-C24/h,-C23/2-C34/h,-C44/h+C22*h/4,C14/2-C25/2-C45/h+C12*h/4,-C26/2-C46/h,-C12/2-C14/h,C22/2+C24/h,C23/2+C34/h,C24+C44/h+C22*h/4,C14/2+C25/2+C45/h+C12*h/4,C26/2+C46/h],\
                           [C11/2+C15/h,-C12/2-C25/h,-C13/2-C35/h,-C14/2+C25/2-C45/h+C12*h/4,-C55/h+C11*h/4,-C16/2-C56/h,-C11/2-C15/h,C12/2+C25/h,C13/2+C35/h,C14/2+C25/2+C45/h+C12*h/4,C15+C55/h+C11*h/4,C16/2+C56/h],\
                           [C16/h,-C26/h,-C36/h,C26/2-C46/h,C16/2-C56/h,-C66/h,-C16/h,C26/h,C36/h,C26/2+C46/h,C16/2+C56/h,C66/h]])
+        self.Ke = np.dot(self.T.T,np.dot(self.Kel,self.T))
         # Initialize the element distributed load vector
         self.Fe = np.zeros((12,1),dtype=float)
         # Initialize the Geometric Stiffness Matrix
         kgtmp = np.zeros((12,12),dtype=float)
         kgtmp[0,0] = kgtmp[1,1] = kgtmp[6,6] = kgtmp[7,7] = 1./h
         kgtmp[0,6] = kgtmp[1,7] = kgtmp[6,0] = kgtmp[7,1] = -1./h
-        self.Keg = kgtmp
+        self.Kegl = kgtmp
+        self.Keg = np.dot(self.T.T,np.dot(self.Kegl,self.T))
         # Initialize the mass matrix
         # Create local reference of cross-section mass matrix
         M = xsect.M
@@ -2855,7 +2970,7 @@ class TBeam(Beam):
         M45 = M[3,4]
         M55 = M[4,4]
         M66 = M[5,5]
-        self.Me = np.array([[h*M11/3.,0.,0.,0.,0.,h*M16/3.,h*M11/6.,0.,0.,0.,0.,h*M16/6.],\
+        self.Mel = np.array([[h*M11/3.,0.,0.,0.,0.,h*M16/3.,h*M11/6.,0.,0.,0.,0.,h*M16/6.],\
                             [0.,h*M11/3.,0.,0.,0.,h*M26/3.,0.,h*M11/6.,0.,0.,0.,h*M26/6.],\
                             [0.,0.,h*M11/3.,-h*M16/3.,-h*M26/3.,0.,0.,0.,h*M11/6.,-h*M16/6.,-h*M26/6.,0.],\
                             [0.,0.,-h*M16/3.,h*M44/3.,h*M45/3.,0.,0.,0.,-h*M16/6.,h*M44/6.,h*M45/6.,0.],\
@@ -2867,6 +2982,7 @@ class TBeam(Beam):
                             [0.,0.,-h*M16/6.,h*M44/6.,h*M45/6.,0.,0.,0.,-h*M16/3.,h*M44/3.,h*M45/3.,0.],\
                             [0.,0.,-h*M26/6.,h*M45/6.,h*M55/6.,0.,0.,0.,-h*M26/3.,h*M45/3.,h*M55/3.,0.],\
                             [h*M16/6.,h*M26/6.,0.,0.,0.,h*M66/6.,h*M16/3.,h*M26/3.,0.,0.,0.,h*M66/3.]])
+        self.Me = np.dot(self.T.T,np.dot(self.Mel,self.T))
     def applyDistributedLoad(self,fx):
         """Applies distributed load to the element.
         
@@ -2876,7 +2992,7 @@ class TBeam(Beam):
         can apply distributed forces.
         
         :Args:
-        - `fx (1x4 np.array[float])`: The constant distributed load applied
+        - `fx (1x6 np.array[float])`: The constant distributed load applied
             over the length of the beam.
         
         :Returns:
@@ -2884,8 +3000,9 @@ class TBeam(Beam):
         """
         h = self.h
         self.Fe = np.reshape(np.array([h*fx[0]/2,h*fx[1]/2,\
-                            h*fx[2]/2,0.,0.,h*fx[3]/2,h*fx[0]/2,h*fx[1]/2,\
-                            h*fx[2]/2,0.,0.,h*fx[3]/2]),(12,1))
+                            h*fx[2]/2,h*fx[3]/2,h*fx[4]/2,h*fx[5]/2,\
+                            h*fx[0]/2,h*fx[1]/2,h*fx[2]/2,h*fx[3]/2,h*fx[4]/2,\
+                            h*fx[5]/2]),(12,1))
     def plotRigidBeam(self,**kwargs):
         """Plots the rigid beam in 3D space.
         

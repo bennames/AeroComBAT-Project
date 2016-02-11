@@ -79,7 +79,7 @@ xsect_Lay2.calcWarpEffects(force=force)
 xsect_Lay2.plotWarped(figName='Validation Case L2',warpScale=10,contLim=[0,500000])
 
 '''
-
+'''
 # Layup 3 Box beam (0.5 x 0.923 in^2 box with laminate schedule [30,0]_3)
 n_i_1 = [1,1,1,1,1,1]
 m_i_1 = [2,2,2,2,2,2]
@@ -97,8 +97,8 @@ n_i_4 = [1,1,1,1,1,1]
 m_i_4 = [2,2,2,2,2,2]
 th_4 = [-15,15,-15,15,-15,15]
 lam4 = Laminate(n_i_4, m_i_4, matLib, th=th_4)
-
 '''
+
 # AL Box Beam
 n_i_1 = [1,1,1,1,1,1]
 m_i_1 = [3,3,3,3,3,3]
@@ -116,6 +116,40 @@ n_i_4 = [1,1,1,1,1,1]
 m_i_4 = [3,3,3,3,3,3]
 th_4 = [-15,15,-15,15,-15,15]
 lam4 = Laminate(n_i_4, m_i_4, matLib, th=th_4)
+
+laminates_Lay3 = [lam1,lam2,lam3,lam4]
+xsect_Lay3 = XSect(4,af2,xdim2,laminates_Lay3,matLib,typeXsect='box',meshSize=1)
+xsect_Lay3.xSectionAnalysis()
+
+force = np.array([1,0,0,0,0,0.])
+xsect_Lay3.calcWarpEffects(force=force)
+xsect_Lay3.plotWarped(figName='Warping Displacement Fx',warpScale=0,contour='none')
+xsect_Lay3.plotWarped(figName='Warping Displacement Fx',warpScale=2e9,contLim=[0,1e-9])
+
+force = np.array([0,1,0,0,0,0.])
+xsect_Lay3.calcWarpEffects(force=force)
+xsect_Lay3.plotWarped(figName='Warping Displacement Fy',warpScale=0,contour='none')
+xsect_Lay3.plotWarped(figName='Warping Displacement Fy',warpScale=1e9,contLim=[0,1e-9])
+
+force = np.array([0,0,1,0,0,0.])
+xsect_Lay3.calcWarpEffects(force=force)
+xsect_Lay3.plotWarped(figName='Warping Displacement Fz',warpScale=0,contour='none')
+xsect_Lay3.plotWarped(figName='Warping Displacement Fz',warpScale=5e9,contLim=[0,1e-9])
+
+force = np.array([0,0,0,1,0,0.])
+xsect_Lay3.calcWarpEffects(force=force)
+xsect_Lay3.plotWarped(figName='Warping Displacement Mx',warpScale=0,contour='none')
+xsect_Lay3.plotWarped(figName='Warping Displacement Mx',warpScale=1e9,contLim=[0,1e-9])
+
+force = np.array([0,0,0,0,1,0.])
+xsect_Lay3.calcWarpEffects(force=force)
+xsect_Lay3.plotWarped(figName='Warping Displacement My',warpScale=0,contour='none')
+xsect_Lay3.plotWarped(figName='Warping Displacement My',warpScale=1e9,contLim=[0,1e-9])
+
+force = np.array([0,0,0,0,0,1.])
+xsect_Lay3.calcWarpEffects(force=force)
+xsect_Lay3.plotWarped(figName='Warping Displacement Mz',warpScale=0,contour='none')
+xsect_Lay3.plotWarped(figName='Warping Displacement Mz',warpScale=5e8,contLim=[0,1e-9])
 '''
 lam1.printSummary()
 lam2.printSummary()
@@ -126,6 +160,8 @@ xsect_Lay3 = XSect(4,af2,xdim2,laminates_Lay3,matLib,typeXsect='box',meshSize=1)
 xsect_Lay3.xSectionAnalysis()
 xsect_Lay3.printSummary(stiffMat=True)
 xsect_Lay3.calcWarpEffects(force=force)
+
+import mayavi.mlab as mlab
 
 xsect_Lay3.plotWarped(figName='Stress sig_11',warpScale=1,contLim=[-3961,4476],contour='sig_11')
 import mayavi.mlab as mlab
@@ -184,13 +220,6 @@ for i in range(0,np.size(lam4AeroComBATEIDmesh,axis=0)):
 # Import NASTRAN Stress Data:
 NASTRANStress = np.genfromtxt('NASTRANStress.csv', delimiter=',')
 # Determine L2 Norms
-'''
-sigxx_L2 = np.linalg.norm(NASTRANStress[:,1])
-sigyy_L2 = np.linalg.norm(NASTRANStress[:,2])
-sigzz_L2 = np.linalg.norm(NASTRANStress[:,3])
-sigxy_L2 = np.linalg.norm(NASTRANStress[:,4])
-sigxz_L2 = np.linalg.norm(NASTRANStress[:,6])
-sigyz_L2 = np.linalg.norm(NASTRANStress[:,5])'''
 sigxx_L2 = max(abs(NASTRANStress[:,1]))
 sigyy_L2 = max(abs(NASTRANStress[:,2]))
 sigzz_L2 = max(abs(NASTRANStress[:,3]))
@@ -250,7 +279,7 @@ mlab.colorbar()
 xsect_Lay3.plotWarped(figName='Stress Validation sig_23',warpScale=1,contLim=[-15,15],contour='sig_23')
 import mayavi.mlab as mlab
 mlab.colorbar()
-
+'''
 '''
 def reorder(Q):
     scram_vec = [0,1,5,2,4,3]
