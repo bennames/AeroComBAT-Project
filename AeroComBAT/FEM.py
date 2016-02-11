@@ -30,6 +30,7 @@ import numpy as np
 import scipy as sci
 from tabulate import tabulate
 import mayavi.mlab as mlab
+from Aerodynamics import K
 # =============================================================================
 # DEFINE AeroComBAT FEM CLASS
 # =============================================================================
@@ -141,6 +142,8 @@ class Model:
         #TODO: Link AID's to analysis_names
         # Parts
         self.parts = {}
+        self.Loads = {}
+        self.aeroBox = {}
     def addElements(self, elemarray):
         """A method to add elements to the model.
         
@@ -216,8 +219,19 @@ class Model:
                 raise ValueError('The part ID %d is already associated with a'\
                     'part which has been added to the model.' %(part.PID))
             if part.type=='wing':
+                # Add structural elements to the model
                 for wingSect in part.wingSects:
                     self.addElements(wingSect.SuperBeams)
+                # Add lifting surfaces to the model
+                if len(part.liftingSurfaces)>0:
+                    for SID, surface in part.liftingSurfaces.iteritems():
+                        for PANID, panel in surface.CQUADAs.iteritems():
+                            if PANID in self.aeroBox.keys():
+                                return ValueError('You cannot add aero-panel %d'+
+                                'CQUADA to the model if the same PANID is'+
+                                'already used in the model. Consider'+
+                                'renumbering your aero panel IDs' %(PANID))
+                            self.aeroBox[PANID]=panel
             self.parts[part.PID] = part
     def resetPointLoads(self):
         """A method to reset the point loads applied to the model.
@@ -253,7 +267,7 @@ class Model:
                 for wingSect in self.wingSects:
                     for sbeam in wingSect.SuperBeams:
                         sbeam.xsect.resetResults()
-    def assembleGlobalModel(self,static4BuckName = 'analysis_untitled'):
+    def assembleGlobalModel(self,analysisType,LID=-1,static4BuckName = 'analysis_untitled'):
         """Assembles the global model.
         
         This method adds all of the element matricies (mass, stiffness, etc.)
@@ -267,87 +281,178 @@ class Model:
         :Returns:
         - None
         """
-        # Determine the degrees of freedom in the model
-        DOF = 6*len(self.nids)
-        # Initialize the global stiffness matrix
-        Kg = np.zeros((DOF,DOF),dtype=float)
-        # Initialize the global force vector
-        Fg = np.zeros((DOF,1),dtype=float)
-        # Initialize the geometric global stiffness matrix
-        Kgg = np.zeros((DOF,DOF),dtype=float)
-        # Initialize the global mass matrix
-        Mg = np.zeros((DOF,DOF),dtype=float)
-        # For all of the elements in the elems array
-        for elem in self.elems:
-            # Determine the node ID's associated with the elem
-            nodes = [elem.n1.NID,elem.n2.NID]
-            # For both NID's
-            for i in range(0,len(nodes)):
+        # For a Linear Static Analysis
+        if analysisType==1:
+            tmpLoad = None
+            if LID in self.Loads.keys():
+                tmpLoad = self.Loads[LID]
+            else:
+                raise ValueError('You selected a load ID that doesnt exist.')
+            # Determine the degrees of freedom in the model
+            DOF = 6*len(self.nids)
+            # Initialize the global stiffness matrix
+            Kg = np.zeros((DOF,DOF),dtype=float)
+            # Initialize the global force vector
+            Fg = np.zeros((DOF,1),dtype=float)
+            # For all of the elements in the elems array
+            for elem in self.elems:
+                # Apply the distributed load to the element
+                elem.applyDistributedLoad(tmpLoad.distributedLoads[elem.EID])
+                # Determine the node ID's associated with the elem
+                nodes = [elem.n1.NID,elem.n2.NID]
+                # For both NID's
+                for i in range(0,len(nodes)):
+                    # The row in the global matrix (an integer correspoinding to
+                    # the NID)
+                    row = self.nodeDict[nodes[i]]
+                    # Add the elem force vector to the global matrix
+                    Fg[6*row:6*row+6,:] = Fg[6*row:6*row+6,:] +\
+                        elem.Fe[6*i:6*i+6,:]
+                    for j in range(0,len(nodes)):
+                        # Determine the column range for the NID
+                        col = self.nodeDict[nodes[j]]
+                        # Add the elem stiffness matrix portion to the global
+                        # stiffness matrix
+                        Kg[6*row:6*row+6,6*col:6*col+6] = Kg[6*row:6*row+6,6*col:6*col+6]\
+                                                        +elem.Ke[6*i:6*i+6,6*j:6*j+6]
+            # Apply the point loads to the model
+            for NID in tmpLoad.keys():
                 # The row in the global matrix (an integer correspoinding to
                 # the NID)
-                row = self.nodeDict[nodes[i]]
-                # Add the elem force vector to the global matrix
-                Fg[6*row:6*row+6,:] = Fg[6*row:6*row+6,:] + elem.Fe[6*i:6*i+6,:] \
-                                    + np.reshape(self.Qg[6*row:6*row+6],(6,1))
-                for j in range(0,len(nodes)):
-                    # Determine the column range for the NID
-                    col = self.nodeDict[nodes[j]]
-                    # Add the elem stiffness matrix portion to the global
-                    # stiffness matrix
-                    Kg[6*row:6*row+6,6*col:6*col+6] = Kg[6*row:6*row+6,6*col:6*col+6]\
-                                                    +elem.Ke[6*i:6*i+6,6*j:6*j+6]
-                    # Determine the axial force in the beam
-                    if static4BuckName in elem.F1.keys():
-                        Ploc = elem.F1[static4BuckName][2]
-                    else:
-                        Ploc=0.
-                    # Add the elem geometric stiffness matrix portion to the
-                    # global stiffness matrix
-                    Kgg[6*row:6*row+6,6*col:6*col+6] = Kgg[6*row:6*row+6,6*col:6*col+6]\
-                                                    +elem.Keg[6*i:6*i+6,6*j:6*j+6]*Ploc
-                    # Add the element mass matrix portion to the global mass matrix
-                    Mg[6*row:6*row+6,6*col:6*col+6] = Mg[6*row:6*row+6,6*col:6*col+6]\
-                                                    +elem.Me[6*i:6*i+6,6*j:6*j+6]
-        # Save the global stiffness matrix
-        self.Kg = Kg
-        # Save the global force vector
-        self.Fg = Fg
-        # Save the global geometric stiffness matrix
-        self.Kgg = Kgg
-        # Save the global mass matrix
-        self.Mg = Mg
-        # Determine the list of NIDs to be contrained
-        cnds = sorted(list(self.const.keys()))
-        # Initialize the number of equations to be removed from the system
-        deleqs = 0
-        # For the number of constrained NIDs
-        for i in range(0,len(self.const)):
-            # The row range to be removed associated with the NID
-            row = self.nodeDict[cnds[i]]
-            # Determine which DOF are to be removed
-            tmpcst = self.const[cnds[i]]
-            # For all of the degrees of freedom to be removed
-            for j in range(0,len(tmpcst)):
-                # Remove the row associated with the jth DOF for the ith NID
-                Fg = np.delete(Fg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
-                Kg = np.delete(Kg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
-                Kg = np.delete(Kg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
-                Kgg = np.delete(Kgg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
-                Kgg = np.delete(Kgg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
-                Mg = np.delete(Mg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
-                Mg = np.delete(Mg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
-                # Incremend the number of deleted equations
-                deleqs += 1
-        # Save the reduced global force vector
-        self.Fgr = Fg
-        # Save the reduced global stiffness matrix
-        self.Kgr = Kg
-        # Save the reduced global geometric stiffness matrix
-        self.Kggr = Kgg
-        # Save the reduced global mass matrix
-        self.Mgr = Mg
+                row = self.nodeDict[NID]
+                Fg[6*row:6*row+6,:]=Fg[6*row:6*row+6,:]\
+                    +np.reshape(tmpLoad[NID],(6,1))
+            # Save the global stiffness matrix
+            self.Kg = Kg
+            # Save the global force vector
+            self.Fg = Fg
+            # Determine the list of NIDs to be contrained
+            cnds = sorted(list(self.const.keys()))
+            # Initialize the number of equations to be removed from the system
+            deleqs = 0
+            # For the number of constrained NIDs
+            for i in range(0,len(self.const)):
+                # The row range to be removed associated with the NID
+                row = self.nodeDict[cnds[i]]
+                # Determine which DOF are to be removed
+                tmpcst = self.const[cnds[i]]
+                # For all of the degrees of freedom to be removed
+                for j in range(0,len(tmpcst)):
+                    # Remove the row associated with the jth DOF for the ith NID
+                    Fg = np.delete(Fg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
+                    Kg = np.delete(Kg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
+                    Kg = np.delete(Kg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
+                    # Incremend the number of deleted equations
+                    deleqs += 1
+            # Save the reduced global force vector
+            self.Fgr = Fg
+            # Save the reduced global stiffness matrix
+            self.Kgr = Kg
             
-    def applyLoads(self,**kwargs):
+        # For a linear buckling analysis
+        if analysisType==2:
+            # Determine the degrees of freedom in the model
+            DOF = 6*len(self.nids)
+            # Initialize the geometric global stiffness matrix
+            Kgg = np.zeros((DOF,DOF),dtype=float)
+            # Initialize the global mass matrix
+            for elem in self.elems:
+                # Determine the node ID's associated with the elem
+                nodes = [elem.n1.NID,elem.n2.NID]
+                # For both NID's
+                for i in range(0,len(nodes)):
+                    # The row in the global matrix (an integer correspoinding to
+                    # the NID)
+                    row = self.nodeDict[nodes[i]]
+                    for j in range(0,len(nodes)):
+                        # Determine the column range for the NID
+                        col = self.nodeDict[nodes[j]]
+                        # Determine the axial force in the beam
+                        if static4BuckName in elem.F1.keys():
+                            Ploc = elem.F1[static4BuckName][2]
+                        else:
+                            Ploc=0.
+                        # Add the elem geometric stiffness matrix portion to the
+                        # global stiffness matrix
+                        Kgg[6*row:6*row+6,6*col:6*col+6] = Kgg[6*row:6*row+6,6*col:6*col+6]\
+                                                        +elem.Keg[6*i:6*i+6,6*j:6*j+6]*Ploc
+            # Save the global geometric stiffness matrix
+            self.Kgg = Kgg
+            # Determine the list of NIDs to be contrained
+            cnds = sorted(list(self.const.keys()))
+            # Initialize the number of equations to be removed from the system
+            deleqs = 0
+            # For the number of constrained NIDs
+            for i in range(0,len(self.const)):
+                # The row range to be removed associated with the NID
+                row = self.nodeDict[cnds[i]]
+                # Determine which DOF are to be removed
+                tmpcst = self.const[cnds[i]]
+                # For all of the degrees of freedom to be removed
+                for j in range(0,len(tmpcst)):
+                    # Remove the row associated with the jth DOF for the ith NID
+                    Kgg = np.delete(Kgg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
+                    Kgg = np.delete(Kgg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
+                    # Increment the number of deleted equations
+                    deleqs += 1
+            # Save the reduced global geometric stiffness matrix
+            self.Kggr = Kgg
+            
+        # For a Normal Modes Analysis
+        if analysisType==3:
+            # Determine the degrees of freedom in the model
+            DOF = 6*len(self.nids)
+            # Initialize the global stiffness matrix
+            Kg = np.zeros((DOF,DOF),dtype=float)
+            Mg = np.zeros((DOF,DOF),dtype=float)
+            # For all of the elements in the elems array
+            for elem in self.elems:
+                # Determine the node ID's associated with the elem
+                nodes = [elem.n1.NID,elem.n2.NID]
+                # For both NID's
+                for i in range(0,len(nodes)):
+                    # The row in the global matrix (an integer correspoinding to
+                    # the NID)
+                    row = self.nodeDict[nodes[i]]
+                    for j in range(0,len(nodes)):
+                        # Determine the column range for the NID
+                        col = self.nodeDict[nodes[j]]
+                        # Add the elem stiffness matrix portion to the global
+                        # stiffness matrix
+                        Kg[6*row:6*row+6,6*col:6*col+6] = Kg[6*row:6*row+6,6*col:6*col+6]\
+                                                        +elem.Ke[6*i:6*i+6,6*j:6*j+6]
+                        # Add the element mass matrix portion to the global mass matrix
+                        Mg[6*row:6*row+6,6*col:6*col+6] = Mg[6*row:6*row+6,6*col:6*col+6]\
+                                                        +elem.Me[6*i:6*i+6,6*j:6*j+6]                        
+            # Save the global stiffness matrix
+            self.Kg = Kg
+            # Save the global mass matrix
+            self.Mg = Mg
+            # Determine the list of NIDs to be contrained
+            cnds = sorted(list(self.const.keys()))
+            # Initialize the number of equations to be removed from the system
+            deleqs = 0
+            # For the number of constrained NIDs
+            for i in range(0,len(self.const)):
+                # The row range to be removed associated with the NID
+                row = self.nodeDict[cnds[i]]
+                # Determine which DOF are to be removed
+                tmpcst = self.const[cnds[i]]
+                # For all of the degrees of freedom to be removed
+                for j in range(0,len(tmpcst)):
+                    # Remove the row associated with the jth DOF for the ith NID
+                    Kg = np.delete(Kg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
+                    Kg = np.delete(Kg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
+                    Mg = np.delete(Mg,row*6+(tmpcst[j]-1)-deleqs,axis=0)
+                    Mg = np.delete(Mg,row*6+(tmpcst[j]-1)-deleqs,axis=1)
+                    # Incremend the number of deleted equations
+                    deleqs += 1
+            # Save the reduced global stiffness matrix
+            self.Kgr = Kg
+            # Save the reduced global mass matrix
+            self.Mgr = Mg
+            
+    def applyLoads(self,LID,**kwargs):
         """A method to apply nodal and distributed loads to the model.
         
         This method allows the user to apply nodal loads to nodes and
@@ -377,8 +482,10 @@ class Model:
               vx = (1/10)*10*x[2]**2-7*x[2]-2.1
               vy = 10*x[2]**2-7*x[2]
               pz = 0
+              mx = 0
+              my = 0
               tz = (10*x[2]**2-7*x[2])/10+3*x[0]**2
-              return np.array([vx,vy,pz,tz])
+              return np.array([vx,vy,pz,mx,my,tz])
         
         Nodal load dictionary example:
         
@@ -386,14 +493,19 @@ class Model:
         
            F[NID] = np.array([Qx,Qy,P,Mx,My,T])
         """
+        if not LID in self.Loads.keys():
+            self.Loads[LID] = LoadSet(LID)
+        tmpLoad = self.Loads[LID]
         # TODO: Make it so that local CSYS can be used for load applications. This
         # Should allow for translation and rotations.
         def fdefault(x):
                 vx = 0.
                 vy = 0.
                 pz = 0.
+                mx = 0.
+                my = 0.
                 tz = 0.
-                return np.array([vx,vy,pz,tz])
+                return np.array([vx,vy,pz,mx,my,tz])
         # Get the distributed load function
         f = kwargs.pop('f',fdefault)
         # Get the descrete load dictionary
@@ -402,13 +514,7 @@ class Model:
         allElems = kwargs.pop('allElems',False)
         PIDs = kwargs.pop('PIDs',[])
         eids = kwargs.pop('eids',[])
-        if not len(PIDs)==0:
-            for PID in PIDs:
-                part = self.parts[PID]
-                if part.type=='wing':
-                    for wingSect in part.wingSects:
-                        for superBeam in wingSect.SuperBeams:
-                            eids+=[elem.EID for elem in superBeam.elems]
+        
         if allElems:
             eids += [elem.EID for elem in self.elems]
             if not len(PIDs)==0:
@@ -416,35 +522,33 @@ class Model:
                     'elements within the model as well as all elements in'\
                     'parts:')
                 print(PIDs)
+        else:
+            if not len(PIDs)==0:
+                for PID in PIDs:
+                    part = self.parts[PID]
+                    if part.type=='wing':
+                        for wingSect in part.wingSects:
+                            for superBeam in wingSect.SuperBeams:
+                                eids+=superBeam.elems.keys()
         if len(eids)==0 and not f==fdefault:
             print('WARNING: You are attempting to apply a distributed load'\
                 'without listing EIDs at which to apply those loads.')
         # Remove rudundant EIDs
         eids = np.unique(eids)
-        # For all of the EIDs provided
-        for ID in eids:
-            # For all of the in the model
-            for elem in self.elems:
-                # If the applied ID is the elem EID
-                if elem.EID==ID:
-                    if elem.type=='Tbeam':
-                        h = elem.h
-                        x1 = elem.n1.x
-                        x2 = elem.n2.x
-                        fx = f((x1+x2)/2)
-                        elem.applyDistributedLoad(fx)
-                    elif elem.type=='EBbeam':
-                        h = elem.h
-                        x1 = elem.n1.x
-                        x2 = elem.n2.x
-                        fx = f((x1+x2)/2)
-                        elem.Fe = np.reshape(np.array([h*fx[0]/2.,h*fx[1]/2.,\
-                        h*fx[2]/2,-h**2*fx[0]/12.,-h**2*fx[1]/12.,h*fx[3]/2,\
-                        h*fx[0]/2.,h*fx[1]/2.,h*fx[2]/2,h**2*fx[0]/12.,\
-                        h**2*fx[1]/12.,h*fx[3]/2]),(12,1))
+        # For all of the in the model
+        for elem in self.elems:
+            if elem.EID in eids:
+                if elem.type=='Tbeam':
+                    x1 = elem.n1.x
+                    x2 = elem.n2.x
+                    fx = f((x1+x2)/2)
+                    tmpLoad.addDistributedLoad(fx,elem.EID)
         if F==None:
             pass
         else:
+            for NID in F.keys():
+                tmpLoad.addPointLoad(F[NID],NID)
+            '''
             # Determine what global NIDs the point loads are to be applied at
             keys = list(F.keys())
             if (self.Qg).any()==None:
@@ -455,10 +559,9 @@ class Model:
                 if not len(Ftmp)==6:
                     raise ValueError('When you apply a discrete force to a node'\
                         'it must be a numpy array of exactly length 3.')
-                # Rearrange the force vector to be consistent with the DOF (u,v,w,thy.thx.thz)
                 Ftmp = np.array([Ftmp[0],Ftmp[1],Ftmp[2],Ftmp[3],Ftmp[4],Ftmp[5]])
                 self.Qg[6*self.nodeDict[key]:6*self.nodeDict[key]+6] = \
-                self.Qg[6*self.nodeDict[key]:6*self.nodeDict[key]+6]+Ftmp
+                self.Qg[6*self.nodeDict[key]:6*self.nodeDict[key]+6]+Ftmp'''
     def applyConstraints(self,NID,const):
         """A method for applying nodal constraints to the model.
         
@@ -492,7 +595,7 @@ class Model:
             self.const[NID]=np.array([1,2,3,4,5,6],dtype=int)
         else:
             self.const[NID]=const
-    def staticAnalysis(self,**kwargs):
+    def staticAnalysis(self,LID,**kwargs):
         """Linear static analysis.
         
         This method conducts a linear static analysis on the model. This will
@@ -508,7 +611,7 @@ class Model:
         - None
         """
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
-        self.assembleGlobalModel()
+        self.assembleGlobalModel(1,LID=LID)
         # Prepare the reduced stiffness matrix for efficient LU decomposition solution
         lu,piv = sci.linalg.lu_factor(self.Kgr)
         # Solve global displacements
@@ -548,10 +651,11 @@ class Model:
                 #Solve for the reaction forces on the second node
                 Ke21 = elem.Ke[6:12,0:6]
                 elem.F2 = np.dot(Ke21,elem.U1-elem.U2)
-    def bucklingAnalysis(self,**kwargs):
+    def bucklingAnalysis(self,LID,**kwargs):
+        static_analysis_name = kwargs.pop('static_analysis_name','static_analysis_untitled')
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
-        self.staticAnalysis()
-        self.assembleGlobalModel()
+        self.staticAnalysis(LID,analysis_name=static_analysis_name)
+        self.assembleGlobalModel(2,static4BuckName=static_analysis_name)
         Fscale,umode = sci.linalg.eig(self.Kgr,-self.Kggr)
         idx = Fscale.argsort()
         self.Fscale = np.array(Fscale[idx],dtype=float)
@@ -601,7 +705,7 @@ class Model:
         """
         # Create Analysis Name
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
-        self.assembleGlobalModel()
+        self.assembleGlobalModel(3)
         eigs,umode = sci.linalg.eig(self.Kgr,self.Mgr)
         idx = eigs.argsort()
         self.eigs = np.sqrt(np.array(eigs[idx],dtype=float))/(2*np.pi)
@@ -649,10 +753,9 @@ class Model:
         # One at the beggining and one at the end of the super beam
         numXSects = kwargs.pop('numXSects',2)
         mlab.figure(figure=figName)
-        for part in self.parts:
+        for PID, part in self.parts.iteritems():
             if part.type=='wing':
-                for sects in part.wingSects:
-                    sects.plotRigid(figName=figName,clr=clr,numXSects=numXSects)
+                part.plotRigidWing(figName=figName,clr=clr,numXSects=numXSects)
     def plotDeformedModel(self,**kwargs):
         """Plots the deformed model.
         
@@ -709,3 +812,112 @@ class Model:
                         contLim=contLim,warpScale=warpScale,displScale=displScale,\
                         contour=contour,analysis_name=analysis_name,mode=mode)
         mlab.colorbar()
+        
+    def CalcAICs(self,M,U,omega,kr,br,rho):
+        # Calculate the AIC matricies
+        # Initialize an array of PANIDs
+        PANIDs = self.aeroBox.keys()
+        # Initialize the number of panels
+        numPan = len(PANIDs)
+        # Initialize the complex [D] matrix
+        D = np.zeros((numPan,numPan),dtype=complex)
+        # Initialize the Diagonal Box Area Matrix
+        Area = np.zeros((numPan,numPan))
+        # Initialize the [W] Matrix
+        W = np.zeros((numPan,len(self.nids)*6),dtype=complex)
+        # For all the recieving panels
+        for i in range(0,numPan):
+            recievingBox = self.aeroBox[PANIDs[i]]
+            # For all the sending panels
+            for j in range(0,numPan):
+                sendingBox = self.aeroBox[PANIDs[j]]
+                # Calculate average chord of sending box
+                delta_x_j = abs(sendingBox.x(0,1)-sendingBox.x(0,-1))
+                # Calculate sweep of sending box
+                xtmp = sendingBox.x(1,1)-sendingBox.x(-1,1)
+                ytmp = sendingBox.y(1,1)-sendingBox.y(-1,1)
+                lambda_j = np.arctan(xtmp/ytmp)
+                # Calculate the length of the doublet line on sending box
+                xtmp = sendingBox.x(1,0.5)-sendingBox.x(-1,0.5)
+                ytmp = sendingBox.y(1,0.5)-sendingBox.y(-1,0.5)
+                ztmp = sendingBox.z(1,0.5)-sendingBox.z(-1,0.5)
+                # Calculate y and z vectors for recieving box
+                ytmp_r = recievingBox.y(1,0.5)-recievingBox.y(-1,0.5)
+                ztmp_r = recievingBox.z(1,0.5)-recievingBox.z(-1,0.5)
+                # Calculate the length of the doublet line
+                l_j = np.linalg.norm([xtmp,ytmp,ztmp])
+                # Calculate parameters invloved in aproximate I_ij
+                Xr = np.array([recievingBox.x(0,-.5),recievingBox.y(0,-.5),\
+                    recievingBox.z(0,-.5)])
+                Xi = np.array([sendingBox.x(-1,.5),sendingBox.y(-1,.5),\
+                    sendingBox.z(-1,.5)])
+                Xc = np.array([sendingBox.x(0,.5),sendingBox.y(0,.5),\
+                    recievingBox.z(0,.5)])
+                Xo = np.array([sendingBox.x(1,.5),sendingBox.y(1,.5),\
+                    sendingBox.z(1,.5)])
+                e = 0.5*l_j
+                gamma_s = np.arctan(ztmp/ytmp)
+                if abs(gamma_s)<1e-6:
+                    gamma_s = 0.
+                gamma_r = np.arctan(ztmp_r/ytmp_r)
+                if abs(gamma_r)<1e-6:
+                    gamma_r = 0.
+                eta_0 = (Xr[1]-Xc[1])*np.cos(gamma_s)\
+                    +(Xr[2]-Xc[2])*np.sin(gamma_s)
+                zeta_0 = -(Xr[1]-Xc[1])*np.sin(gamma_s)\
+                    +(Xr[2]-Xc[2])*np.cos(gamma_s)
+                r1 = np.linalg.norm([eta_0,zeta_0])
+                # Calculate the Kernel function at the inboard, middle, and
+                # outboard locations
+                Ki = K(Xr,Xi,gamma_r,gamma_s,M,U,omega,r1)
+                Kc = K(Xr,Xc,gamma_r,gamma_s,M,U,omega,r1)
+                Ko = K(Xr,Xo,gamma_r,gamma_s,M,U,omega,r1)
+                A = (Ki-2*Kc+Ko)/(2*e**2)
+                B = (Ko-Ki)/(2*e)
+                C = Kc
+                # Determine if planar or non-planar I_ij definition should be used
+                if abs(zeta_0)<1e-6:
+                    I_ij = (eta_0**2*A+eta_0*B+C)*(1./(eta_0-e)-1./(eta_0+e))+\
+                        (B/2+eta_0*A)*np.log(((eta_0-e)/(eta_0+e))**2)
+                else:
+                    I_ij = ((eta_0**2-zeta_0**2)*A+eta_0*B+C)*zeta_0**(-1)*\
+                        np.arctan(2*e*abs(zeta_0)/(r1**2-e**2))+\
+                        (B/2+eta_0*A)*np.log((r1**2-2*eta_0*e+e**2)/\
+                        (r1**2+2*eta_0*e+e**2))+2*e*A
+                D[i,j]=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
+            Area[i,i] = recievingBox.Area
+            # Assemble total derivative matrix [W]
+            for NID, factor in recievingBox.DOF.iteritems():
+                col = self.nodeDict[NID]
+                W[i,col*6+2] = -1j*kr/br*recievingBox.DOF[NID]
+                W[i,col*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[NID]
+            '''if not -1 in recievingBox.DOF.keys():
+                nids = recievingBox.DOF.keys()
+                col1 = self.nodeDict[nids[0]]
+                W[i,col1*6+2] = -1j*kr/br*recievingBox.DOF[nids[0]]
+                W[i,col1*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[nids[0]]
+                col2 = self.nodeDict[nids[1]]
+                W[i,col2*6+2] = -1j*kr/br*recievingBox.DOF[nids[1]]
+                W[i,col2*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[nids[1]]'''
+        # Create integration matrix [B]
+        B = br/kr*np.dot(np.imag(W.T),Area)
+        self.D = D
+        self.chd = 0.5*rho*(U/(br*omega))**2*br**2*np.dot(B,np.dot(np.linalg.inv(D),W))
+            
+                
+
+class LoadSet:
+    def __init__(self,LID):
+        self.LID = LID
+        self.pointLoads = {}
+        self.distributedLoads = {}
+    def addPointLoad(self,F,NID):
+        if NID in self.pointLoads.keys():
+            self.pointLoads[NID]=self.pointLoads[NID]+F
+        else:
+            self.addDistributedLoad[NID]=F
+    def addDistributedLoad(self,f,eid):
+        if eid in self.distributedLoads.keys():
+            self.distributedLoads[eid]=self.distributedLoads[eid]+f
+        else:
+            self.distributedLoads[eid]=f

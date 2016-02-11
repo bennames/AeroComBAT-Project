@@ -4,6 +4,7 @@ from Structures import CQUAD4
 import numpy as np
 
 
+
 class Mesher:
     def boxBeam(xsect,meshSize,x0,xf,nodeDict,elemDict,matlib,**kwargs):
         # INITIALIZE INPUTS
