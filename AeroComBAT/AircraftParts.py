@@ -2,7 +2,7 @@
 # HEPHAESTUS PYTHON MODULES
 # =============================================================================
 from Structures import WingSection, Laminate
-from FEM import Model
+from Aerodynamics import CAERO1
 # =============================================================================
 # IMPORT SCIPY MODULES
 # =============================================================================
@@ -12,7 +12,7 @@ import mayavi.mlab as mlab
 # WING OPTIMIZATION CLASS
 # =============================================================================
 class Wing:
-    def __init__(self,p1,p2,croot,ctip,x0_spar,xf_spar,Y_rib,n_ply,m_ply,mat_lib,**kwargs):
+    def __init__(self,PID,p1,p2,croot,ctip,x0_spar,xf_spar,Y_rib,n_ply,m_ply,mat_lib,**kwargs):
         """Creates a wing object.
         
         This object represents a wing and contains both structural and
@@ -38,7 +38,7 @@ class Wing:
             n_ply at a given orientation.
         - `mat_lib (obj)`: A material library containing all of the material
             objets to be used in the model.
-        - `WID (int)`: The integer ID for the wing object.
+        - `PID (int)`: The integer ID for the wing part object.
         - `name (str)`: The name of the airfoil section to be used for cross
             section generation.
         - `wing_SNID (int)`: The first node ID associated with the wing.
@@ -57,12 +57,12 @@ class Wing:
         """
         #The type of the object
         self.type='wing'
-        # Initialize the FEM Model
-        self.model = Model()
         # Initialize the array holding wing sections
         self.wingSects = []
         # Initialize the wing ID
-        self.PID = kwargs.pop('WID',0)
+        self.PID = PID
+        # Initialize Lifting surface Array
+        self.liftingSurfaces = {}
         # Name of the airfoil section (used to generate the OML shape of the x-section)
         name = kwargs.pop('name','NACA0012')
         # The initial starting node ID for the structural generation of the wing
@@ -111,8 +111,85 @@ class Wing:
             tmp_SB_SBID = tmpWingSect.SuperBeams[-1].SBID+1
             self.wingSects += [tmpWingSect]
             SXID = max(self.wingSects[i].XIDs)+1
-            self.model.addElements(tmpWingSect.SuperBeams)
-    def addConstraint(self,NID,const):
+            #self.model.addElements(tmpWingSect.SuperBeams)
+    def addLiftingSurface(self,SID,x1,x2,x3,x4,nspan,nchord):
+        # Create the lifting surface
+        tmpLiftSurf = CAERO1(SID,x1,x2,x3,x4,nspan,nchord)
+        # Create a temporary dictionary of CQUADA's to iterate through later
+        Dict = tmpLiftSurf.CQUADAs.copy()
+        # Store it in the wing object
+        self.liftingSurfaces[SID]=tmpLiftSurf
+        # CONNECT AERO BOXES TO ELEMENTS
+        # For all elements in the wing
+        for wingSect in self.wingSects:
+            for superBeam in wingSect.SuperBeams:
+                for EID, elem in superBeam.elems.iteritems():
+                    # For all panels in the lifting surface
+                    tmpDict = Dict.copy()
+                    for PANID, panel in tmpDict.iteritems():
+                        # Determine the y-coord of the recieving point
+                        y34pan = panel.y(-0.5,0)
+                        # If the panel y-coord is between the nodes of the elem
+                        if (y34pan-elem.n1.x[1])*(y34pan-elem.n2.x[1])<0:
+                            # The panel's displacement can be described by the
+                            # displacements of the nodes used by the element.
+                            # Determine the x-coord in the elem corresponding
+                            # to the location of the panel recieving point
+                            t = (y34pan-elem.n1.x[1])/(elem.n2.x[1]-elem.n1.x[1])
+                            # Determine the nodal contributions of the displacements
+                            panel.DOF[elem.n1.NID] = t
+                            panel.DOF[elem.n2.NID] = 1-t
+                            # Determine the moment arm of the box acting on the
+                            # beam
+                            x34elem = elem.n1.x[0]+t*(elem.n2.x[0]-elem.n1.x[0])
+                            x34pan = panel.x(-0.5,0)
+                            panel.xarm = x34pan-x34elem
+                            # Remove this reference from the dictionary so it
+                            # is not iterated over again for the next element
+                            del Dict[PANID]
+                for NID, node in superBeam.nodes.iteritems():
+                    # For all panels in the lifting surface
+                    tmpDict = Dict.copy()
+                    for PANID, panel in tmpDict.iteritems():
+                        # Determine the y-coord of the recieving point
+                        y34pan = panel.y(-0.5,0)
+                        # If the panel y-coord is between the nodes of the elem
+                        if abs(y34pan-node.x[1])<1e-6:
+                            # The panel's displacement can be described by the
+                            # displacements of the nodes used by the element.
+                            # Determine the x-coord in the elem corresponding
+                            # to the location of the panel recieving point
+                            t = 1
+                            # Determine the nodal contributions of the displacements
+                            panel.DOF[node.NID] = t
+                            # Determine the moment arm of the box acting on the
+                            # beam
+                            x34node = node.x[0]
+                            x34pan = panel.x(-0.5,0)
+                            panel.xarm = x34pan-x34node
+                            # Remove this reference from the dictionary so it
+                            # is not iterated over again for the next element
+                            del Dict[PANID]
+        if len(Dict.keys())>0:
+            print('Warning, some elements could not have their displacements'+
+                ' matched by beam elements. This includes:')
+        for PANID, panel in Dict.iteritems():
+            #panel.DOF[-1] = None
+            print('CQUADA %d' %(PANID))
+    def plotRigidWing(self,**kwargs):
+        figName = kwargs.pop('figName','Rigid Wing')
+        # Chose the color of the beam, defaults to black, accepts tuple
+        clr = kwargs.pop('color',(0,0,0))
+        # Chose the number of cross-sections to be plotted. By default this is 2
+        # One at the beggining and one at the end of the super beam
+        numXSects = kwargs.pop('numXSects',2)
+        mlab.figure(figure=figName)
+        for sects in self.wingSects:
+            sects.plotRigid(figName=figName,clr=clr,numXSects=numXSects)
+        if len(self.liftingSurfaces)>0:
+            for SID, surface in self.liftingSurfaces.iteritems():
+                surface.plotLiftingSurface(figName=figName)
+    '''def addConstraint(self,NID,const):
         #INPUTS:
         #nid - The node you want to constrain
         #const - a numpy array containing integers from 1-6 or a string description.
@@ -206,4 +283,4 @@ class Wing:
                 sects.plotDispl(figName=figName,clr=clr,numXSects=numXSects,\
                     contLim=contLim,warpScale=warpScale,displScale=displScale,\
                     contour=contour,analysis_name=analysis_name,mode=mode)
-        mlab.colorbar()
+        mlab.colorbar()'''
