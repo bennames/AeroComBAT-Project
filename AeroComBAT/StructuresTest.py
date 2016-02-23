@@ -14,38 +14,41 @@ class NodeTest(unittest.TestCase):
     def __init__(self):
         """Constructor does nothing and is therefore left blank.
         """
+        #global myNode;
+        self.myNode = None
+        
     def setUp3(self):
         """Creates a fresh Node object with three defined coordinates
         """
-        myNode = Node(0, [1.,2.,3.]);
+        self.myNode = Node(0, [1.,2.,3.]);
         
     def setUp2(self):
         """Creates a fresh Node object with two defined coordinates
         """
-        myNode = Node(0, [1.,2.]);
+        self.myNode = Node(0, [1.,2.]);
     
     def setUp1(self):
         """Creates a fresh Node object with one defined coordinate
         """
-        myNode = Node(0, [1.]);
+        self.myNode = Node(0, [1.]);
         
     def setUp0(self):
         """Creates a fresh Node object with no defined coordinates
         """
-        myNode = Node(0, []);
+        self.myNode = Node(0, []);
         
         
     def testLengths(self):
         """Tests to see if created Nodes have correctly defined coordinates
         """
-        setUp0();
-        self.assertEqual([0.,0.,0.], myNode.x);
-        setUp1();
-        self.assertEqual([1.,0.,0.], myNode.x);
-        setUp2();
-        self.assertEqual([1.,2.,0.], myNode.x);
-        setUp3();
-        self.assertEqual([1.,2.,3.], myNode.x);
+        self.setUp0();
+        self.assertEqual([0.,0.,0.], self.myNode.x);
+        self.setUp1();
+        self.assertEqual([1.,0.,0.], self.myNode.x);
+        self.setUp2();
+        self.assertEqual([1.,2.,0.], self.myNode.x);
+        self.setUp3();
+        self.assertEqual([1.,2.,3.], self.myNode.x);
         
     def testSetUpErrors(self):
         """Tests to see if the Node class will create a Node object with a 
@@ -53,18 +56,20 @@ class NodeTest(unittest.TestCase):
         """
         while True:
             try:
-                myNode = Node('a', []);
+                self.myNode = Node('a', []);
                 break;
             except TypeError as e:
                 print(e);
                 
         while True:
             try:
-                myNode = Node(1, [1.,2.,3.,4.]);
+                self.myNode = Node(1, [1.,2.,3.,4.]);
                 break;
             except ValueError as e:
                 print(e);
+        return;
                 
+    
                 
 
            
