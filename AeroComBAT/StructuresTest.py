@@ -6,6 +6,8 @@ Created on Tue Feb 16 22:20:33 2016
 """
 import unittest
 
+from Structures import Node
+
 class NodeTest(unittest.TestCase):
     """Creates a test for the Node class.
     """
@@ -25,15 +27,44 @@ class NodeTest(unittest.TestCase):
     def setUp1(self):
         """Creates a fresh Node object with one defined coordinate
         """
-        nyNode = Node(0, [1.]);
+        myNode = Node(0, [1.]);
         
     def setUp0(self):
         """Creates a fresh Node object with no defined coordinates
         """
         myNode = Node(0, []);
         
+        
     def testLengths(self):
         """Tests to see if created Nodes have correctly defined coordinates
         """
         setUp0();
-        self.assertEqual([0.,0.,0.], myNode.x)
+        self.assertEqual([0.,0.,0.], myNode.x);
+        setUp1();
+        self.assertEqual([1.,0.,0.], myNode.x);
+        setUp2();
+        self.assertEqual([1.,2.,0.], myNode.x);
+        setUp3();
+        self.assertEqual([1.,2.,3.], myNode.x);
+        
+    def testSetUpErrors(self):
+        """Tests to see if the Node class will create a Node object with a 
+           non-integer Node ID
+        """
+        while True:
+            try:
+                myNode = Node('a', []);
+                break;
+            except TypeError as e:
+                print(e);
+                
+        while True:
+            try:
+                myNode = Node(1, [1.,2.,3.,4.]);
+                break;
+            except ValueError as e:
+                print(e);
+                
+                
+
+           
