@@ -108,7 +108,7 @@ class Node:
             self.x = x
         else:
             raise ValueError('An array of length 3 or greater was provided'\
-                'for the 3 dimensional coordinate.')
+                ' for the 3 dimensional coordinate.')
         # Initialize the summary info:
         self.summary = tabulate(([[self.NID,self.x]]),('NID','Coordinates'))
     def printSummary(self):

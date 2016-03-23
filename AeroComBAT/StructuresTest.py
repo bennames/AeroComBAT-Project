@@ -6,17 +6,10 @@ Created on Tue Feb 16 22:20:33 2016
 """
 import unittest
 
-from Structures import Node
-
+from Structures import Node, Material
 
 
 class NodeTest(unittest.TestCase):
-    """Creates a test for the Node class.
-    """
-    def __init__(self):
-        """Constructor declares Node object for testing.
-        """
-        self.myNode = None
     
     def setUp3(self):
         """Creates a fresh Node object with three defined coordinates
@@ -38,6 +31,9 @@ class NodeTest(unittest.TestCase):
         """
         self.myNode = Node(0, [])
         
+    def tearDown(self):
+        self.myNode.dispose()
+        self.myNode = None
         
     def testLengths(self):
         """Tests to see if created Nodes have correctly defined coordinates
@@ -50,26 +46,51 @@ class NodeTest(unittest.TestCase):
         self.assertEqual([1.,2.,0.], self.myNode.x)
         self.setUp3()
         self.assertEqual([1.,2.,3.], self.myNode.x)
+        self.tearDown()
     
     def testSetUpErrors(self):
         """Tests to see if the Node class will create a Node object with a 
            non-integer Node ID
         """
-        while True:
-            try:
-                self.myNode = Node('a', [])
-                break
-            except TypeError as e:
-                print(e)
+        try:
+            self.myNode = Node('a', [])
+        except TypeError as e:
+            print(e)
                 
-        while True:
-            try:
-                self.myNode = Node(1, [1.,2.,3.,4.])
-                break
-            except ValueError as e:
-                print(e)
-                
-if __name__ == '__main__': unittest.main()
+        try:
+            self.myNode = Node(1, [1.,2.,3.,4.])
+        except ValueError as e:
+            print(e)
+        self.tearDown()
                 
 
+    
+class MaterialTest(unittest.TestCase):
+    
+    def setUp(self):
+        self.myMaterial = Material(1,'iron','iso',[210.,0.2,7850.],0.1,{})
+        
+    def tearDown(self):
+        self.myMaterial.dispose()
+        self.myMaterial = None
+    
+    def testMaterial(self):
+        self.setUp()
+        self.assertEqual(220.,self.myMaterial.E1)
+
+    
+if __name__ == '__main__':
+    test_classes_to_run = [NodeTest, MaterialTest]
+
+    loader = unittest.TestLoader()
+    suites_list = []
+    for test_class in test_classes_to_run:
+        suite = loader.loadTestsFromTestCase(test_class)
+        suites_list.append(suite)
+
+    print(suites_list)
+    big_suite = unittest.TestSuite(suites_list)
+
+    runner = unittest.TextTestRunner()
+    results = runner.run(big_suite)
            
