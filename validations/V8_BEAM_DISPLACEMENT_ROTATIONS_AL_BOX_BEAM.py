@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath('..'))
 from AeroComBAT.Structures import MaterialLib
 from AeroComBAT.AircraftParts import Wing
 import numpy as np
+from AeroComBAT.FEM import Model
 
 # Define the width of the cross-section
 x1 = -0.8990566037735849
@@ -32,21 +33,27 @@ n_ply = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 m_i = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
 noe_dens = 2
-wing1 = Wing(p1,p2,croot,ctip,x1,x2,Y_rib,n_ply,m_i,matLib,name='box',noe=noe_dens)
+wing1 = Wing(1,p1,p2,croot,ctip,x1,x2,Y_rib,n_ply,m_i,matLib,name='box',noe=noe_dens)
 sbeam1 = wing1.wingSects[0].SuperBeams[0]
 
+model  = Model()
+
+model.addAircraftParts([wing1])
+
+model.plotRigidModel(numXSects=10)
+
 # Apply the constraint for the model
-wing1.addConstraint(0,'fix')
+model.applyConstraints(0,'fix')
 
 # CASE 1:
 # Apply the case load
 tipLoad = np.array([-10000.,100000.,-300000.,35000.,60000.,10000.])
 F = {40:tipLoad}
-wing1.applyLoads(F=F)
+model.applyLoads(1,F=F)
 # Run the analysis
-wing1.staticAnalysis()
-wing1.plotDeformedWing(figName='V8 Case 1',numXSects=10,contLim=[0.,5.0e8],\
-    warpScale=100,displScale=10,contour='MaxPrin')
+model.staticAnalysis(1)
+model.plotDeformedModel(figName='V8 Case 1',numXSects=10,contLim=[0,293000],\
+    warpScale=10,displScale=2,contour='sig_33')
 # Write the beam displacements and rotations to a file
 sbeam1.writeDisplacements(fileName = 'V8_Case_1.csv')
 
@@ -58,6 +65,7 @@ def f(x):
     pz = 0
     tz = .2*c*(-1.0e3*x[2]**2+6e7*x[2]+1.0e6)
     return np.array([vx,vy,pz,tz])/1.0e4
+model.resetPointLoads()
 wing1.applyLoads(f=f,allElems=True)
 # Run the analysis
 wing1.staticAnalysis(resetPointLoads=True)

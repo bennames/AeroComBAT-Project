@@ -79,10 +79,18 @@ class Wing:
         n_orients = kwargs.pop('n_orients',4)
         # The number of laminates required to mesh the desired cross-section
         n_lams = kwargs.pop('n_lams',4)
+        # Laminate symmetry
+        lam_sym = kwargs.pop('lam_sym',False)
         # The maximum aspect ratio a 2D element may have in the cross-section
         meshSize = kwargs.pop('meshSize',4)
         # The reference axis to be loaded in the wing
         ref_ax = kwargs.pop('ref_ax','shearCntr')
+        # Chord vector for wing
+        chordVec = kwargs.pop('chordVec',np.array([1.,0.,0.]))
+        # Orientations of each ply in the lamiante
+        th_ply = kwargs.pop('th_ply',[0]*len(n_ply))
+        # Type of cross-section
+        typeXSect = kwargs.pop('typeXSect','box')
         # Calculate the wing span:
         b_s = np.linalg.norm(p2-p1)
         # Lambda function to calculate average panel chord length on on the fly.
@@ -96,7 +104,8 @@ class Wing:
                 # Select vectors of thicknesses and MID's:
                 n_i_tmp = n_ply[i*n_lams+n_orients*j:i*n_lams+n_orients*j+n_orients]
                 m_i_tmp = m_ply[i*n_lams+n_orients*j:i*n_lams+n_orients*j+n_orients]
-                section_lams += [Laminate(n_i_tmp,m_i_tmp,mat_lib,sym=True)]
+                th_i_tmp = th_ply[i*n_lams+n_orients*j:i*n_lams+n_orients*j+n_orients]
+                section_lams += [Laminate(n_i_tmp,m_i_tmp,mat_lib,sym=lam_sym,th=th_i_tmp)]
             # Compile all information needed to create xsection and beams
             # Starting coordiante of super beam
             tmp_x1 = p1+Y_rib[i]*(p2-p1)
@@ -104,7 +113,8 @@ class Wing:
             tmp_x2 = p1+Y_rib[i+1]*(p2-p1)
             tmpWingSect = WingSection(tmp_x1,tmp_x2,chord,name,x0_spar,xf_spar,\
                 section_lams,mat_lib,noe,SSBID=tmp_SB_SBID,SNID=tmp_SB_SNID,\
-                SEID=tmp_SB_SEID,meshSize=meshSize,SXID=SXID,ref_ax=ref_ax)
+                SEID=tmp_SB_SEID,meshSize=meshSize,SXID=SXID,ref_ax=ref_ax,\
+                chordVec=chordVec,typeXSect=typeXSect)
             # Prepare ID values for next iteration
             tmp_SB_SNID = tmpWingSect.SuperBeams[-1].enid
             tmp_SB_SEID = max(tmpWingSect.SuperBeams[-1].elems.keys())+1

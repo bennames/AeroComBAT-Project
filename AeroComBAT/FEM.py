@@ -31,6 +31,8 @@ import scipy as sci
 from tabulate import tabulate
 import mayavi.mlab as mlab
 from Aerodynamics import K
+from Aerodynamics import calcAIC as jAIC
+
 # =============================================================================
 # DEFINE AeroComBAT FEM CLASS
 # =============================================================================
@@ -232,6 +234,24 @@ class Model:
                                 'already used in the model. Consider'+
                                 'renumbering your aero panel IDs' %(PANID))
                             self.aeroBox[PANID]=panel
+                    # Initialize an array of PANIDs
+                    PANIDs = self.aeroBox.keys()
+                    # Initialize the number of panels
+                    numPan = len(PANIDs)
+                    Area = np.zeros((numPan,numPan))
+                    # For all the recieving panels
+                    Wd = np.zeros((numPan,len(self.nids)*6),dtype=complex)
+                    for i in range(0,numPan):
+                        recievingBox = self.aeroBox[PANIDs[i]]
+                        Area[i,i] = recievingBox.Area
+                        for NID, factor in recievingBox.DOF.iteritems():
+                            col = self.nodeDict[NID]
+                            Wd[i,col*6+2] = -1j*factor
+                            Wd[i,col*6+4] = (1.+1j*recievingBox.xarm)*factor
+                    self.AeroArea = Area
+                    
+                    self.Wd = Wd
+                    self.Bd = np.dot(np.imag(Wd.T),self.AeroArea)
             self.parts[part.PID] = part
     def resetPointLoads(self):
         """A method to reset the point loads applied to the model.
@@ -247,7 +267,8 @@ class Model:
         - None
         
         """
-        self.Qg = np.zeros(6*len(self.nids))
+        #self.Qg = np.zeros(6*len(self.nids))
+        self.Loads = {}
     def resetResults(self):
         """A method to reset the results in a model.
 
@@ -297,7 +318,8 @@ class Model:
             # For all of the elements in the elems array
             for elem in self.elems:
                 # Apply the distributed load to the element
-                elem.applyDistributedLoad(tmpLoad.distributedLoads[elem.EID])
+                if elem.EID in tmpLoad.distributedLoads.keys():
+                    elem.applyDistributedLoad(tmpLoad.distributedLoads[elem.EID])
                 # Determine the node ID's associated with the elem
                 nodes = [elem.n1.NID,elem.n2.NID]
                 # For both NID's
@@ -316,12 +338,12 @@ class Model:
                         Kg[6*row:6*row+6,6*col:6*col+6] = Kg[6*row:6*row+6,6*col:6*col+6]\
                                                         +elem.Ke[6*i:6*i+6,6*j:6*j+6]
             # Apply the point loads to the model
-            for NID in tmpLoad.keys():
+            for NID in tmpLoad.pointLoads.keys():
                 # The row in the global matrix (an integer correspoinding to
                 # the NID)
                 row = self.nodeDict[NID]
                 Fg[6*row:6*row+6,:]=Fg[6*row:6*row+6,:]\
-                    +np.reshape(tmpLoad[NID],(6,1))
+                    +np.reshape(tmpLoad.pointLoads[NID],(6,1))
             # Save the global stiffness matrix
             self.Kg = Kg
             # Save the global force vector
@@ -708,8 +730,9 @@ class Model:
         self.assembleGlobalModel(3)
         eigs,umode = sci.linalg.eig(self.Kgr,self.Mgr)
         idx = eigs.argsort()
-        self.eigs = np.sqrt(np.array(eigs[idx],dtype=float))/(2*np.pi)
+        self.freqs = np.sqrt(np.array(eigs[idx],dtype=float))/(2*np.pi)
         umode = np.array(umode[:,idx],dtype=float)
+        self.umoder = umode
         #Generate list of constraint keys
         ckeys = sorted(list(self.const.keys()))
         #For each node constrained
@@ -728,6 +751,201 @@ class Model:
                 Umode1 = umode[6*self.nodeDict[nid1]:6*self.nodeDict[nid1]+6,:]
                 Umode2 = umode[6*self.nodeDict[nid2]:6*self.nodeDict[nid2]+6,:]
                 elem.saveNodalDispl(Umode1,Umode2,analysis_name=analysis_name)
+    def flutterAnalysis(self,U_vec,kr_vec,M_vec,b,rho_0,nModes,**kwargs):
+        """Conducts a flutter analysis.
+        
+        This method calculates the flutter modes and damping provided
+        velocities, reduced frequencies, Mach numbers, and the reference
+        semi-chord.
+        """
+        analysis_name = kwargs.pop('analysis_name','analysis_untitled')
+        rho_rat = kwargs.pop('rho_rat',np.ones(len(U_vec)))
+        g = kwargs.pop('g',0.)
+        symxz = kwargs.pop('symxz',False)
+        #Generate list of constraint keys
+        ckeys = sorted(list(self.const.keys()))
+        # Assemble Kgr and Mgr matricies
+        #self.assembleGlobalModel(3)
+        self.normalModesAnalysis()
+        normalModes = self.umode
+        # Number of DOF for the global system
+        DOF = np.size(self.Kg,axis=0)
+        # Create flutter point objects
+        self.flutterPoints = {}
+        for i in range(0,nModes):
+            self.flutterPoints[i] = FlutterPoint(i,U_vec,nModes)
+        # Determine the modally reduced stiffness matrix:
+        #for k in range(0,len(ckeys)):
+        #    # Establish temporary node constrined
+        #    tmpconst = self.const[ckeys[k]]
+        #    # For each DOF contrained on the temporary node
+        #    for l in range(0,len(tmpconst)):
+        #        # Insert a zero for the constrained degrees of Freedom
+        #        modes = np.insert(modes,self.nodeDict[ckeys[k]]*6+\
+        #            (tmpconst[l]-1),np.zeros((1,len(eigs))),axis=0)
+        nrmModes = self.umoder[:,0:nModes]
+        Kgrm = np.dot(nrmModes.T,np.dot(self.Kgr,nrmModes))
+        Mgrm = np.dot(nrmModes.T,np.dot(self.Mgr,nrmModes))
+        
+        self.TestEig = []
+        self.TestMAC = []
+        self.TestMode = []
+        # For all reduced frequencies
+        for kr, M in zip(kr_vec, M_vec):
+            print(kr)
+            #tmpModes = np.copy(normalModes)
+            tmpModes = np.eye(nModes)
+            self.calcAIC(M,kr,b,symxz=symxz)
+            for U, rhoRat in zip(U_vec, rho_rat):
+                # Calculate the Qaic multiplied by dynamic pressure
+                #Qaicr = self.Qaicr*0.5*rhoRat*rho_0*U**2
+                Qaicrm = np.dot(nrmModes.T,np.dot(self.Qaicr*0.5*rhoRat*rho_0*U**2,nrmModes))
+                #eigs, modes = sci.linalg.eig(-np.dot(np.linalg.inv(self.Mgr),(1+1j*g)*self.Kgr-Qaicr))
+                eigs, modes = sci.linalg.eig(-np.dot(np.linalg.inv(Mgrm),(1+1j*g)*Kgrm-Qaicrm))
+                eigs = np.sqrt(eigs)
+                        #eigs[k]=np.conj(eigs[k])
+                #self.testEigs = eigs
+                #raise ValueError('Test')
+                #eigs, modes = sci.linalg.eig(A,B)
+                # For each node constrained
+                
+                for k in range(0,len(eigs)):
+                    if np.imag(eigs[k])<0:
+                        eigs[k]=-eigs[k]
+                # MAC
+                #MAC = np.divide(np.dot(modes.T,np.conj(tmpModes))**2,\
+                #    np.multiply(np.dot(modes.T,np.conj(modes)),np.dot(tmpModes.T,np.conj(tmpModes))))
+                MAC = np.zeros((np.size(modes,axis=1),np.size(modes,axis=1)))
+                for i in range(0,np.size(modes,axis=1)):
+                    for j in range(0,np.size(modes,axis=1)):
+                        #v0 = tmpModes[:,j]
+                        #v1 = modes[:,i]
+                        #eig0 = 1/eigs[j]
+                        #eig1 = 1/eigs[i]
+                        #num = (abs(np.dot(np.conj(v0),v1))/abs(np.conj(eig0)+eig1)+\
+                        #    abs(np.dot(v0,v1))/abs(eig0+eig1))**2
+                        #den = (np.dot(np.conj(v0),v0)/(2*abs(np.real(eig0)))+\
+                        #    abs(np.dot(v0,v0))/(2*abs(eig0)))*\
+                        #    (np.dot(np.conj(v1),v1)/(2*abs(np.real(eig1)))+\
+                        #    abs(np.dot(v1,v1))/(2*abs(eig1)))
+                        MAC[i,j] = abs(np.dot(np.conj(tmpModes[:,j]),modes[:,i])**2/\
+                            (np.dot(tmpModes[:,j],np.conj(tmpModes[:,j]))\
+                            *np.dot(modes[:,i],np.conj(modes[:,i]))))
+                        #MAC[i,j] = num/den
+                #MAC = np.dot(tmpModes.T,np.conj(modes))**2
+                self.MAC = MAC
+                idx = []
+                for i in range(0,np.size(MAC,axis=1)):
+                    idx += [np.argmax(MAC[:,i])]
+                self.eigs = eigs
+                #idx = np.imag(eigs).argsort()
+                p = eigs[idx]
+                self.p = p
+                modes = modes[:,idx]
+                self.idx = idx
+                self.tmpModes = tmpModes
+                tmpModes = modes
+                self.modes = modes
+                #p = np.sqrt(eigs[0:nModes])
+                omega_root = np.imag(p)
+                gamma_root = np.real(p)/omega_root
+                omega_aero = kr*U/b
+                #raise ValueError('Test')
+                #if U==U_vec[13] and kr==kr_vec[1]:
+                #    raise ValueError('test')
+                for i in range(0,nModes):
+                    #print(omega_root[i])
+                    self.flutterPoints[i].saveSol(U,omega_aero,\
+                        omega_root[i],gamma_root[i],np.real(modes[:,i]))
+        for FPID, flutterPoint in self.flutterPoints.iteritems():
+            flutterPoint.interpOmegaRoot()
+            
+    def jitflutterAnalysis(self,U_vec,kr_vec,M_vec,b,rho_0,nModes,**kwargs):
+        """Conducts a flutter analysis.
+        
+        This method calculates the flutter modes and damping provided
+        velocities, reduced frequencies, Mach numbers, and the reference
+        semi-chord.
+        """
+        analysis_name = kwargs.pop('analysis_name','analysis_untitled')
+        rho_rat = kwargs.pop('rho_rat',np.ones(len(U_vec)))
+        g = kwargs.pop('g',0.)
+        symxz = kwargs.pop('symxz',False)
+        # Assemble Kgr and Mgr matricies
+        #self.assembleGlobalModel(3)
+        self.normalModesAnalysis()
+        # Create flutter point objects
+        self.flutterPoints = {}
+        for i in range(0,nModes):
+            self.flutterPoints[i] = FlutterPoint(i,U_vec,nModes)
+        nrmModes = self.umode[:,0:nModes]
+        Kgm = np.dot(nrmModes.T,np.dot(self.Kg,nrmModes))
+        Mgm = np.dot(nrmModes.T,np.dot(self.Mg,nrmModes))
+        delta_x_vec = []
+        sweep_vec = []
+        l_vec = []
+        dihedral_vec = []
+        numPanels = len(self.aeroBox)
+        Xr_vec = np.zeros((numPanels,3))
+        Xi_vec = np.zeros((numPanels,3))
+        Xc_vec = np.zeros((numPanels,3))
+        Xo_vec = np.zeros((numPanels,3))
+        for PANID, panel in self.aeroBox.iteritems():
+            delta_x_vec += [panel.delta_x]
+            sweep_vec += [panel.sweep]
+            l_vec += [panel.l]
+            dihedral_vec += [panel.dihedral]
+            Xr_vec[PANID,:] = panel.Xr
+            Xi_vec[PANID,:] = panel.Xi
+            Xc_vec[PANID,:] = panel.Xc
+            Xo_vec[PANID,:] = panel.Xo
+        # For all reduced frequencies
+        for kr, M in zip(kr_vec, M_vec):
+            print(kr)
+            tmpModes = np.eye(nModes)
+            D = jAIC(M,kr,b,delta_x_vec,sweep_vec,l_vec,dihedral_vec,\
+                Xr_vec,Xi_vec,Xc_vec,Xo_vec,symxz=symxz)
+            W = np.real(self.Wd)+1j*kr/b*np.imag(self.Wd)
+            Qaic = np.dot(self.Bd,np.dot(np.linalg.inv(D),W))
+            for U, rhoRat in zip(U_vec, rho_rat):
+                # Calculate the Qaic multiplied by dynamic pressure
+                Qaicm = np.dot(nrmModes.T,np.dot(Qaic*0.5*rhoRat*rho_0*U**2,nrmModes))
+                eigs, modes = sci.linalg.eig(-np.dot(np.linalg.inv(Mgm),(1+1j*g)*Kgm-Qaicm))
+                eigs = np.sqrt(eigs)
+                for k in range(0,len(eigs)):
+                    if np.imag(eigs[k])<0:
+                        eigs[k]=-eigs[k]
+                # MAC
+                MAC = np.zeros((np.size(modes,axis=1),np.size(modes,axis=1)))
+                for i in range(0,np.size(modes,axis=1)):
+                    for j in range(0,np.size(modes,axis=1)):
+                        MAC[i,j] = abs(np.dot(np.conj(tmpModes[:,j]),modes[:,i])**2/\
+                            (np.dot(tmpModes[:,j],np.conj(tmpModes[:,j]))\
+                            *np.dot(modes[:,i],np.conj(modes[:,i]))))
+                self.MAC = MAC
+                idx = []
+                for i in range(0,np.size(MAC,axis=1)):
+                    idx += [np.argmax(MAC[:,i])]
+                self.eigs = eigs
+                #idx = np.imag(eigs).argsort()
+                p = eigs[idx]
+                self.p = p
+                modes = modes[:,idx]
+                self.idx = idx
+                self.tmpModes = tmpModes
+                tmpModes = modes
+                self.modes = modes
+                #p = np.sqrt(eigs[0:nModes])
+                omega_root = np.imag(p)
+                gamma_root = np.real(p)/omega_root
+                omega_aero = kr*U/b
+                for i in range(0,nModes):
+                    #print(omega_root[i])
+                    self.flutterPoints[i].saveSol(U,omega_aero,\
+                        omega_root[i],gamma_root[i],np.real(modes[:,i]))
+        for FPID, flutterPoint in self.flutterPoints.iteritems():
+            flutterPoint.interpOmegaRoot()            
+            
     def plotRigidModel(self,**kwargs):
         """Plots the rigid model.
         
@@ -805,7 +1023,7 @@ class Model:
         # eigenvalue solution.
         mode = kwargs.pop('mode',0)
         mlab.figure(figure=figName)
-        for part in self.parts:
+        for PID, part in self.parts.iteritems():
             if part.type=='wing':
                 for sects in part.wingSects:
                     sects.plotDispl(figName=figName,clr=clr,numXSects=numXSects,\
@@ -813,7 +1031,7 @@ class Model:
                         contour=contour,analysis_name=analysis_name,mode=mode)
         mlab.colorbar()
         
-    def CalcAICs(self,M,U,omega,kr,br,rho):
+    def calcAIC(self,M,kr,br,symxz=False):
         # Calculate the AIC matricies
         # Initialize an array of PANIDs
         PANIDs = self.aeroBox.keys()
@@ -821,8 +1039,8 @@ class Model:
         numPan = len(PANIDs)
         # Initialize the complex [D] matrix
         D = np.zeros((numPan,numPan),dtype=complex)
-        # Initialize the Diagonal Box Area Matrix
-        Area = np.zeros((numPan,numPan))
+        ## Initialize the Diagonal Box Area Matrix
+        #Area = np.zeros((numPan,numPan))
         # Initialize the [W] Matrix
         W = np.zeros((numPan,len(self.nids)*6),dtype=complex)
         # For all the recieving panels
@@ -832,36 +1050,39 @@ class Model:
             for j in range(0,numPan):
                 sendingBox = self.aeroBox[PANIDs[j]]
                 # Calculate average chord of sending box
-                delta_x_j = abs(sendingBox.x(0,1)-sendingBox.x(0,-1))
+                #delta_x_j = abs(sendingBox.x(0,1)-sendingBox.x(0,-1))
+                delta_x_j = sendingBox.delta_x
                 # Calculate sweep of sending box
-                xtmp = sendingBox.x(1,1)-sendingBox.x(-1,1)
+                '''xtmp = sendingBox.x(1,1)-sendingBox.x(-1,1)
                 ytmp = sendingBox.y(1,1)-sendingBox.y(-1,1)
-                lambda_j = np.arctan(xtmp/ytmp)
+                lambda_j = np.arctan(xtmp/ytmp)'''
+                lambda_j = sendingBox.sweep
                 # Calculate the length of the doublet line on sending box
-                xtmp = sendingBox.x(1,0.5)-sendingBox.x(-1,0.5)
+                '''xtmp = sendingBox.x(1,0.5)-sendingBox.x(-1,0.5)
                 ytmp = sendingBox.y(1,0.5)-sendingBox.y(-1,0.5)
                 ztmp = sendingBox.z(1,0.5)-sendingBox.z(-1,0.5)
+                l_j = np.linalg.norm([xtmp,ytmp,ztmp])'''
+                l_j = sendingBox.l
                 # Calculate y and z vectors for recieving box
-                ytmp_r = recievingBox.y(1,0.5)-recievingBox.y(-1,0.5)
-                ztmp_r = recievingBox.z(1,0.5)-recievingBox.z(-1,0.5)
-                # Calculate the length of the doublet line
-                l_j = np.linalg.norm([xtmp,ytmp,ztmp])
+                '''ytmp_r = recievingBox.y(1,0.5)-recievingBox.y(-1,0.5)
+                ztmp_r = recievingBox.z(1,0.5)-recievingBox.z(-1,0.5)'''
                 # Calculate parameters invloved in aproximate I_ij
-                Xr = np.array([recievingBox.x(0,-.5),recievingBox.y(0,-.5),\
+                '''Xr = np.array([recievingBox.x(0,-.5),recievingBox.y(0,-.5),\
                     recievingBox.z(0,-.5)])
                 Xi = np.array([sendingBox.x(-1,.5),sendingBox.y(-1,.5),\
                     sendingBox.z(-1,.5)])
                 Xc = np.array([sendingBox.x(0,.5),sendingBox.y(0,.5),\
-                    recievingBox.z(0,.5)])
+                    sendingBox.z(0,.5)])
                 Xo = np.array([sendingBox.x(1,.5),sendingBox.y(1,.5),\
-                    sendingBox.z(1,.5)])
-                e = 0.5*l_j
-                gamma_s = np.arctan(ztmp/ytmp)
-                if abs(gamma_s)<1e-6:
-                    gamma_s = 0.
-                gamma_r = np.arctan(ztmp_r/ytmp_r)
-                if abs(gamma_r)<1e-6:
-                    gamma_r = 0.
+                    sendingBox.z(1,.5)])'''
+                Xr = recievingBox.Xr
+                Xi = sendingBox.Xi
+                Xc = sendingBox.Xc
+                Xo = sendingBox.Xo
+                e = 0.5*l_j*np.cos(lambda_j)
+                #gamma_s = np.arctan(ztmp/ytmp)
+                gamma_s = sendingBox.dihedral
+                gamma_r = recievingBox.dihedral
                 eta_0 = (Xr[1]-Xc[1])*np.cos(gamma_s)\
                     +(Xr[2]-Xc[2])*np.sin(gamma_s)
                 zeta_0 = -(Xr[1]-Xc[1])*np.sin(gamma_s)\
@@ -869,9 +1090,13 @@ class Model:
                 r1 = np.linalg.norm([eta_0,zeta_0])
                 # Calculate the Kernel function at the inboard, middle, and
                 # outboard locations
-                Ki = K(Xr,Xi,gamma_r,gamma_s,M,U,omega,r1)
-                Kc = K(Xr,Xc,gamma_r,gamma_s,M,U,omega,r1)
-                Ko = K(Xr,Xo,gamma_r,gamma_s,M,U,omega,r1)
+                #if multiProcess:
+                #    print('start multiprocess')
+                #    Ki,Kc,Ko = K_multi(Xr,Xi,Xc,Xo,gamma_r,gamma_s,M,br,kr,r1)
+                Ki = K(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1)
+                Kc = K(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1)
+                Ko = K(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1)
+                #print('got Ks')
                 A = (Ki-2*Kc+Ko)/(2*e**2)
                 B = (Ko-Ki)/(2*e)
                 C = Kc
@@ -885,12 +1110,43 @@ class Model:
                         (B/2+eta_0*A)*np.log((r1**2-2*eta_0*e+e**2)/\
                         (r1**2+2*eta_0*e+e**2))+2*e*A
                 D[i,j]=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
-            Area[i,i] = recievingBox.Area
+                
+                if symxz:
+                    # Calculate sweep of sending box
+                    lambda_j = -lambda_j
+                    # Calculate parameters invloved in aproximate I_ij
+                    Xi[1] = -Xi[1]
+                    Xc[1] = -Xc[1]
+                    Xo[1] = -Xo[1]
+                    # Sending box dihedral
+                    gamma_s = -gamma_s
+                    eta_0 = (Xr[1]-Xc[1])*np.cos(gamma_s)\
+                        +(Xr[2]-Xc[2])*np.sin(gamma_s)
+                    zeta_0 = -(Xr[1]-Xc[1])*np.sin(gamma_s)\
+                        +(Xr[2]-Xc[2])*np.cos(gamma_s)
+                    r1 = np.linalg.norm([eta_0,zeta_0])
+                    Ki = K(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1)
+                    Kc = K(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1)
+                    Ko = K(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1)
+                    A = (Ki-2*Kc+Ko)/(2*e**2)
+                    B = (Ko-Ki)/(2*e)
+                    C = Kc
+                    # Determine if planar or non-planar I_ij definition should be used
+                    if abs(zeta_0)<1e-6:
+                        I_ij = (eta_0**2*A+eta_0*B+C)*(1./(eta_0-e)-1./(eta_0+e))+\
+                            (B/2+eta_0*A)*np.log(((eta_0-e)/(eta_0+e))**2)
+                    else:
+                        I_ij = ((eta_0**2-zeta_0**2)*A+eta_0*B+C)*zeta_0**(-1)*\
+                            np.arctan(2*e*abs(zeta_0)/(r1**2-e**2))+\
+                            (B/2+eta_0*A)*np.log((r1**2-2*eta_0*e+e**2)/\
+                            (r1**2+2*eta_0*e+e**2))+2*e*A
+                    D[i,j]+=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
+            #Area[i,i] = recievingBox.Area
             # Assemble total derivative matrix [W]
             for NID, factor in recievingBox.DOF.iteritems():
                 col = self.nodeDict[NID]
-                W[i,col*6+2] = -1j*kr/br*recievingBox.DOF[NID]
-                W[i,col*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[NID]
+                W[i,col*6+2] = -1j*kr/br*factor
+                W[i,col*6+4] = (1.+1j*kr/br*recievingBox.xarm)*factor
             '''if not -1 in recievingBox.DOF.keys():
                 nids = recievingBox.DOF.keys()
                 col1 = self.nodeDict[nids[0]]
@@ -900,9 +1156,31 @@ class Model:
                 W[i,col2*6+2] = -1j*kr/br*recievingBox.DOF[nids[1]]
                 W[i,col2*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[nids[1]]'''
         # Create integration matrix [B]
-        B = br/kr*np.dot(np.imag(W.T),Area)
+        B = br/kr*np.dot(np.imag(W.T),self.AeroArea)
         self.D = D
-        self.chd = 0.5*rho*(U/(br*omega))**2*br**2*np.dot(B,np.dot(np.linalg.inv(D),W))
+        self.W = W
+        chd = np.dot(B,np.dot(np.linalg.inv(D),W))
+        self.Qaic = chd
+        
+        # Determine the list of NIDs to be contrained
+        cnds = sorted(list(self.const.keys()))
+        # Initialize the number of equations to be removed from the system
+        deleqs = 0
+        # For the number of constrained NIDs
+        for i in range(0,len(self.const)):
+            # The row range to be removed associated with the NID
+            row = self.nodeDict[cnds[i]]
+            # Determine which DOF are to be removed
+            tmpcst = self.const[cnds[i]]
+            # For all of the degrees of freedom to be removed
+            for j in range(0,len(tmpcst)):
+                # Remove the row associated with the jth DOF for the ith NID
+                chd = np.delete(chd,row*6+(tmpcst[j]-1)-deleqs,axis=0)
+                chd = np.delete(chd,row*6+(tmpcst[j]-1)-deleqs,axis=1)
+                # Incremend the number of deleted equations
+                deleqs += 1
+        # Save the reduced global stiffness matrix
+        self.Qaicr = chd
             
                 
 
@@ -915,9 +1193,84 @@ class LoadSet:
         if NID in self.pointLoads.keys():
             self.pointLoads[NID]=self.pointLoads[NID]+F
         else:
-            self.addDistributedLoad[NID]=F
+            self.pointLoads[NID]=F
     def addDistributedLoad(self,f,eid):
         if eid in self.distributedLoads.keys():
             self.distributedLoads[eid]=self.distributedLoads[eid]+f
         else:
             self.distributedLoads[eid]=f
+            
+class FlutterPoint:
+    def __init__(self,FPID,U_vec,nModes):
+        self.FPID = FPID
+        self.U_vec = U_vec
+        self.omegaAeroDict = {}
+        self.omegaRootDict = {}
+        self.gammaDict = {}
+        self.shapeDict = {}
+        self.omega = []
+        self.gamma = []
+        self.shape = np.zeros((nModes,len(U_vec)))
+        for U in U_vec:
+            self.omegaAeroDict[U] = []
+            self.omegaRootDict[U] = []
+            self.gammaDict[U] = []
+            self.shapeDict[U] = []
+    def saveSol(self,U,omega_aero,omega_root,gamma_root,shape):
+        if U not in self.U_vec:
+            raise ValueError('A velocity is being written that wasnt provided')
+        self.omegaAeroDict[U] += [omega_aero]
+        self.omegaRootDict[U] += [omega_root]
+        self.gammaDict[U] += [gamma_root]
+        self.shapeDict[U] += [shape]
+    def interpOmegaRoot(self):
+        i = 0
+        for U in self.U_vec:
+            omegaAeros = self.omegaAeroDict[U]
+            omegaRoots = self.omegaRootDict[U]
+            gammaRoots = self.gammaDict[U]
+            shapes = self.shapeDict[U]
+            ind1 = 'none'
+            omegaDiff = np.array(omegaAeros)-np.array(omegaRoots)
+            for k in range(0,len(omegaAeros)-1):
+                if omegaDiff[k]*omegaDiff[k+1]<0:
+                    ind1 = k
+                    break
+            if ind1=='none':
+                print(U)
+                print(omegaAeros)
+                print(omegaRoots)
+                raise ValueError("Omega_aero never equals omega_root"
+                    "for mode %d at airspeed %4.2f . Consider adding more reduces "
+                    "frequency values." %(self.FPID,U))
+            # Linearly interpolating between frquencies, determine
+            # parameter t which can be used to interpolate frequencies
+            omega_aero1 = omegaAeros[ind1]
+            omega_aero2 = omegaAeros[ind1+1]
+            omega_root1 = omegaRoots[ind1]
+            omega_root2 = omegaRoots[ind1+1]
+            gamma_root1 = gammaRoots[ind1]
+            gamma_root2 = gammaRoots[ind1+1]
+            shape_root1 = np.array(shapes[ind1])
+            shape_root2 = np.array(shapes[ind1+1])
+            true_mode_omega = -(omega_aero2*omega_root1-omega_aero1*omega_root2)\
+                /(omega_aero1-omega_aero2-omega_root1+omega_root2)
+            true_mode_gamma = ((gamma_root2-gamma_root1)/(omega_aero2-omega_aero1))\
+                *(true_mode_omega-omega_aero1)+gamma_root1
+            true_mode_shape = (shape_root2-shape_root1)/(omega_aero2-omega_aero1)\
+                *(true_mode_omega-omega_aero1)+shape_root1
+            '''t = (omega_aero1-omega_root1)/((omega_root2-omega_root1)-\
+                (omega_aero2-omega_aero1))
+            true_mode_omega = omega_aero1+t*(omega_aero2-omega_aero1)
+            true_mode_gamma = gamma_root1+t*(gamma_root2-gamma_root1)
+            true_mode_shape = shape_root1+t*(shape_root2-shape_root1)'''
+            '''# Temporary dimension check for mode_shape
+            if not np.size(true_mode_shape,axis=1)==1:
+                array_height = np.size(true_mode_shape,axis=0)
+                array_length = np.size(true_mode_shape,axis=1)
+                return ValueError('true_mode_shape numpy arrays shape is:'+
+                    '%dx%d' %(array_height,array_length))'''
+            self.omega += [true_mode_omega/(np.pi*2)]
+            self.gamma += [true_mode_gamma]
+            self.shape[:,i] = true_mode_shape
+            i+=1

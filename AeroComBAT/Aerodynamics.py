@@ -9,63 +9,35 @@
 import numpy as np
 from tabulate import tabulate
 import mayavi.mlab as mlab
+from numba import jit
 
+# Define Constants for later sumation integration
+an = np.array([.24186198,-2.7918027,24.991079,-111.59196,271.43549,-305.75288,\
+    -41.18363,545.98537,-644.78155,328.72755,-64.279511])
+c = 0.372
+n = np.array(range(1,12))
 # Define Kernel Function Here
-def K(Xr,Xs,gamma_r,gamma_s,M,U,omega,r1):
-    # Define Constants for later sumation integration
-    an = [.24186198,-2.7918027,24.991079,-111.59196,271.43549,-305.75288,\
-        -41.18363,545.98537,-644.78155,328.72755,-64.279511]
-    c = 0.372
-    # Prandtl-Glauert Compressability Correction Factor
-    beta = (1-M**2)**(0.5)
+@jit(nopython=True)
+def K(Xr,Xs,gamma_r,gamma_s,M,br,kr,r1):
     # Vector pointing from sending node to recieving node
     x0 = Xr[0]-Xs[0]
     y0 = Xr[1]-Xs[1]
     z0 = Xr[2]-Xs[2]
-    # Reduced Frequency
-    k1 = omega*r1/U
-    # Another distance value?
-    R = (x0**2+beta**2*r1**2)**(0.5)
+    
     # Check if r1 is very small
     if abs(r1)<1e-6:
         if x0>0:
-            return 2*np.exp(-1j*omega*x0/U)
+            return 2*np.exp(-1j*kr*x0/br)
         else:
             return 0.
+    # Prandtl-Glauert Compressability Correction Factor
+    beta = (1-M**2)**(0.5)
+    # Reduced Frequency
+    k1 = r1*kr/br
+    # Another distance value?
+    R = (x0**2+beta**2*r1**2)**(0.5)
     # If r1 is not very small:
     u1 = (M*R-x0)/(beta**2*r1)
-    # Definition of I0 integral
-    def I0(u1,k1):
-        I_0=0.
-        for i in range(1,12):
-            I_0+=an[i-1]*np.exp(-i*c*u1)/(i**2*c**2+k1**2)*(i*c-1j*k1)
-        return I_0
-    '''def I0(u1,k1):
-        return 0.101*np.exp(-.329*u1)/(0.329+1j*k1)\
-            +0.899*np.exp(-1.4067*u1)/(1.4067+1j*k1)\
-            +0.094809*np.exp(-2.9*u1)/(np.pi**2+(2.9+1j*k1)**2)\
-            *((2.9+1j*k1)*np.sin(np.pi*u1)+np.pi*np.cos(np.pi*u1))
-        J_0 = .101*np.exp(-.329*u1)/(.329+1j*k1)**2*((.329+1j*k1)*u1+1)\
-            +0.899*np.exp(-1.4067*u1)/(1.4067+1j*k1)**2*((1.4067+1j*k1)*u1+1)\
-            +.094809*np.exp(-2.9*u1)/(np.pi**2+(2.9+1j*k1)**2)\
-            *(((2.9+1j*k1)*np.sin(np.pi*u1)+np.pi*np.cos(np.pi*u1))*u1\
-            +1./(np.pi**2+(2.9+1j*k1)**2)*(((2.9+1j*k1)**2-np.pi**2)\
-            *np.sin(np.pi*u1)+2*np.pi*(2.9+1j*k1)*np.cos(np.pi*u1)))'''
-    # Definition of I1 integral
-    def I1(u1,k1):
-        return np.exp(-1j*k1*u1)*(1-u1/(1+u1**2)**(0.5)-1j*k1*I0(u1,k1))
-    # Definition of 3*I2 integral
-    def J0(u1,k1):
-        J_0=0
-        for i in range(1,12):
-            J_0+=an[i-1]*np.exp(-i*c*u1)/(i**2*c**2+k1**2)**2\
-                *(i**2*c**2-k1**2+i*c*u1*(i**2*c**2+k1**2)\
-                -1j*k1*(2*i*c+u1*(i**2*c**2+k1**2)))
-        return J_0
-    def I2_3(u1,k1):
-        return np.exp(-1j*k1*u1)*((2+1j*k1*u1)*(1-u1/(1+u1**2)**(0.5))\
-            -u1/(1+u1**2)**(1.5)-1j*k1*I0(u1,k1)+k1**2*J0(u1,k1))
-
     T1 = np.cos(gamma_r-gamma_s)
     T2 = (z0*np.cos(gamma_r)-y0*np.sin(gamma_r))\
         *(z0*np.cos(gamma_s)-y0*np.sin(gamma_s))/r1**2
@@ -75,22 +47,145 @@ def K(Xr,Xs,gamma_r,gamma_s,M,U,omega,r1):
         if u1>=0:
             I1_val = I1(u1,k1)
         else:
-            I1_val = 2*np.real(I1(0,k1))\
-                -np.real(I1(-u1,k1))+1j*np.imag(I1(-u1,k1))
-        K1 = I1_val+(M*r1/R)*(np.exp(-1j*k1*u1)/(1+u1**2)**(0.5))
+            I1_val = 2*I1(0,k1).real\
+                -I1(-u1,k1).real+1j*I1(-u1,k1).imag
+        K1 = I1_val+M*r1*np.exp(-1j*k1*u1)/(R*(1+u1**2)**(0.5))
     if abs(T2)<1e-6:
         K2 = 0.
     else:
         if u1>=0:
             I2_3_val = I2_3(u1,k1)
         else:
-            I2_3_val = 2*np.real(I2_3(0,k1))\
-                -np.real(I2_3(-u1,k1))+1j*np.imag(I2_3(-u1,k1))
+            I2_3_val = 2*I2_3(0,k1).real\
+                -I2_3(-u1,k1).real+1j*I2_3(-u1,k1).imag
         K2 = -I2_3_val\
             -1j*k1*M**2*r1**2/R**2*np.exp(-1j*k1*u1)/(1+u1**2)**(0.5)\
             -M*r1/R*((1+u1**2)*beta**2*r1**2/R**2+2+M*r1*u1/R)\
             *np.exp(-1j*k1*u1)/(1+u1**2)**(1.5)
-    return np.exp(-1j*omega*x0/U)*(K1*T1+K2*T2)/r1**2
+    return np.exp(-1j*kr*x0/br)*(K1*T1+K2*T2)
+# Definition of I0 integral
+@jit(nopython=True)
+def I0(u1,k1):
+    I_0 = 0.
+    #I_0 = np.dot(an,np.exp(-n*c*u1)/(n**2*c**2+k1**2)*(n*c-1j*k1))
+    for i in range(len(n)):
+        I_0+=an[i]*np.exp(-n[i]*c*u1)/(n[i]**2*c**2+k1**2)*(n[i]*c-1j*k1)
+    return I_0
+# Definition of I1 integral
+@jit(nopython=True)
+def I1(u1,k1):
+    return np.exp(-1j*k1*u1)*(1-u1/(1+u1**2)**(0.5)-1j*k1*I0(u1,k1))
+# Definition of J0 integral
+@jit(nopython=True)
+def J0(u1,k1):
+    J_0 = 0.
+    #J_0 = np.dot(an,np.exp(-n*c*u1)/(n**2*c**2+k1**2)**2\
+    #        *(n**2*c**2-k1**2+n*c*u1*(n**2*c**2+k1**2)\
+    #        -1j*k1*(2*n*c+u1*(n**2*c**2+k1**2))))
+    for i in range(0,len(n)):
+        J_0+=an[i]*np.exp(-n[i]*c*u1)/(n[i]**2*c**2+k1**2)**2\
+            *(n[i]**2*c**2-k1**2+n[i]*c*u1*(n[i]**2*c**2+k1**2)\
+            -1j*k1*(2*n[i]*c+u1*(n[i]**2*c**2+k1**2)))
+    return J_0
+# Definition of 3*I2 integral
+@jit(nopython=True)
+def I2_3(u1,k1):
+    return np.exp(-1j*k1*u1)*((2+1j*k1*u1)*(1-u1/(1+u1**2)**(0.5))\
+        -u1/(1+u1**2)**(1.5)-1j*k1*I0(u1,k1)+k1**2*J0(u1,k1))
+
+# Functions for JIT calcAIC Method
+@jit(nopython=True)
+def eta(yr,ys,zr,zs,gamma_s):
+    return (yr-ys)*np.cos(gamma_s)+(zr-zs)*np.sin(gamma_s)
+
+@jit(nopython=True)
+def zeta(yr,ys,zr,zs,gamma_s):
+    return -(yr-ys)*np.sin(gamma_s)+(zr-zs)*np.cos(gamma_s)
+    
+@jit(nopython=True)
+def I_plan(A,B,C,e,eta_0):
+    return (eta_0**2*A+eta_0*B+C)*(1./(eta_0-e)-1./(eta_0+e))+\
+                    (B/2+eta_0*A)*np.log(((eta_0-e)/(eta_0+e))**2)
+                    
+@jit(nopython=True)
+def I_nonplan(A,B,C,e,eta_0,zeta_0,r1):
+    return ((eta_0**2-zeta_0**2)*A+eta_0*B+C)*zeta_0**(-1)*\
+                    np.arctan(2*e*abs(zeta_0)/(r1**2-e**2))+\
+                    (B/2+eta_0*A)*np.log((r1**2-2*eta_0*e+e**2)/\
+                    (r1**2+2*eta_0*e+e**2))+2*e*A
+
+@jit
+def calcAIC(M,kr,br,delta_x_vec,sweep_vec,l_vec,dihedral_vec,Xr_vec,Xi_vec,Xc_vec,\
+    Xo_vec,symxz=False):
+    # Initialize the number of panels
+    numPan = len(Xr_vec)
+    # Initialize the complex [D] matrix
+    D = np.zeros((numPan,numPan),dtype=np.complex128)
+    # For all the recieving panels
+    for i in range(0,numPan):
+        # For all the sending panels
+        Xr = Xr_vec[i,:]
+        gamma_r = dihedral_vec[i]
+        for j in range(0,numPan):
+            #sendingBox = self.aeroBox[PANIDs[j]]
+            # Calculate average chord of sending box
+            delta_x_j = delta_x_vec[j]
+            # Calculate sweep of sending box
+            lambda_j = sweep_vec[j]
+            # Calculate the length of the doublet line on sending box
+            l_j = l_vec[j]
+            Xi = Xi_vec[j,:]
+            Xc = Xc_vec[j,:]
+            Xo = Xo_vec[j,:]
+            e = 0.5*l_j*np.cos(lambda_j)
+            gamma_s = dihedral_vec[j]
+            eta_0 = eta(Xr[1],Xc[1],Xr[2],Xc[2],gamma_s)
+            zeta_0 = zeta(Xr[1],Xc[1],Xr[2],Xc[2],gamma_s)
+            r1 = np.sqrt(eta_0**2+zeta_0**2)
+            # Calculate the Kernel function at the inboard, middle, and
+            # outboard locations
+            Ki = K(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1)
+            Kc = K(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1)
+            Ko = K(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1)
+            A = (Ki-2*Kc+Ko)/(2*e**2)
+            B = (Ko-Ki)/(2*e)
+            C = Kc
+            # Determine if planar or non-planar I_ij definition should be used
+            if abs(zeta_0)<1e-6:
+                I_ij = I_plan(A,B,C,e,eta_0)
+            else:
+                I_ij = I_nonplan(A,B,C,e,eta_0,zeta_0,r1)
+            D[i,j]=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
+            
+            if symxz:
+                # Calculate sweep of sending box
+                lambda_j = -lambda_j
+                # Calculate parameters invloved in aproximate I_ij
+                Xi[1] = -Xi[1]
+                Xc[1] = -Xc[1]
+                Xo[1] = -Xo[1]
+                # Sending box dihedral
+                gamma_s = -gamma_s
+                eta_0 = eta(Xr[1],Xc[1],Xr[2],Xc[2],gamma_s)
+                zeta_0 = zeta(Xr[1],Xc[1],Xr[2],Xc[2],gamma_s)
+                r1 = np.sqrt(eta_0**2+zeta_0**2)
+                Ki = K(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1)
+                Kc = K(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1)
+                Ko = K(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1)
+                A = (Ki-2*Kc+Ko)/(2*e**2)
+                B = (Ko-Ki)/(2*e)
+                C = Kc
+                # Determine if planar or non-planar I_ij definition should be used
+                if abs(zeta_0)<1e-6:
+                    I_ij = I_plan(A,B,C,e,eta_0)
+                else:
+                    I_ij = I_nonplan(A,B,C,e,eta_0,zeta_0,r1)
+                D[i,j]+=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
+    #W = np.real(Wd)+1j*kr/br*np.imag(Wd)
+    #B = br/kr*Bd
+    #B = Bd
+    #Qaic = np.dot(B,np.dot(np.linalg.inv(D),W))
+    return D
 
 class Airfoil:
     def __init__(self,c,**kwargs):
@@ -222,6 +317,34 @@ class CQUADA:
                 Jdet = abs(np.linalg.det(Jmat))
                 # Calculate the mass per unit length of the element
                 self.Area += Jdet
+        # Calculate box sweep angle
+        xtmp = self.x(1,-1)-self.x(-1,-1)
+        ytmp = self.y(1,-1)-self.y(-1,-1)
+        sweep = np.arctan(xtmp/ytmp)
+        if abs(sweep)<1e-3:
+            sweep = 0.
+        self.sweep = sweep
+        # Calculate the average chord length
+        self.delta_x = self.x(0,1)-self.x(0,-1)
+        # Calculate the length of the doublet line
+        xtmp = self.x(1,.5)-self.x(-1,.5)
+        ytmp = self.y(1,.5)-self.y(-1,.5)
+        ztmp = self.z(1,.5)-self.z(-1,.5)
+        self.l = np.linalg.norm([xtmp,ytmp,ztmp])
+        # Calculate box dihedral
+        dihedral = np.arctan(ztmp/ytmp)
+        if abs(dihedral)<1e-3:
+            dihedral = 0.
+        self.dihedral = dihedral
+        # Calculate sending and recieving points on the box
+        self.Xr = np.array([self.x(0.,.5),self.y(0.,.5),\
+            self.z(0.,.5)])
+        self.Xi = np.array([self.x(-1,-.5),self.y(-1,.5),\
+            self.z(-1,-.5)])
+        self.Xc = np.array([self.x(0.,-.5),self.y(0.,-.5),\
+            self.z(0.,-.5)])
+        self.Xo = np.array([self.x(1.,-.5),self.y(1.,-.5),\
+            self.z(1.,-.5)])
         
     def x(self,eta,xi):
         """Calculate the x-coordinate within the element.
@@ -354,13 +477,14 @@ class CAERO1:
         
         self.CQUADAs = {SPANID-1:None}
         
+        
         for i in range(0,nspan):
             for j in range(0,nchord):
                 newPANID = max(self.CQUADAs.keys())+1
-                x1 = [self.xmesh[i+1,j],self.ymesh[i+1,j],self.zmesh[i+1,j]]
-                x2 = [self.xmesh[i+1,j+1],self.ymesh[i+1,j+1],self.zmesh[i+1,j+1]]
-                x3 = [self.xmesh[i,j+1],self.ymesh[i,j+1],self.zmesh[i,j+1]]
-                x4 = [self.xmesh[i,j],self.ymesh[i,j],self.zmesh[i,j]]
+                x1 = [self.xmesh[i,j],self.ymesh[i,j],self.zmesh[i,j]]
+                x2 = [self.xmesh[i,j+1],self.ymesh[i,j+1],self.zmesh[i,j+1]]
+                x3 = [self.xmesh[i+1,j+1],self.ymesh[i+1,j+1],self.zmesh[i+1,j+1]]
+                x4 = [self.xmesh[i+1,j],self.ymesh[i+1,j],self.zmesh[i+1,j]]
                 self.CQUADAs[newPANID] = CQUADA(newPANID,[x1,x2,x3,x4])
         del self.CQUADAs[-1]
         

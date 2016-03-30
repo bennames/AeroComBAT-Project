@@ -531,7 +531,7 @@ class CQUAD4:
         # Create a rotation helper to rotate the compliance matrix:
         rh = RotationHelper()
         # Rotate the materials compliance matrix as necessary:
-        Selem = rh.transformCompl(material.Smat,th,xsect=xsect)
+        Selem = rh.transformCompl(np.copy(material.Smat),th,xsect=xsect)
         # Reorder Selem for cross-sectional analysis:
         # Initialize empty compliance matrix
         Sxsect = np.zeros((6,6))
@@ -1630,14 +1630,25 @@ class Mesher:
                         deltax2 = xsect.laminates[k].xmesh[i+1,j+1]-xsect.laminates[k].xmesh[i+1,j]
                         deltay2 = xsect.laminates[k].ymesh[i+1,j+1]-xsect.laminates[k].ymesh[i+1,j]
                         thz_loc = np.rad2deg(np.mean([np.arctan(deltay1/deltax1), np.arctan(deltay2/deltax2)]))
-                        MID = xsect.laminates[k].plies[i].MID
-                        th = [0,xsect.laminates[k].plies[i].th,thz[k]+thz_loc]
+                        if k==0:
+                            MID = xsect.laminates[k].plies[ylen-i-1].MID
+                            th = [0,xsect.laminates[k].plies[ylen-i-1].th,thz[k]+thz_loc]
+                        else:
+                            MID = xsect.laminates[k].plies[i].MID
+                            th = [0,xsect.laminates[k].plies[i].th,thz[k]+thz_loc]
+                        
                         #if newEID in [0,1692,1135,1134,2830,2831]:
                         #    print(th)
                     # Else if it is vertical:
                     else:
-                        MID = xsect.laminates[k].plies[j].MID
-                        th = [0,xsect.laminates[k].plies[j].th,thz[k]]
+                        if k==1:
+                            MID = xsect.laminates[k].plies[xlen-j-1].MID
+                            th = [0,xsect.laminates[k].plies[xlen-j-1].th,thz[k]]
+                        else:
+                            MID = xsect.laminates[k].plies[j].MID
+                            th = [0,xsect.laminates[k].plies[j].th,thz[k]]
+                        #MID = xsect.laminates[k].plies[j].MID
+                        
                         #if newEID in [0,1692,1135,1134,2830,2831]:
                         #    print(th)
                     elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
@@ -1681,8 +1692,6 @@ class Mesher:
         Airfoil = xsect.airfoil
         # The chord length of the airfoil profile
         c = Airfoil.c
-        # Initialize the z location of the cross-section
-        zc = 0
         
         # CREATE NODES FOR MESH
         # Verify that 4 laminate objects have been provides
@@ -1692,17 +1701,17 @@ class Mesher:
         # Determine the number of plies per each laminate
         laminate = laminates[0]
         # get the y coordinates of the lamiante
-        ycoords = laminate.Z[::-1]
-        xcoords = np.linspace(-c/2,c/2,c/(min(laminate.t)*meshSize)+1)
+        ycoords = laminate.z[::-1]
+        xcoords = np.linspace(x0*c,xf*c,int(c/(min(laminate.t)*meshSize))+1)
         # Create 2D meshes
         xmesh,ymesh = np.meshgrid(xcoords,ycoords)
         # Create z-mesh
-        zmesh = np.zeros((len(xcoords),len(ycoords)))
+        zmesh = np.zeros((len(ycoords),len(xcoords)))
         
-        Mesh = np.zeros((len(xcoords),len(ycoords)),dtype=int)
+        Mesh = np.zeros((len(ycoords),len(xcoords)),dtype=int)
         
-        for i in range(0,len(xcoords)):
-            for j in range(0,len(ycoords)):
+        for i in range(0,len(ycoords)):
+            for j in range(0,len(xcoords)):
                 newNID = max(nodeDict.keys())+1
                 Mesh[i,j] = newNID
                 nodeDict[newNID] = Node(newNID,[xmesh[i,j],ymesh[i,j],zmesh[i,j]])
@@ -1732,7 +1741,7 @@ class Mesher:
                 NIDs = [laminate.mesh[i+1,j],laminate.mesh[i+1,j+1],\
                     laminate.mesh[i,j+1],laminate.mesh[i,j]]
                 nodes = [xsect.nodeDict[NID] for NID in NIDs]
-                MID = xsect.laminates[k].plies[ylen-1-i].MID
+                MID = laminate.plies[ylen-1-i].MID
                 th = [0,laminate.plies[i].th,0.]
                 elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
                 laminate.EIDmesh[i,j] = newEID
@@ -1818,7 +1827,255 @@ class Mesher:
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
         del xsect.elemDict[-1]
+    def rectBoxBeam(self,xsect,meshSize,x0,xf,matlib):
+        """Meshes a box beam cross-section.
         
+        This method is currently the only supported and tested meshing method.
+        The mesher assumes that the laminates in the box beam are oriented such
+        that the top surfaces of the laminate are facing inwards. Therefore if
+        you would like a particular fiber orientation on the outter or inner
+        most surfaces, create your laminate layup schedules appropriately.
+        
+        :Args:
+        - `xsect (obj)`: The cross-section object to be meshed.
+        - `meshSize (int)`: The maximum aspect ratio an element can have
+        - `x0 (float)`: The non-dimensional starting point of the cross-section
+            on the airfoil.
+        - `xf (float)`: The non-dimesnional ending point of the cross-section
+            on the airfoil.
+        - `matlib (obj)`: The material library object used to create CQUAD4
+            elements.
+                
+        :Returns:
+        - None
+            
+        """
+        print('Rectangular Box Meshing Commencing')
+        # INITIALIZE INPUTS
+        # Initialize the node dictionary containing all nodes objects used by
+        # the cross-section
+        nodeDict = {-1:None}
+        # Initialize the element dictionary containing all element objects used
+        # by the cross-section
+        elemDict = {-1:None}
+        # The laminates used to mesh the cross-seciton
+        laminates = xsect.laminates
+        # Initialize the airfoil
+        Airfoil = xsect.airfoil
+        # The chord length of the airfoil profile
+        c = Airfoil.c
+        # Initialize the z location of the cross-section
+        zc = 0
+        # Initialize the Euler angler rotation about the local xsect z-axis for
+        # any the given laminate. Note that individual elements might
+        # experience further z-axis orientation if there is curvature in in the
+        # OML of the cross-section.
+        thz = [0,90,180,270]
+        
+        # CREATE NODES FOR MESH
+        # Verify that 4 laminate objects have been provides
+        if not len(laminates)==4:
+            raise ValueError('The box beam cross-section was selected, but 4 '\
+                'laminates were not provided')
+        # Determine the number of plies per each laminate
+        nlam1 = len(laminates[0].plies)
+        nlam2 = len(laminates[1].plies)
+        nlam3 = len(laminates[2].plies)
+        nlam4 = len(laminates[3].plies)
+        # Define boundary curves:
+        # Note, the following curves represent the x-coordinate mesh
+        # seeding along key regions, such as the connection region
+        # between laminate 1 and 2
+        '''x2 = np.zeros(len(laminates[1].plies))
+        x4 = np.zeros(len(laminates[3].plies))
+        x3 = np.linspace(x0+laminates[1].H/c,xf-laminates[3].H/c,int(((xf-laminates[3].H/c)\
+            -(x0+laminates[1].H/c))/(meshSize*min(laminates[0].t)/c)))[1:]
+        x5 = np.linspace(x0+laminates[1].H/c,xf-laminates[3].H/c,int(((xf-laminates[3].H/c)\
+            -(x0+laminates[1].H/c))/(meshSize*min(laminates[2].t)/c)))[1:]'''
+        # Populates the x-coordinates of the mesh seeding in curves x2 and
+        # x4, which are the joint regions between the 4 laminates.
+        '''x2 = x0+(laminates[1].z+laminates[1].H/2)/c
+        x4 = xf-(laminates[3].z[::-1]+laminates[3].H/2)/c'''
+        
+        # Calculate important x points:
+        x0 = x0*c
+        x1 = x0+laminates[1].H
+        xf = xf*c
+        x2 = xf-laminates[3].H
+        
+        # Calculate important y points:
+        y0 = -c/2
+        y1 = y0+laminates[2].H
+        yf = c/2
+        y2 = yf-laminates[0].H
+        
+        # Determine the mesh seeding to maintain minimum AR
+        lam13xSeeding = np.ceil((xf-x0)/(meshSize*min(laminates[0].t)))
+        lam24ySeeding = np.ceil((yf-y0)/(meshSize*min(laminates[0].t)))
+        
+        # Define Finite Element Modeling Functions
+        def x(eta,xi,xs):
+            return .25*(xs[0]*(1.-xi)*(1.-eta)+xs[1]*(1.+xi)*(1.-eta)+\
+                    xs[2]*(1.+xi)*(1.+eta)+xs[3]*(1.-xi)*(1.+eta))
+        def y(eta,xi,ys):
+            return .25*(ys[0]*(1.-xi)*(1.-eta)+ys[1]*(1.+xi)*(1.-eta)+\
+                    ys[2]*(1.+xi)*(1.+eta)+ys[3]*(1.-xi)*(1.+eta))
+        
+        # Generate Grids in superelement space
+        xis13 = np.linspace(-1,1,lam13xSeeding+1)
+        etas13 = np.linspace(1,-1,nlam1+1)
+        lam1Mesh = np.zeros((1+nlam1,len(xis13)),dtype=int)
+        lam3Mesh = np.zeros((1+nlam3,len(xis13)),dtype=int)
+        xis13, etas13 = np.meshgrid(xis13,etas13)
+        lam1xMesh = x(etas13,xis13,[x1,x2,xf,x0])
+        lam1yMesh = y(etas13,xis13,[y2,y2,yf,yf])
+        lam3xMesh = x(etas13,xis13,[x0,xf,x2,x1])
+        lam3yMesh = y(etas13,xis13,[y0,y0,y1,y1])
+        
+        # GENERATE LAMINATE 1 AND 3 MESHES
+        # Create 3 empty numpy arrays for each laminate (we will start with
+        # lamiantes 1 and 3). The first is holds node ID's, the second and
+        # third hold the corresponding x and y coordinates of the node
+        '''lam1Mesh = np.zeros((1+nlam1,len(x1top)),dtype=int)
+        lam1xMesh = np.zeros((1+nlam1,len(x1top)))
+        lam1yMesh = np.zeros((1+nlam1,len(x1top)))
+        lam3Mesh = np.zeros((1+nlam3,len(x3bot)),dtype=int)
+        lam3xMesh = np.zeros((1+nlam3,len(x3bot)))
+        lam3yMesh = np.zeros((1+nlam3,len(x3bot)))
+        #Generate the xy points of the top airfoil curve
+        xu,yu,trash1,trash2 = Airfoil.points(x1top)
+        #Generate the xy points of the bottom airfoil curve
+        trash1,trash2,xl,yl = Airfoil.points(x3bot)
+        #Generate the node objects for laminate 1
+        ttmp = [0]+(laminates[0].z+laminates[0].H/2)'''
+        for i in range(0,np.size(lam1xMesh,axis=0)):
+            for j in range(0,np.size(lam1xMesh,axis=1)):
+                #Create node/populate mesh array
+                newNID = int(max(nodeDict.keys())+1)
+                lam1Mesh[i,j] = newNID
+                #Add node to NID Dictionary
+                nodeDict[newNID] = Node(newNID,np.array([lam1xMesh[i,j],lam1yMesh[i,j],zc]))
+        #Generate  the node objects for laminate 3
+        #ttmp = [0]+laminates[2].z+laminates[2].H/2
+        for i in range(0,np.size(lam3xMesh,axis=0)):
+            for j in range(0,np.size(lam3xMesh,axis=1)):
+                #Create node/populate mesh array
+                newNID = int(max(nodeDict.keys())+1)
+                lam3Mesh[-1-i,j] = newNID
+                #Add node to NID Dictionary
+                nodeDict[newNID] = Node(newNID,np.array([lam3xMesh[-1-i,j],lam3yMesh[-1-i,j],zc]))
+        #GENERATE LAMINATE 2 AND 4 MESHES
+        #Define the mesh seeding for laminate 2
+        #meshLen2 = int(((yu[0]-laminates[0].H)-(yl[0]+laminates[2].H))/(meshSize*min(laminates[1].t)))
+        #Define the mesh seeding for laminate 4
+        #meshLen4 = int(((yu[-1]-laminates[0].H)-(yl[-1]+laminates[2].H))/(meshSize*min(laminates[3].t)))
+        # Create 3 empty numpy arrays for each laminate (we will start with
+        # lamiantes 2 and 4). The first is holds node ID's, the second and
+        # third hold the corresponding x and y coordinates of the node
+        '''lam2Mesh = np.zeros((meshLen2,nlam2+1),dtype=int)
+        lam2xMesh = np.zeros((meshLen2,nlam2+1))
+        lam2yMesh = np.zeros((meshLen2,nlam2+1))
+        lam4Mesh = np.zeros((meshLen4,nlam4+1),dtype=int)
+        lam4xMesh = np.zeros((meshLen4,nlam4+1))
+        lam4yMesh = np.zeros((meshLen4,nlam4+1))
+        '''
+        xis24 = np.linspace(-1,1,nlam2+1)
+        etas24 = np.linspace(1,-1,lam24ySeeding+1)
+        lam2Mesh = np.zeros((len(etas24),1+nlam2),dtype=int)
+        lam4Mesh = np.zeros((len(etas24),1+nlam4),dtype=int)
+        xis24, etas24 = np.meshgrid(xis24,etas24)
+        lam2xMesh = x(etas24,xis24,[x0,x1,x1,x0])
+        lam2yMesh = y(etas24,xis24,[y0,y1,y2,yf])
+        lam4xMesh = x(etas24,xis24,[x2,xf,xf,x2])
+        lam4yMesh = y(etas24,xis24,[y1,y0,yf,y2])
+        
+        #Add connectivity nodes for lamiante 2
+        lam2Mesh[0,:] = lam1Mesh[:,0]
+        lam2xMesh[0,:] = lam1xMesh[:,0]
+        lam2yMesh[0,:] = lam1yMesh[:,0]
+        lam2Mesh[-1,:] = lam3Mesh[::-1,0]
+        lam2xMesh[-1,:] = lam3xMesh[::-1,0]
+        lam2yMesh[-1,:] = lam3yMesh[::-1,0]
+        #Add connectivity nodes for lamiante 4
+        lam4Mesh[0,:] = lam1Mesh[::-1,-1]
+        lam4xMesh[0,:] = lam1xMesh[::-1,-1]
+        lam4yMesh[0,:] = lam1yMesh[::-1,-1]
+        lam4Mesh[-1,:] = lam3Mesh[:,-1]
+        lam4xMesh[-1,:] = lam3xMesh[:,-1]
+        lam4yMesh[-1,:] = lam3yMesh[:,-1]
+        #Generate the node objects for laminate 2
+        for i in range(1,np.size(lam2xMesh,axis=0)-1):
+            for j in range(0,np.size(lam2xMesh,axis=1)):
+                #Create node/populate mesh array
+                newNID = int(max(nodeDict.keys())+1)
+                lam2Mesh[i,j] = newNID
+                #Add node to NID Dictionary
+                nodeDict[newNID] = Node(newNID,np.array([lam2xMesh[i,j],lam2yMesh[i,j],zc]))
+        #Generate the node objects for laminate 4
+        for i in range(1,np.size(lam2xMesh,axis=0)-1):
+            for j in range(0,np.size(lam2xMesh,axis=1)):
+                #Create node/populate mesh array
+                newNID = int(max(nodeDict.keys())+1)
+                lam4Mesh[i,j] = newNID
+                #Add node to NID Dictionary
+                nodeDict[newNID] = Node(newNID,np.array([lam4xMesh[i,j],lam4yMesh[i,j],zc]))
+        # Save meshes:
+        xsect.laminates[0].mesh = lam1Mesh
+        xsect.laminates[0].xmesh = lam1xMesh
+        xsect.laminates[0].ymesh = lam1yMesh
+        xsect.laminates[0].zmesh = np.zeros((np.size(lam1Mesh,axis=0),np.size(lam1Mesh,axis=1)))
+
+        xsect.laminates[1].mesh = lam2Mesh
+        xsect.laminates[1].xmesh = lam2xMesh
+        xsect.laminates[1].ymesh = lam2yMesh
+        xsect.laminates[1].zmesh = np.zeros((np.size(lam2Mesh,axis=0),np.size(lam2Mesh,axis=1)))
+        
+        xsect.laminates[2].mesh = lam3Mesh
+        xsect.laminates[2].xmesh = lam3xMesh
+        xsect.laminates[2].ymesh = lam3yMesh
+        xsect.laminates[2].zmesh = np.zeros((np.size(lam3Mesh,axis=0),np.size(lam3Mesh,axis=1)))
+        
+        xsect.laminates[3].mesh = lam4Mesh
+        xsect.laminates[3].xmesh = lam4xMesh
+        xsect.laminates[3].ymesh = lam4yMesh
+        xsect.laminates[3].zmesh = np.zeros((np.size(lam4Mesh,axis=0),np.size(lam4Mesh,axis=1)))
+        
+        xsect.nodeDict = nodeDict
+        
+        for k in range(0,len(xsect.laminates)):
+            ylen = np.size(xsect.laminates[k].mesh,axis=0)-1
+            xlen = np.size(xsect.laminates[k].mesh,axis=1)-1
+            # Ovearhead for later plotting of the cross-section. Will allow
+            # for discontinuities in the contour should it arise (ie in
+            # stress or strain contours).
+            xsect.laminates[k].plotx = np.zeros((ylen*2,xlen*2))
+            xsect.laminates[k].ploty = np.zeros((ylen*2,xlen*2))
+            xsect.laminates[k].plotz = np.zeros((ylen*2,xlen*2))
+            xsect.laminates[k].plotc = np.zeros((ylen*2,xlen*2))
+            xsect.laminates[k].EIDmesh = np.zeros((ylen,xlen),dtype=int)
+            for i in range(0,ylen):
+                for j in range(0,xlen):
+                    newEID = int(max(elemDict.keys())+1)
+                    NIDs = [xsect.laminates[k].mesh[i+1,j],xsect.laminates[k].mesh[i+1,j+1],\
+                        xsect.laminates[k].mesh[i,j+1],xsect.laminates[k].mesh[i,j]]
+                    nodes = [xsect.nodeDict[NID] for NID in NIDs]
+                    if k==0:
+                        MID = xsect.laminates[k].plies[-i-1].MID
+                        th = [0,xsect.laminates[k].plies[-i-1].th,thz[k]]
+                    elif k==1:
+                        MID = xsect.laminates[k].plies[-j-1].MID
+                        th = [0,xsect.laminates[k].plies[-j-1].th,thz[k]]
+                    elif k==2:
+                        MID = xsect.laminates[k].plies[i].MID
+                        th = [0,xsect.laminates[k].plies[i].th,thz[k]]
+                    else:
+                        MID = xsect.laminates[k].plies[j].MID
+                        th = [0,xsect.laminates[k].plies[j].th,thz[k]]
+                    elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
+                    xsect.laminates[k].EIDmesh[i,j] = newEID
+        xsect.elemDict = elemDict
+        del xsect.nodeDict[-1]
+        del xsect.elemDict[-1]
 class XSect:
     """Creates a beam cross-section object,
     
@@ -1961,9 +2218,13 @@ class XSect:
         # Begin the meshing process for a box beam cross-section profile
         if self.typeXSect=='box':
             mesher.boxBeam(self,meshSize,x0,xf,matlib)
-        if self.typeXSect=='circle':
+        elif self.typeXSect=='circle':
             r = kwargs.pop('r',self.airfoil.c)
             mesher.cylindricalTube(self,r,meshSize,x0,xf,matlib)
+        elif self.typeXSect=='laminate':
+            mesher.laminate(self, meshSize, x0, xf, matlib)
+        elif self.typeXSect=='rectBox':
+            mesher.rectBoxBeam(self, meshSize, x0, xf, matlib)
             
     def xSectionAnalysis(self,**kwargs):
         """Analyzes an initialized corss-section.
@@ -2146,7 +2407,6 @@ class XSect:
         Ixx = 0.; Ixy=0.; Iyy=0;
         self.x_m = np.array([xm/m,ym/m,0.])
         # Establish reference axis location
-        #TODO: Add support for the center of mass as the reference axis
         if ref_ax=='shearCntr':
             self.refAxis = np.array([[self.xs],[self.ys],[0.]])
             xref = -self.refAxis[0,0]
@@ -2418,18 +2678,15 @@ class XSect:
         """
         # The rigid translation of the cross-section
         x = kwargs.pop('x',np.array([0.,0.,0.]))
-        # The unit vector of the beam axis
-        beam_axis = kwargs.pop('beam_axis',np.array([0.,1.,0.]))
+        # The rotation matrix mapping the cross-section from the local frame to
+        # the global frame
+        RotMat = kwargs.pop('RotMat',np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]]))
         # The figure name
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Whether the wiremesh should be plotted
         wireMesh = kwargs.pop('mesh',True)
         # Initialize which figure is being plotted on
         mlab.figure(figure=figName)
-        # Create a rotation helper to rotate rigid xsects to the beam frame
-        rh = RotationHelper()
-        # Create the rotation matrix
-        RotMat = rh.genRotMat(self.normal_vector,beam_axis)
         # For all laminate objects in the cross-section
         for lam in self.laminates:
             # Initialize xyz array's to be plotted
@@ -2449,7 +2706,7 @@ class XSect:
             # Plot the wireframe if desired.
             if wireMesh:
                 mlab.mesh(plotx+x[0]-self.refAxis[0],ploty+x[1]-self.refAxis[1],plotz+x[2],\
-                    representation='wireframe',color=tuple(self.color[::-1]))
+                    representation='wireframe',color=(0,0,0))
     def plotWarped(self,**kwargs):
         """Plots the warped cross-section along a beam.
         
@@ -2485,14 +2742,16 @@ class XSect:
         plotted as triangles.
         
         """
+        # INPUT ARGUMENT INITIALIZATION
         # Select Displacement Scale
         displScale = kwargs.pop('displScale',1.)
         # The rigid translation of the cross-section
         x = kwargs.pop('x',np.zeros(3))
         # The defomation (tranltation and rotation) of the beam node and cross-section
         U = displScale*kwargs.pop('U',np.zeros(6))
-        # The unit vector of the beam axis
-        beam_axis = kwargs.pop('beam_axis',np.array([0.,0.,1.]))
+        # The rotation matrix mapping the cross-section from the local frame to
+        # the global frame
+        RotMat = kwargs.pop('RotMat',np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]]))
         # The figure name
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Show a contour
@@ -2507,21 +2766,22 @@ class XSect:
         mlab.figure(figure=figName)
         # Create a rotation helper
         rh = RotationHelper()
-        # Generate the rotation matrix which rotates the cross-section normal 
-        # to the beam axis
-        RotMat = rh.genRotMat(self.normal_vector,beam_axis)
-        # Calculate the rotation matrix about the z axis
-        RotZSlope = rh.getEulerAxisRotMat(beam_axis,U[5])
-        # Calculate the rotation matrix about the x-axis
-        beam_x_axis = np.dot(RotMat,np.array([1.,0.,0.]))
-        RotXSlope = rh.getEulerAxisRotMat(beam_x_axis,U[3])
-        # Calculate the rotation matrix about the y-axis
-        beam_y_axis = np.dot(RotMat,np.array([0.,1.,0.]))
-        RotYSlope = rh.getEulerAxisRotMat(beam_y_axis,U[4])
+        # Rotate the rotations from the global frame to the local frame:
+        UlocalRot = np.dot(RotMat.T,U[3:6])
+        # Calculate the rotation matrix about the local z axis
+        RotZ = rh.rotXYZ(np.array([0.,0.,UlocalRot[2]]),deg2rad=False)
+        # Calculate the rotation matrix about the local x-axis
+        RotX = rh.rotXYZ(np.array([UlocalRot[0],0.,0.]),deg2rad=False)
+        # Calculate the rotation matrix about the local y-axis
+        RotY = rh.rotXYZ(np.array([0.,UlocalRot[1],0.]),deg2rad=False)
         # Create local reference of the reference axis
         refAxis = self.refAxis
-        # Calculate the total rotation of the xsect once oriented with the beam
-        totatRot = np.dot(RotYSlope,np.dot(RotXSlope,RotZSlope))
+        # Create local reference to the shear center locations
+        xsc = self.xs
+        ysc = self.ys
+        # Create local reference to the tension center locations
+        xtc = self.xt
+        ytc = self.yt
         # Add the warping displacements to original xyz coordinates
         for lam in self.laminates:
             eidArray = lam.EIDmesh
@@ -2538,23 +2798,58 @@ class XSect:
                     tmpEID = eidArray[i,j]
                     elem = self.elemDict[tmpEID]
                     xdef,ydef,zdef = elem.getDeformed(warpScale=warpScale)
-                    plotx[2*i:2*i+2,2*j:2*j+2] = xdef-refAxis[0]
-                    ploty[2*i:2*i+2,2*j:2*j+2] = ydef-refAxis[1]
+                    plotx[2*i:2*i+2,2*j:2*j+2] = xdef
+                    ploty[2*i:2*i+2,2*j:2*j+2] = ydef
                     plotz[2*i:2*i+2,2*j:2*j+2] = zdef
                     plotc[2*i:2*i+2,2*j:2*j+2] = elem.getStressState(crit=contour)
-            # Rotate the warped xsection to the rotated and displaced beam axis
+            # Translate the cross-section points to the shear center
+            #plotx = plotx-xsc
+            #ploty = ploty-ysc
+            # Conduct torsion rotation about the shear center
+            for i in range(0,np.size(plotx,axis=0)):
+                for j in range(0,np.size(plotx,axis=1)):
+                    # Establish the temporary position vector and translate to
+                    # shear center
+                    tmpPos = np.array([[plotx[i,j]-xsc],[ploty[i,j]-ysc],[plotz[i,j]]])
+                    # Apply torsion rotation and translate to tension center
+                    tmpPos = np.dot(RotZ,tmpPos)-np.array([[xtc-xsc],[ytc-ysc],[0.]])
+                    # Apply moment rotations and translate to reference axis
+                    tmpPos = np.dot(RotY,np.dot(RotX,tmpPos))\
+                        -np.array([[refAxis[0]-xtc],[refAxis[1]-ytc],[0.]])
+                    # Apply rotation to global frame
+                    newPos = np.dot(RotMat,tmpPos)
+                    # Add rotated points back
+                    plotx[i,j] = newPos[0]
+                    ploty[i,j] = newPos[1]
+                    plotz[i,j] = newPos[2]
+            '''# Translate the cross-section points to the tension center
+            plotx = plotx+xsc-xtc
+            ploty = ploty+ysc-ytc
+            # Conduct moment rotations about the tension center
             for i in range(0,np.size(plotx,axis=0)):
                 for j in range(0,np.size(plotx,axis=1)):
                     # Establish the temporary position vector
                     tmpPos = np.array([[plotx[i,j]],[ploty[i,j]],[plotz[i,j]]])
-                    # Rotate the cross-section point to the beam frame
-                    newPos = np.dot(RotMat,tmpPos)
-                    # Rotate point to coincide with beam deformation rotation
-                    newPos = np.dot(totatRot,newPos)
-                    # Add rotated reference axis value back
+                    # Apply moment rotations
+                    newPos = np.dot(RotY,np.dot(RotX,tmpPos))
+                    # Add rotated points back
                     plotx[i,j] = newPos[0]
                     ploty[i,j] = newPos[1]
                     plotz[i,j] = newPos[2]
+            # Translate the cross-section points to the reference axis
+            plotx = plotx+xtc-refAxis[0]
+            ploty = ploty+ytc-refAxis[1]
+            # Conduct rotations to go from local frame to global frame
+            for i in range(0,np.size(plotx,axis=0)):
+                for j in range(0,np.size(plotx,axis=1)):
+                    # Establish the temporary position vector
+                    tmpPos = np.array([[plotx[i,j]],[ploty[i,j]],[plotz[i,j]]])
+                    # Apply rotation to global frame
+                    newPos = np.dot(RotMat,tmpPos)
+                    # Add rotated points back
+                    plotx[i,j] = newPos[0]
+                    ploty[i,j] = newPos[1]
+                    plotz[i,j] = newPos[2]'''
             # Plot the laminate surface
             if isinstance(contour,str):
                 mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],scalars=plotc,\
@@ -2939,18 +3234,18 @@ class TBeam(Beam):
         C55 = K[4,4];C56 = K[4,5]
         C66 = K[5,5]
         # Initialize the Element Stiffness Matrix
-        self.Kel = np.array([[C11/h,-C12/h,-C13/h,C12/2-C14/h,C11/2-C15/h,-C16/h,-C11/h,C12/h,C13/h,C12/2+C14/h,C11/2+C15/h,C16/h],\
-                          [-C12/h,C22/h,C23/h,-C22/2+C24/h,-C12/2+C25/h,C26/h,C12/h,-C22/h,-C23/h,-C22/2-C24/h,-C12/2-C25/h,-C26/h],\
-                          [-C13/h,C23/h,C33/h,-C23/2+C34/h,-C13/2+C35/h,C36/h,C13/h,-C23/h,-C33/h,-C23/2-C34/h,-C13/2-C35/h,-C36/h],\
-                          [C12/2-C14/h,-C22/2+C24/h,-C23/2+C34/h,-C24+C44/h+C22*h/4,-C14/2-C25/2+C45/h+C12*h/4,-C26/2+C46/h,-C12/2+C14/h,C22/2-C24/h,C23/2-C34/h,-C44/h+C22*h/4,-C14/2+C25/2-C45/h+C12*h/4,C26/2-C46/h],\
-                          [C11/2-C15/h,-C12/2+C25/h,-C13/2+C35/h,-C14/2-C25/2+C45/h+C12*h/4,-C15+C55/h+C11*h/4,-C16/2+C56/h,-C11/2+C15/h,C12/2-C25/h,C13/2-C35/h,C14/2-C25/2-C45/h+C12*h/4,-C55/h+C11*h/4,C16/2-C56/h],\
-                          [-C16/h,C26/h,C36/h,-C26/2+C46/h,-C16/2+C56/h,C66/h,C16/h,-C26/h,-C36/h,-C26/2-C46/h,-C16/2-C56/h,-C66/h],\
-                          [-C11/h,C12/h,C13/h,-C12/2+C14/h,-C11/2+C15/h,C16/h,C11/h,-C12/h,-C13/h,-C12/2-C14/h,-C11/2-C15/h,-C16/h],\
-                          [C12/h,-C22/h,-C23/h,C22/2-C24/h,C12/2-C25/h,-C26/h,-C12/h,C22/h,C23/h,C22/2+C24/h,C12/2+C25/h,C26/h],\
-                          [C13/h,-C23/h,-C33/h,C23/2-C34/h,C13/2-C35/h,-C36/h,-C13/h,C23/h,C33/h,C23/2+C34/h,C13/2+C35/h,C36/h],\
-                          [C12/2+C14/h,-C22/2-C24/h,-C23/2-C34/h,-C44/h+C22*h/4,C14/2-C25/2-C45/h+C12*h/4,-C26/2-C46/h,-C12/2-C14/h,C22/2+C24/h,C23/2+C34/h,C24+C44/h+C22*h/4,C14/2+C25/2+C45/h+C12*h/4,C26/2+C46/h],\
-                          [C11/2+C15/h,-C12/2-C25/h,-C13/2-C35/h,-C14/2+C25/2-C45/h+C12*h/4,-C55/h+C11*h/4,-C16/2-C56/h,-C11/2-C15/h,C12/2+C25/h,C13/2+C35/h,C14/2+C25/2+C45/h+C12*h/4,C15+C55/h+C11*h/4,C16/2+C56/h],\
-                          [C16/h,-C26/h,-C36/h,C26/2-C46/h,C16/2-C56/h,-C66/h,-C16/h,C26/h,C36/h,C26/2+C46/h,C16/2+C56/h,C66/h]])
+        self.Kel = np.array([[C11/h,C12/h,C13/h,-C12/2+C14/h,C11/2+C15/h,C16/h,-C11/h,-C12/h,-C13/h,-C12/2-C14/h,C11/2-C15/h,-C16/h],\
+                          [C12/h,C22/h,C23/h,-C22/2+C24/h,C12/2+C25/h,C26/h,-C12/h,-C22/h,-C23/h,-C22/2-C24/h,C12/2-C25/h,-C26/h],\
+                          [C13/h,C23/h,C33/h,-C23/2+C34/h,C13/2+C35/h,C36/h,-C13/h,-C23/h,-C33/h,-C23/2-C34/h,C13/2-C35/h,-C36/h],\
+                          [-C12/2+C14/h,-C22/2+C24/h,-C23/2+C34/h,-C24+C44/h+C22*h/4,C14/2-C25/2+C45/h-C12*h/4,-C26/2+C46/h,C12/2-C14/h,C22/2-C24/h,C23/2-C34/h,-C44/h+C22*h/4,C14/2+C25/2-C45/h-C12*h/4,C26/2-C46/h],\
+                          [C11/2+C15/h,C12/2+C25/h,C13/2+C35/h,C14/2-C25/2+C45/h-C12*h/4,C15+C55/h+C11*h/4,C16/2+C56/h,-C11/2-C15/h,-C12/2-C25/h,-C13/2-C35/h,-C14/2-C25/2-C45/h-C12*h/4,-C55/h+C11*h/4,-C16/2-C56/h],\
+                          [C16/h,C26/h,C36/h,-C26/2+C46/h,C16/2+C56/h,C66/h,-C16/h,-C26/h,-C36/h,-C26/2-C46/h,C16/2-C56/h,-C66/h],\
+                          [-C11/h,-C12/h,-C13/h,C12/2-C14/h,-C11/2-C15/h,-C16/h,C11/h,C12/h,C13/h,C12/2+C14/h,-C11/2+C15/h,C16/h],\
+                          [-C12/h,-C22/h,-C23/h,C22/2-C24/h,-C12/2-C25/h,-C26/h,C12/h,C22/h,C23/h,C22/2+C24/h,-C12/2+C25/h,C26/h],\
+                          [-C13/h,-C23/h,-C33/h,C23/2-C34/h,-C13/2-C35/h,-C36/h,C13/h,C23/h,C33/h,C23/2+C34/h,-C13/2+C35/h,C36/h],\
+                          [-C12/2-C14/h,-C22/2-C24/h,-C23/2-C34/h,-C44/h+C22*h/4,-C14/2-C25/2-C45/h-C12*h/4,-C26/2-C46/h,C12/2+C14/h,C22/2+C24/h,C23/2+C34/h,C24+C44/h+C22*h/4,-C14/2+C25/2+C45/h-C12*h/4,C26/2+C46/h],\
+                          [C11/2-C15/h,C12/2-C25/h,C13/2-C35/h,C14/2+C25/2-C45/h-C12*h/4,-C55/h+C11*h/4,C16/2-C56/h,-C11/2+C15/h,-C12/2+C25/h,-C13/2+C35/h,-C14/2+C25/2+C45/h-C12*h/4,-C15+C55/h+C11*h/4,-C16/2+C56/h],\
+                          [-C16/h,-C26/h,-C36/h,C26/2-C46/h,-C16/2-C56/h,-C66/h,C16/h,C26/h,C36/h,C26/2+C46/h,-C16/2+C56/h,C66/h]])
         self.Ke = np.dot(self.T.T,np.dot(self.Kel,self.T))
         # Initialize the element distributed load vector
         self.Fe = np.zeros((12,1),dtype=float)
@@ -3031,13 +3326,15 @@ class TBeam(Beam):
         # Determine the rigid coordiates of the beam
         x1 = self.n1.x
         x2 = self.n2.x
+        # Determine the tube radius:
+        tube_radius = np.linalg.norm([x2-x1])/4
         # Create arrays of the coordinates for mayavi to plot
         x = np.array([x1[0],x2[0]])
         y = np.array([x1[1],x2[1]])
         z = np.array([x1[2],x2[2]])
         # Plot the beam
         if environment=='mayavi':
-            mlab.plot3d(x,y,z,color=clr)
+            mlab.plot3d(x,y,z,color=clr,tube_radius=tube_radius)
     def saveNodalDispl(self,U1,U2,**kwargs):
         """Saves applied displacements and rotations solutions if the beam.
         
@@ -3121,8 +3418,13 @@ class TBeam(Beam):
         mode=kwargs.pop('mode',0)
         x1r = self.n1.x
         x2r = self.n2.x
+        # Determine the tube radius:
+        tube_radius = np.linalg.norm([x2r-x1r])/4
         if not (analysis_name in self.F1.keys() or self.Fmode1.keys()):
-            self.plotRigidBeam(environment=environment,clr=clr,figName=figName)
+            print('Warning, the analysis name for the results you are trying'+
+            'to plot does not exist. The rigid beam will instead be plotted')
+            self.plotRigidBeam(environment=environment,clr=clr,figName=figName\
+                ,tube_radius=tube_radius)
         else:
             if mode:
                 x1disp = displScale*self.Umode1[analysis_name][:,mode-1]
@@ -3136,7 +3438,7 @@ class TBeam(Beam):
             y = np.array([x1r[1]+x1disp[1],x2r[1]+x2disp[1]])
             z = np.array([x1r[2]+x1disp[2],x2r[2]+x2disp[2]])
             if environment=='mayavi':
-                mlab.plot3d(x,y,z,color=clr)
+                mlab.plot3d(x,y,z,color=clr,tube_radius=tube_radius)
     def printInternalForce(self,**kwargs):
         """Prints the internal forces and moments in the beam.
         
@@ -3223,11 +3525,13 @@ class TBeam(Beam):
                 force = self.F1[analysis_name]*(1.-x)+self.F2[analysis_name]*(x)
                 # Determine internal displacement at non-dimensional location
                 disp = self.U1[analysis_name]*(1.-x)+self.U2[analysis_name]*(x)
-            force = np.reshape(force,(6,1))
+            # Rotate the force in the beam from the global frame to the local
+            # frame in order to recover stress and strain
+            force = np.reshape(np.dot(self.T[0:6,0:6].T,force),(6,1))
             disp = np.reshape(disp,(6,1))
             x_global = self.n1.x*(1.-x)+self.n2.x*(x)
             self.xsect.calcWarpEffects(force=force)
-            self.xsect.plotWarped(x=x_global,U=disp,beam_axis=self.xbar,\
+            self.xsect.plotWarped(x=x_global,U=disp,RotMat=self.T[0:3,0:3],\
                 figName=figName,contour=contour,contLim=contLim,\
                 displScale=displScale,warpScale=warpScale)
 class SuperBeam:
@@ -3271,7 +3575,7 @@ class SuperBeam:
         as well as the coordinates of those nodes.
         
     """
-    def __init__(self,x1,x2,xsect,noe,SBID,btype='Tbeam',sNID=1,sEID=1):
+    def __init__(self,x1,x2,xsect,noe,SBID,btype='Tbeam',sNID=1,sEID=1,**kwargs):
         """Creates a superelement object.
         
         This method instantiates a superelement. What it effectively does is
@@ -3294,6 +3598,7 @@ class SuperBeam:
         - None
         
         """
+        chordVec = kwargs.pop('chordVec',np.array([1.,0.,0.]))
         # Initialize the object type
         self.type = 'SuperBeam'
         # Save the beam element type used within the superbeam.
@@ -3335,7 +3640,8 @@ class SuperBeam:
                 x0 = self.getBeamCoord(t[i])
                 xi = self.getBeamCoord(t[i+1])
                 # Store the element in the superbeam elem dictionary
-                elems[i+sEID] = TBeam(x0,xi,xsect,i+sEID,SBID,nid1=tmpsnidb,nid2=tmpsnide)
+                elems[i+sEID] = TBeam(x0,xi,xsect,i+sEID,SBID,nid1=tmpsnidb,\
+                    nid2=tmpsnide,chordVec=chordVec)
                 self.NIDs2EIDs[tmpsnidb] += [i+sEID]
                 self.NIDs2EIDs[tmpsnide] += [i+sEID]
                 tmpsnidb = tmpsnide
@@ -3354,7 +3660,8 @@ class SuperBeam:
             raise TypeError('You have entered an invalid beam type.')
         self.elems = elems
         # Save the unit vector pointing along the length of the beam
-        self.xbar = elems[0].xbar
+        self.xbar = elems[sEID].xbar
+        self.RotMat = elems[sEID].T[0:3,0:3]
         nodes = {}
         for i in range(0,noe+1):
             x0 = self.getBeamCoord(t[i])
@@ -3663,6 +3970,7 @@ class WingSection:
         meshSize = kwargs.pop('meshSize',4)
         SXID = kwargs.pop('SXID',0)
         ref_ax = kwargs.pop('ref_ax','shearCntr')
+        chordVec = kwargs.pop('chordVec',np.array([1.,0.,0.]))
         t_vec = np.linspace(0,1,numSupBeams+1)
         xs = []
         for t in t_vec:
@@ -3680,7 +3988,7 @@ class WingSection:
             sbeam_len = np.linalg.norm(xs[i+1]-xs[i])
             noe = int(noe*sbeam_len)
             self.SuperBeams += [SuperBeam(xs[i],xs[i+1],self.XSects[i],noe,\
-                SSBID+i,sNID=tmpsnid1,sEID=tmpsEID)]
+                SSBID+i,sNID=tmpsnid1,sEID=tmpsEID,chordVec=chordVec)]
             tmpsnid1 = max(self.SuperBeams[i].nodes.keys())
             tmpsEID = max(self.SuperBeams[i].elems.keys())+1
     def plotRigid(self,**kwargs):
@@ -3724,12 +4032,12 @@ class WingSection:
                 #nids = sbeam.nodes.keys()
                 # For numXSects nodes evenly spaced in the beam
                 x_nd = np.linspace(0,1,numXSects)
-                xbar = sbeam.xbar
+                RotMat = sbeam.RotMat
                 for i in range(0,numXSects):
                     # Determine the rigid location of the node with NID i
                     xtmp = sbeam.getBeamCoord(x_nd[i])
                     # The below lines are for loaded/displaced beams:
-                    sbeam.xsect.plotRigid(figName=figName,beam_axis=xbar,x=xtmp)
+                    sbeam.xsect.plotRigid(figName=figName,RotMat=RotMat,x=xtmp)
     def plotDispl(self,**kwargs):
         """Plots the deformed wing section object in 3D space.
         

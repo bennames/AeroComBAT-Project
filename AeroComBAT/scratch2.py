@@ -35,7 +35,7 @@ x1 = np.array([0.,0.,0.])
 x2 = np.array([c,0.,0.])
 x3 = np.array([c,20.,0.])
 x4 = np.array([0.,20.,0.])
-nspan = 2
+nspan = 10
 nchord = 2
 
 wing1.addLiftingSurface(1,x1,x2,x3,x4,nspan,nchord)
@@ -48,7 +48,46 @@ model.addAircraftParts([wing1])
 
 model.plotRigidModel(numXSects=10)
 
-model.CalcAICs(0.,10,2.,.1,c/2,1.225)
+from Aerodynamics import K
+import multiprocessing as mp
+
+box1 = model.aeroBox[0]
+
+Xr = box1.Xr
+Xi = box1.Xi
+Xc = box1.Xc
+Xo = box1.Xo
+
+gamma_r = box1.dihedral
+gamma_s = box1.dihedral
+
+M = .24
+
+kr = .46
+
+br = c/2
+
+r1=0.
+
+output = mp.Queue()
+
+def multi_K(Xr,Xs,gamma_r,gamma_s,M,br,kr,r1,output):
+    output.put(K(Xr,Xs,gamma_r,gamma_s,M,br,kr,r1))
+
+Pi = mp.Process(target=multi_K,args=(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1,output))
+Pc = mp.Process(target=multi_K,args=(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1,output))
+Po = mp.Process(target=multi_K,args=(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1,output))
+
+processes = [Pi,Pc,Po]
+
+for p in processes:
+    p.start()
+for p in processes:
+    p.join()
+print(output.empty())
+Ki = output.get()
+Kc = output.get()
+Ko = output.get()
 
 #panel1 = CAERO1(1,x1,x2,x3,x4,nspan,nchord)
 #panel1.plotLiftingSurface()

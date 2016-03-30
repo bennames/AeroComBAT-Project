@@ -3,6 +3,7 @@
 # =============================================================================
 import numpy as np
 from tabulate import tabulate
+from numba import jit
 
 class RotationHelper:
     def transformCompl(self,S,th,**kwargs):
@@ -14,7 +15,7 @@ class RotationHelper:
             # x direction, however for cross-sectional analysis, the nominal fiber
             # angle is parallel to the z-axis, and so before any in plane rotations
             # occur, the fiber must first be rotated about the y axis.
-            Rysig, Ryeps = self.genCompRy(90)
+            Rysig, Ryeps = self.genCompRy(-90)
             Sxsect = np.dot(Ryeps,np.dot(Sxsect,np.linalg.inv(Rysig)))
         # Rotate material about x:
         Rxsig, Rxeps = self.genCompRx(th[0])
@@ -26,8 +27,9 @@ class RotationHelper:
         Rzsig, Rzeps = self.genCompRz(th[2])
         Sxsect = np.dot(Rzeps,np.dot(Sxsect,np.linalg.inv(Rzsig)))
         return Sxsect
-    def rotXYZ(self,th):
-        th = np.deg2rad(th)
+    def rotXYZ(self,th,deg2rad=True):
+        if deg2rad:
+            th = np.deg2rad(th)
         Rx = np.array([[1.,0.,0.],\
                        [0.,np.cos(th[0]),-np.sin(th[0])],\
                        [0.,np.sin(th[0]),np.cos(th[0])]])
@@ -108,3 +110,13 @@ class RotationHelper:
                          [0.,1.,0.,-x[1]],\
                          [0.,0.,1.,-x[2]],\
                          [0.,0.,0.,1.]])
+
+@jit
+def genMAC(modes0,modes1,weightMat):
+    MAC = np.zeros((np.size(modes0,axis=1),np.size(modes0,axis=1)))
+    for i in range(0,np.size(modes0,axis=1)):
+        for j in range(0,np.size(modes0,axis=1)):
+            MAC[i,j] = np.dot(modes0[:,j],np.dot(weightMat,np.conj(modes1[:,i])))**2/\
+                (np.dot(modes0[:,j],np.dot(weightMat,np.conj(modes0[:,j])))\
+                *np.dot(modes1[:,i],np.dot(weightMat,np.conj(modes1[:,i]))))
+    return MAC
