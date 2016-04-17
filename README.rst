@@ -41,7 +41,8 @@ Mayavi is the 3D visualization engine currently used by AeroComBAT. Note that
 in some cases installing mayavi has been found to downgrade numpy. This is not
 necessary, so try to update you numpy installation.
 
-Tutorials
-=========
+Documentation and tutorials
+===========================
 
-For for AeroComBAT Tutorials, see `AeroComBAT Tutorials <tutorials.html>`_.
+For for the AeroComBAT documentation and Tutorials,
+see `AeroComBAT Tutorials <http://aerocombat-project.readthedocs.org/>`_.
