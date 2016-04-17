@@ -1,0 +1,395 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>AeroComBAT.AircraftParts &mdash; AeroComBAT 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">AeroComBAT 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for AeroComBAT.AircraftParts</h1><div class="highlight"><pre>
+<span class="c"># AircraftParts.py</span>
+<span class="c"># Author: Ben Names</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains a library of classes devoted to modeling aircraft parts.</span>
+
+<span class="sd">The main purpose of this library is to model various types of aircraft parts.</span>
+<span class="sd">Currently only wing objects are suported, however in the future it is possible</span>
+<span class="sd">that fuselages as well as other parts will be added.</span>
+
+<span class="sd">:SUMARRY OF THE CLASSES:</span>
+
+<span class="sd">- `Wing`: Creates a wing aircraft. This wing is capable of modeling the</span>
+<span class="sd">    structures of the aircraft wing as well as the aerodynamics. The structures</span>
+<span class="sd">    are modeled with a combination of beam models currently, however it is</span>
+<span class="sd">    likely that Ritz method laminates will also incorporated for buckling</span>
+<span class="sd">    prediction purposes. The aerodynamics are currently modeled with potential</span>
+<span class="sd">    flow doublet panels.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__docformat__</span> <span class="o">=</span> <span class="s">&#39;restructuredtext&#39;</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># AeroComBAT MODULES</span>
+<span class="c"># =============================================================================</span>
+<span class="kn">from</span> <span class="nn">Structures</span> <span class="kn">import</span> <span class="n">WingSection</span><span class="p">,</span> <span class="n">Laminate</span>
+<span class="kn">from</span> <span class="nn">Aerodynamics</span> <span class="kn">import</span> <span class="n">CAERO1</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># IMPORT ANACONDA ASSOCIATED MODULES</span>
+<span class="c"># =============================================================================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">mayavi.mlab</span> <span class="kn">as</span> <span class="nn">mlab</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># DEFINE AeroComBAT AIRCRAFT PART CLASSES</span>
+<span class="c"># =============================================================================</span>
+
+<div class="viewcode-block" id="Wing"><a class="viewcode-back" href="../../AircraftParts.html#AeroComBAT.AircraftParts.Wing">[docs]</a><span class="k">class</span> <span class="nc">Wing</span><span class="p">:</span>
+<div class="viewcode-block" id="Wing.__init__"><a class="viewcode-back" href="../../AircraftParts.html#AeroComBAT.AircraftParts.Wing.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">PID</span><span class="p">,</span><span class="n">p1</span><span class="p">,</span><span class="n">p2</span><span class="p">,</span><span class="n">croot</span><span class="p">,</span><span class="n">ctip</span><span class="p">,</span><span class="n">x0_spar</span><span class="p">,</span><span class="n">xf_spar</span><span class="p">,</span><span class="n">Y_rib</span><span class="p">,</span><span class="n">n_ply</span><span class="p">,</span><span class="n">m_ply</span><span class="p">,</span><span class="n">mat_lib</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a wing object.</span>
+<span class="sd">        </span>
+<span class="sd">        This object represents a wing and contains both structural and</span>
+<span class="sd">        aerodynamic models.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `PID (int)`: The integer ID linked to this part.</span>
+<span class="sd">        - `p1 (1x3 np.array[float])`: The initial x,y,z coordinates of the wing.</span>
+<span class="sd">        - `p2 (1x3 np.array[float]`: The final x,y,z coordinates of the wing.</span>
+<span class="sd">        - `croot (float)`: The root chord length.</span>
+<span class="sd">        - `ctip (float)`: The tip chord length.</span>
+<span class="sd">        - `x0_spar (float)`: The non-dimensional starting location of the cross</span>
+<span class="sd">            section.</span>
+<span class="sd">        - `xf_spar (float)`: The non-dimensional ending location of the cross</span>
+<span class="sd">            section.</span>
+<span class="sd">        - `Y_rib (1xN Array[float])`: The non-dimensional rib locations within</span>
+<span class="sd">            the wing. This dimension is primarily used to create wing-sections</span>
+<span class="sd">            which primarily define the buckling span&#39;s for laminate objects.</span>
+<span class="sd">        - `n_ply (1xM Array[int])`: An array of integers specifying the number</span>
+<span class="sd">            plies to be used in the model. Each integer refers to the number of</span>
+<span class="sd">            plies to be used for at a given orientation.</span>
+<span class="sd">        - `m_ply (1xM Array[int])`: An array of integers specifying the</span>
+<span class="sd">            material ID to be used for the corresponding number of plies in</span>
+<span class="sd">            n_ply at a given orientation.</span>
+<span class="sd">        - `th_ply (1xM Array[int])`: An array of floats specifying the</span>
+<span class="sd">            degree orientations of the plies used by the lamiantes in the</span>
+<span class="sd">            model.</span>
+<span class="sd">        - `mat_lib (obj)`: A material library containing all of the material</span>
+<span class="sd">            objets to be used in the model.</span>
+<span class="sd">        - `name (str)`: The name of the airfoil section to be used for cross</span>
+<span class="sd">            section generation.</span>
+<span class="sd">        - `wing_SNID (int)`: The first node ID associated with the wing.</span>
+<span class="sd">        - `wing_SEID (int)`: The first beam element ID associated with the wing.</span>
+<span class="sd">        - `wing_SSBID (int)`: The first superbeam ID associated with the wing.</span>
+<span class="sd">        - `SXID (int)`: The starting cross-section ID used by the wing.</span>
+<span class="sd">        - `noe (float)`: The number of beam elements to be used in the wing per</span>
+<span class="sd">            unit length.</span>
+<span class="sd">        - `n_orients (int)`: The number of fiber orientations to be used in</span>
+<span class="sd">            each laminate.</span>
+<span class="sd">        - `n_lams (int)`: The number of laminates required to mesh the desired</span>
+<span class="sd">            cross-section.</span>
+<span class="sd">        - `meshSize (float)`: The maximum aspect ratio a 2D element may have in</span>
+<span class="sd">            the cross-section.</span>
+<span class="sd">        - `ref_ax (str)`: The reference axis to be loaded in the wing.</span>
+<span class="sd">        - `chordVec (1x3 np.array[float])`: This numpy array is used to orient</span>
+<span class="sd">            the cross-section in 3D space. It corresponds to the local unit x-</span>
+<span class="sd">            vector in the cross-section, expressed in the global frame.</span>
+<span class="sd">        - `typeXSect (str)`: The type of cross-section to be used by the wing</span>
+<span class="sd">            structure. Currently the suported typed are &#39;boxbeam&#39;, &#39;laminate&#39;,</span>
+<span class="sd">            and &#39;rectBoxBeam&#39;. See the meshing class in the structures module</span>
+<span class="sd">            for more details.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#The type of the object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">=</span><span class="s">&#39;wing&#39;</span>
+        <span class="c"># Initialize the array holding wing sections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wingSects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># Initialize the wing ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PID</span> <span class="o">=</span> <span class="n">PID</span>
+        <span class="c"># Initialize Lifting surface Array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">liftingSurfaces</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># Name of the airfoil section (used to generate the OML shape of the x-section)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="s">&#39;NACA0012&#39;</span><span class="p">)</span>
+        <span class="c"># The initial starting node ID for the structural generation of the wing</span>
+        <span class="n">tmp_SB_SNID</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;wing_SNID&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># The initial beam element EID for the first superbeam ID</span>
+        <span class="n">tmp_SB_SEID</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;wing_SEID&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># The initial starting superbeam ID</span>
+        <span class="n">tmp_SB_SBID</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;wing_SSBID&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># The starting cross-section ID</span>
+        <span class="n">SXID</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;SXID&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># The number of beam elements to be used per unit length</span>
+        <span class="n">noe</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;noe&#39;</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>
+        <span class="c"># The number of fiber orientations to be used in each laminate</span>
+        <span class="n">n_orients</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;n_orients&#39;</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+        <span class="c"># The number of laminates required to mesh the desired cross-section</span>
+        <span class="n">n_lams</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;n_lams&#39;</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+        <span class="c"># Laminate symmetry</span>
+        <span class="n">lam_sym</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;lam_sym&#39;</span><span class="p">,</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c"># The maximum aspect ratio a 2D element may have in the cross-section</span>
+        <span class="n">meshSize</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;meshSize&#39;</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+        <span class="c"># The reference axis to be loaded in the wing</span>
+        <span class="n">ref_ax</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;ref_ax&#39;</span><span class="p">,</span><span class="s">&#39;shearCntr&#39;</span><span class="p">)</span>
+        <span class="c"># Chord vector for wing</span>
+        <span class="n">chordVec</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;chordVec&#39;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]))</span>
+        <span class="c"># Orientations of each ply in the lamiante</span>
+        <span class="n">th_ply</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;th_ply&#39;</span><span class="p">,[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">n_ply</span><span class="p">))</span>
+        <span class="c"># Type of cross-section</span>
+        <span class="n">typeXSect</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;typeXSect&#39;</span><span class="p">,</span><span class="s">&#39;box&#39;</span><span class="p">)</span>
+        <span class="c"># Calculate the wing span:</span>
+        <span class="n">b_s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p2</span><span class="o">-</span><span class="n">p1</span><span class="p">)</span>
+        <span class="c"># Lambda function to calculate average panel chord length on on the fly.</span>
+        <span class="n">chord</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="p">(</span><span class="n">ctip</span><span class="o">-</span><span class="n">croot</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">/</span><span class="n">b_s</span><span class="o">+</span><span class="n">croot</span>
+        <span class="c"># Create wing sections between each rib:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">Y_rib</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="c"># Create a wing panel object based on the average chord length</span>
+            <span class="c"># Determine the laminate schedule beam section</span>
+            <span class="n">section_lams</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n_lams</span><span class="p">):</span>
+                <span class="c"># Select vectors of thicknesses and MID&#39;s:</span>
+                <span class="n">n_i_tmp</span> <span class="o">=</span> <span class="n">n_ply</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">n_lams</span><span class="o">+</span><span class="n">n_orients</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="n">i</span><span class="o">*</span><span class="n">n_lams</span><span class="o">+</span><span class="n">n_orients</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">n_orients</span><span class="p">]</span>
+                <span class="n">m_i_tmp</span> <span class="o">=</span> <span class="n">m_ply</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">n_lams</span><span class="o">+</span><span class="n">n_orients</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="n">i</span><span class="o">*</span><span class="n">n_lams</span><span class="o">+</span><span class="n">n_orients</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">n_orients</span><span class="p">]</span>
+                <span class="n">th_i_tmp</span> <span class="o">=</span> <span class="n">th_ply</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">n_lams</span><span class="o">+</span><span class="n">n_orients</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="n">i</span><span class="o">*</span><span class="n">n_lams</span><span class="o">+</span><span class="n">n_orients</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">n_orients</span><span class="p">]</span>
+                <span class="n">section_lams</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_tmp</span><span class="p">,</span><span class="n">m_i_tmp</span><span class="p">,</span><span class="n">mat_lib</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="n">lam_sym</span><span class="p">,</span><span class="n">th</span><span class="o">=</span><span class="n">th_i_tmp</span><span class="p">)]</span>
+            <span class="c"># Compile all information needed to create xsection and beams</span>
+            <span class="c"># Starting coordiante of super beam</span>
+            <span class="n">tmp_x1</span> <span class="o">=</span> <span class="n">p1</span><span class="o">+</span><span class="n">Y_rib</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">p2</span><span class="o">-</span><span class="n">p1</span><span class="p">)</span>
+            <span class="c"># Ending coordiante of super beam</span>
+            <span class="n">tmp_x2</span> <span class="o">=</span> <span class="n">p1</span><span class="o">+</span><span class="n">Y_rib</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">p2</span><span class="o">-</span><span class="n">p1</span><span class="p">)</span>
+            <span class="n">tmpWingSect</span> <span class="o">=</span> <span class="n">WingSection</span><span class="p">(</span><span class="n">tmp_x1</span><span class="p">,</span><span class="n">tmp_x2</span><span class="p">,</span><span class="n">chord</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">x0_spar</span><span class="p">,</span><span class="n">xf_spar</span><span class="p">,</span>\
+                <span class="n">section_lams</span><span class="p">,</span><span class="n">mat_lib</span><span class="p">,</span><span class="n">noe</span><span class="p">,</span><span class="n">SSBID</span><span class="o">=</span><span class="n">tmp_SB_SBID</span><span class="p">,</span><span class="n">SNID</span><span class="o">=</span><span class="n">tmp_SB_SNID</span><span class="p">,</span>\
+                <span class="n">SEID</span><span class="o">=</span><span class="n">tmp_SB_SEID</span><span class="p">,</span><span class="n">meshSize</span><span class="o">=</span><span class="n">meshSize</span><span class="p">,</span><span class="n">SXID</span><span class="o">=</span><span class="n">SXID</span><span class="p">,</span><span class="n">ref_ax</span><span class="o">=</span><span class="n">ref_ax</span><span class="p">,</span>\
+                <span class="n">chordVec</span><span class="o">=</span><span class="n">chordVec</span><span class="p">,</span><span class="n">typeXSect</span><span class="o">=</span><span class="n">typeXSect</span><span class="p">)</span>
+            <span class="c"># Prepare ID values for next iteration</span>
+            <span class="n">tmp_SB_SNID</span> <span class="o">=</span> <span class="n">tmpWingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">enid</span>
+            <span class="n">tmp_SB_SEID</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">tmpWingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">elems</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">+</span><span class="mi">1</span>
+            <span class="n">tmp_SB_SBID</span> <span class="o">=</span> <span class="n">tmpWingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">SBID</span><span class="o">+</span><span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wingSects</span> <span class="o">+=</span> <span class="p">[</span><span class="n">tmpWingSect</span><span class="p">]</span>
+            <span class="n">SXID</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wingSects</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">XIDs</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+            <span class="c">#self.model.addElements(tmpWingSect.SuperBeams)</span></div>
+<div class="viewcode-block" id="Wing.addLiftingSurface"><a class="viewcode-back" href="../../AircraftParts.html#AeroComBAT.AircraftParts.Wing.addLiftingSurface">[docs]</a>    <span class="k">def</span> <span class="nf">addLiftingSurface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">SID</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">x3</span><span class="p">,</span><span class="n">x4</span><span class="p">,</span><span class="n">nspan</span><span class="p">,</span><span class="n">nchord</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a potential flow lifting surface to the model.</span>
+<span class="sd">        </span>
+<span class="sd">        This method adds a potential flow panel aerodynamic model to the wing</span>
+<span class="sd">        part. The x1,x2,x3, and x4 points correspond to the root leading edge,</span>
+<span class="sd">        root trailing edge, tip trailing edge, and tip leading edge of the wing</span>
+<span class="sd">        respectively. Currently the only suported types of panels are doublet-</span>
+<span class="sd">        lattice panels to be used for unsteady aerodynamic models.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `SID (int)`: The lifting surface integer identifier corresponding to</span>
+<span class="sd">            the lifting surface.</span>
+<span class="sd">        - `x1 (1x3 numpy array)`: The point in 3D space corresponding to the</span>
+<span class="sd">            root leading edge point of the lifting surface.</span>
+<span class="sd">        - `x2 (1x3 numpy array)`: The point in 3D space corresponding to the</span>
+<span class="sd">            root trailing edge point of the lifting surface.</span>
+<span class="sd">        - `x3 (1x3 numpy array)`: The point in 3D space corresponding to the</span>
+<span class="sd">            tip trailing edge point of the lifting surface.</span>
+<span class="sd">        - `x4 (1x3 numpy array)`: The point in 3D space corresponding to the</span>
+<span class="sd">            tip leading edge point of the lifting surface.</span>
+<span class="sd">        - `nspan (int)`: The number of boxes to be used in the spanwise</span>
+<span class="sd">            direction.</span>
+<span class="sd">        - `nchord (int)`: The number of boxes to be used in the chordwise</span>
+<span class="sd">            direction.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        .. Note:: Mutliple surfaces could be added to the wing part.</span>
+<span class="sd">        </span>
+<span class="sd">        .. Warning:: In order to use the doublet lattice method, the chord</span>
+<span class="sd">            lines of the lifting surface must run in the x-direction, and there</span>
+<span class="sd">            can be no geometric angles of attack present. The geometry of a</span>
+<span class="sd">            general wing can be seen in the figure below:</span>
+<span class="sd">            </span>
+<span class="sd">        .. image:: images/DoubletLatticeWing.png</span>
+<span class="sd">            :align: center</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Create the lifting surface</span>
+        <span class="n">tmpLiftSurf</span> <span class="o">=</span> <span class="n">CAERO1</span><span class="p">(</span><span class="n">SID</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">x3</span><span class="p">,</span><span class="n">x4</span><span class="p">,</span><span class="n">nspan</span><span class="p">,</span><span class="n">nchord</span><span class="p">)</span>
+        <span class="c"># Create a temporary dictionary of CQUADA&#39;s to iterate through later</span>
+        <span class="n">Dict</span> <span class="o">=</span> <span class="n">tmpLiftSurf</span><span class="o">.</span><span class="n">CQUADAs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c"># Store it in the wing object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">liftingSurfaces</span><span class="p">[</span><span class="n">SID</span><span class="p">]</span><span class="o">=</span><span class="n">tmpLiftSurf</span>
+        <span class="c"># CONNECT AERO BOXES TO ELEMENTS</span>
+        <span class="c"># For all elements in the wing</span>
+        <span class="k">for</span> <span class="n">wingSect</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">superBeam</span> <span class="ow">in</span> <span class="n">wingSect</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">EID</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">superBeam</span><span class="o">.</span><span class="n">elems</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="c"># For all panels in the lifting surface</span>
+                    <span class="n">tmpDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">PANID</span><span class="p">,</span> <span class="n">panel</span> <span class="ow">in</span> <span class="n">tmpDict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="c"># Determine the y-coord of the recieving point</span>
+                        <span class="n">y34pan</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+                        <span class="c"># If the panel y-coord is between the nodes of the elem</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">y34pan</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">y34pan</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+                            <span class="c"># The panel&#39;s displacement can be described by the</span>
+                            <span class="c"># displacements of the nodes used by the element.</span>
+                            <span class="c"># Determine the x-coord in the elem corresponding</span>
+                            <span class="c"># to the location of the panel recieving point</span>
+                            <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">y34pan</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                            <span class="c"># Determine the nodal contributions of the displacements</span>
+                            <span class="n">panel</span><span class="o">.</span><span class="n">DOF</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+                            <span class="n">panel</span><span class="o">.</span><span class="n">DOF</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="n">t</span>
+                            <span class="c"># Determine the moment arm of the box acting on the</span>
+                            <span class="c"># beam</span>
+                            <span class="n">x34elem</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">t</span><span class="o">*</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">n2</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">elem</span><span class="o">.</span><span class="n">n1</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                            <span class="n">x34pan</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+                            <span class="n">panel</span><span class="o">.</span><span class="n">xarm</span> <span class="o">=</span> <span class="n">x34pan</span><span class="o">-</span><span class="n">x34elem</span>
+                            <span class="c"># Remove this reference from the dictionary so it</span>
+                            <span class="c"># is not iterated over again for the next element</span>
+                            <span class="k">del</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PANID</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">NID</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">superBeam</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="c"># For all panels in the lifting surface</span>
+                    <span class="n">tmpDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">PANID</span><span class="p">,</span> <span class="n">panel</span> <span class="ow">in</span> <span class="n">tmpDict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                        <span class="c"># Determine the y-coord of the recieving point</span>
+                        <span class="n">y34pan</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+                        <span class="c"># If the panel y-coord is between the nodes of the elem</span>
+                        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y34pan</span><span class="o">-</span><span class="n">node</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">&lt;</span><span class="mf">1e-6</span><span class="p">:</span>
+                            <span class="c"># The panel&#39;s displacement can be described by the</span>
+                            <span class="c"># displacements of the nodes used by the element.</span>
+                            <span class="c"># Determine the x-coord in the elem corresponding</span>
+                            <span class="c"># to the location of the panel recieving point</span>
+                            <span class="n">t</span> <span class="o">=</span> <span class="mi">1</span>
+                            <span class="c"># Determine the nodal contributions of the displacements</span>
+                            <span class="n">panel</span><span class="o">.</span><span class="n">DOF</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">NID</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+                            <span class="c"># Determine the moment arm of the box acting on the</span>
+                            <span class="c"># beam</span>
+                            <span class="n">x34node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">x34pan</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+                            <span class="n">panel</span><span class="o">.</span><span class="n">xarm</span> <span class="o">=</span> <span class="n">x34pan</span><span class="o">-</span><span class="n">x34node</span>
+                            <span class="c"># Remove this reference from the dictionary so it</span>
+                            <span class="c"># is not iterated over again for the next element</span>
+                            <span class="k">del</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PANID</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Warning, some elements could not have their displacements&#39;</span><span class="o">+</span>
+                <span class="s">&#39; matched by beam elements. This includes:&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">PANID</span><span class="p">,</span> <span class="n">panel</span> <span class="ow">in</span> <span class="n">Dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="c">#panel.DOF[-1] = None</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;CQUADA </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">PANID</span><span class="p">))</span></div>
+<div class="viewcode-block" id="Wing.plotRigidWing"><a class="viewcode-back" href="../../AircraftParts.html#AeroComBAT.AircraftParts.Wing.plotRigidWing">[docs]</a>    <span class="k">def</span> <span class="nf">plotRigidWing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots the rigid wing.</span>
+<span class="sd">        </span>
+<span class="sd">        This method plots the rigid model of the wing. This includes the</span>
+<span class="sd">        reference axis of the beams, the cross-sections of the beams, and the</span>
+<span class="sd">        lifting surfaces that make up the wing. This is an excellent check to</span>
+<span class="sd">        perform before adding the part to a FEM model.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `figName (str)`: The name of the MayaVi figure. &#39;Rigid Wing&#39; by</span>
+<span class="sd">            default.</span>
+<span class="sd">        - `numXSects (int)`: The number of cross-sections that each wing</span>
+<span class="sd">            section will display. By default it is 2.</span>
+<span class="sd">        - `color (1x3 tuple(int))`: This is a length 3 tuple to be used as the</span>
+<span class="sd">            color of the beam reference axes. Black by default.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">figName</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;figName&#39;</span><span class="p">,</span><span class="s">&#39;Rigid Wing&#39;</span><span class="p">)</span>
+        <span class="c"># Chose the color of the beam, defaults to black, accepts tuple</span>
+        <span class="n">clr</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c"># Chose the number of cross-sections to be plotted. By default this is 2</span>
+        <span class="c"># One at the beggining and one at the end of the super beam</span>
+        <span class="n">numXSects</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;numXSects&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figure</span><span class="o">=</span><span class="n">figName</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sects</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wingSects</span><span class="p">:</span>
+            <span class="n">sects</span><span class="o">.</span><span class="n">plotRigid</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="n">figName</span><span class="p">,</span><span class="n">clr</span><span class="o">=</span><span class="n">clr</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="n">numXSects</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">liftingSurfaces</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">SID</span><span class="p">,</span> <span class="n">surface</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">liftingSurfaces</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">surface</span><span class="o">.</span><span class="n">plotLiftingSurface</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="n">figName</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">AeroComBAT 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

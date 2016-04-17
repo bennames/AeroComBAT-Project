@@ -1,14 +1,21 @@
-The FEM Interface Module
-------------------------
+FEM Interface Module
+--------------------
 
 .. automodule:: AeroComBAT.FEM
 
-.. module:: AeroComBAT.FEM
-
 MODEL
 +++++
-
-.. autoclass:: Model
+.. autoclass:: AeroComBAT.FEM.Model
    :members: addElements, addAircraftParts, resetPointLoads, resetResults,
              applyLoads, applyConstraints, staticAnalysis, normalModesAnalysis,
-             plotRigidModel, plotDeformedModel
+             flutterAnalysis, plotRigidModel, plotDeformedModel
+LOAD SET
+++++++++
+.. autoclass:: AeroComBAT.FEM.LoadSet
+   :members: addPointLoad, addDistributedLoad
+
+FLUTTER POINT
++++++++++++++
+.. autoclass:: AeroComBAT.FEM.FlutterPoint
+   :members: __init__, saveSol, interpOmegaRoot
+

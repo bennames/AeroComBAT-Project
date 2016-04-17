@@ -19,8 +19,8 @@
 
 
 \title{AeroComBAT Documentation}
-\date{January 22, 2016}
-\release{0.2.1}
+\date{April 17, 2016}
+\release{1.0}
 \author{Ben Names}
 \newcommand{\sphinxlogo}{}
 \renewcommand{\releasename}{Release}
@@ -129,11 +129,953 @@
 \phantomsection\label{index::doc}
 
 
-Contents:
+AeroComBAT is a python API for composite, aeroelastic structures. The physics
+of this package have been heavily verified against codes such as NABSA, VABS,
+BECAS, and NX NASTRAN.
 
 
-\chapter{The FEM Interface Module}
-\label{FEM:welcome-to-aerocombat-s-documentation}\label{FEM:module-AeroComBAT.FEM}\label{FEM::doc}\label{FEM:the-fem-interface-module}\index{AeroComBAT.FEM (module)}
+\chapter{AeroComBAT Introduction}
+\label{index:welcome-to-aerocombat-s-documentation}\label{index:aerocombat-introduction}
+AeroComBAT (Aeroelastic Composite Beam Analysis Tool) is a python API intended
+to allow users to efficiently models composite beam structures.
+\begin{quote}\begin{description}
+\item[{Authors}] \leavevmode
+Ben Names
+
+\item[{Version}] \leavevmode
+1.0 of 2016/04/16
+
+\end{description}\end{quote}
+
+
+\chapter{Version 1.0}
+\label{index:version-1-0}
+\textbf{Capabilities}
+\begin{itemize}
+\item {} 
+Simple classical lamination theory analysis
+
+\item {} 
+Cross-sectional analysis of composite beams
+
+\item {} \begin{description}
+\item[{3D Composite Timoshenko (shear deformable) beam analysis}] \leavevmode\begin{itemize}
+\item {} 
+Linear static analysis
+
+\item {} 
+Normal mode analysis
+
+\item {} 
+Dynamic Aeroelastic Stability (Flutter) Analysis
+
+\end{itemize}
+
+\end{description}
+
+\end{itemize}
+
+
+\chapter{Installation Instructions}
+\label{index:installation-instructions}
+First of all it is strongly recomended that the user first install the Anaconda
+python distribution from Continuum analytics \href{https://www.continuum.io/}{here}.
+
+Ensure that once this is installed, numpy and numba are installed. Finally,
+in the command prompt or terminal, run:
+
+Distributed load function example:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{conda} \PYG{n}{install} \PYG{n}{mayavi}
+\end{Verbatim}
+
+Mayavi is the 3D visualization engine currently used by AeroComBAT. Note that
+in some cases installing mayavi has been found to downgrade numpy. This is not
+necessary, so try to update you numpy installation.
+
+
+\chapter{Tutorials}
+\label{index:tutorials}
+For for AeroComBAT Tutorials, see AeroComBAT Tutorials.
+
+
+\chapter{Table of Contents:}
+\label{index:table-of-contents}
+
+\section{AeroComBAT Tutorials}
+\label{tutorials:aerocombat-tutorials}\label{tutorials::doc}
+The following are tutorials intended convey how best to use AeroComBAT.
+
+
+\subsection{Tutorial 1 - Material Library and Classical Lamination Theory}
+\label{tutorials:tutorial-1-material-library-and-classical-lamination-theory}
+This tutorial is intended to expose the user to the material library class as
+well as creating CLT laminates with the laminate class. Note that these
+laminate objects are integral to meshing the cross-section (XSect) objects.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} AEROCOMBAT TUTORIAL 1 \PYGZhy{} MATERIAL lIBRARY AND CLASSICAL LAMINATION THEORY}
+\PYG{c}{\PYGZsh{} =============================================================================}
+
+\PYG{c}{\PYGZsh{} IMPORT SYSTEM PACKAGES}
+\PYG{c}{\PYGZsh{} ======================}
+\PYG{k+kn}{import} \PYG{n+nn}{sys}
+\PYG{k+kn}{import} \PYG{n+nn}{os}
+\PYG{c}{\PYGZsh{} Append the root to the system path}
+\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{os}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{abspath}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{..}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} IMPORT AEROCOMBAT CLASSES}
+\PYG{c}{\PYGZsh{} =========================}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Structures} \PYG{k+kn}{import} \PYG{n}{MaterialLib}\PYG{p}{,} \PYG{n}{Laminate}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Utilities} \PYG{k+kn}{import} \PYG{n}{RotationHelper}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.tabulate} \PYG{k+kn}{import} \PYG{n}{tabulate}
+\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+
+
+\PYG{c}{\PYGZsh{} MATERIAL lIBRARY VALIDATION}
+\PYG{c}{\PYGZsh{} ===========================}
+\PYG{c}{\PYGZsh{} Generate Empty Material Library}
+\PYG{n}{matlib} \PYG{o}{=} \PYG{n}{MaterialLib}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add a graphite orthotropic material}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Graphite\PYGZhy{}Polymer Composite ortho}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{ortho}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYGZbs{}
+                \PYG{p}{[}\PYG{l+m+mf}{155.0e9}\PYG{p}{,} \PYG{l+m+mf}{12.1e9}\PYG{p}{,} \PYG{l+m+mf}{12.1e9}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{458}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{248}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{248}\PYG{p}{,} \PYG{l+m+mf}{3.2e9}\PYG{p}{,} \PYG{l+m+mf}{4.4e9}\PYG{p}{,}\PYGZbs{}
+                \PYG{l+m+mf}{4.4e9}\PYG{p}{,} \PYG{l+m+mf}{1.7e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add a graphite transversely isotropic material}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Graphite\PYGZhy{}Polymer Composite}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYGZbs{}
+                \PYG{p}{[}\PYG{l+m+mf}{155.0e9}\PYG{p}{,} \PYG{l+m+mf}{12.1e9}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{458}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{248}\PYG{p}{,} \PYG{l+m+mf}{4.4e9}\PYG{p}{,} \PYG{l+m+mf}{1.7e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add a glass transversely isotropic material}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Glass\PYGZhy{}Polymer Composite}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYGZbs{}
+                \PYG{p}{[}\PYG{l+m+mf}{50.0e9}\PYG{p}{,} \PYG{l+m+mf}{15.2e9}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{428}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{254}\PYG{p}{,} \PYG{l+m+mf}{4.7e9}\PYG{p}{,} \PYG{l+m+mf}{1.2e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add a T300 transversely isotropic material}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{T300/5208}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYGZbs{}
+                \PYG{p}{[}\PYG{l+m+mf}{181.0e9}\PYG{p}{,} \PYG{l+m+mf}{10.3e9}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{458}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{28}\PYG{p}{,} \PYG{l+m+mf}{7.17e9}\PYG{p}{,} \PYG{l+m+mf}{1.8e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add a aluminum isotropic material}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{5}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AL\PYGZhy{}2050}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{75.8}\PYG{p}{,} \PYG{l+m+mf}{0.33}\PYG{p}{,} \PYG{l+m+mf}{2.7e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add a rotated T300 transversely isotropic material}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{6}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{T300/5208}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYGZbs{}
+                \PYG{p}{[}\PYG{l+m+mf}{181.0e9}\PYG{p}{,} \PYG{l+m+mf}{10.3e9}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{458}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mi}{28}\PYG{p}{,} \PYG{l+m+mf}{7.17e9}\PYG{p}{,} \PYG{l+m+mf}{1.8e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{,}\PYG{n}{th} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{45.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Print a summary of the mat}
+\PYG{n}{matlib}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Get the material associated with MID 1}
+\PYG{n}{mat1} \PYG{o}{=} \PYG{n}{matlib}\PYG{o}{.}\PYG{n}{getMat}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Get the compliance matrix of the material mat1}
+\PYG{n}{Smat1} \PYG{o}{=} \PYG{n}{mat1}\PYG{o}{.}\PYG{n}{Smat}
+\PYG{c}{\PYGZsh{} Get the stiffness matrix of the material mat1 and round for accuracy}
+\PYG{n}{Cmat1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{around}\PYG{p}{(}\PYG{n}{mat1}\PYG{o}{.}\PYG{n}{Cmat}\PYG{o}{/}\PYG{l+m+mf}{1e9}\PYG{p}{,}\PYG{n}{decimals}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{n}{Cmat1}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{around}\PYG{p}{(}\PYG{n}{Cmat1}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} The following matricies are the correct compliance and stiffness matricies}
+\PYG{n}{Smat1Test} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{p}{[}\PYG{l+m+mf}{6.45e\PYGZhy{}12}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.6e\PYGZhy{}12}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.6e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.6e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{82.6e\PYGZhy{}12}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{37.9e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.6e\PYGZhy{}12}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{37.9e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{82.6e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{312e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{227e\PYGZhy{}12}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{227e\PYGZhy{}12}\PYG{p}{]}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{Cmat1Test} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{p}{[}\PYG{l+m+mf}{158e9}\PYG{p}{,}\PYG{l+m+mf}{5.64e9}\PYG{p}{,}\PYG{l+m+mf}{5.64e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{5.64e9}\PYG{p}{,}\PYG{l+m+mf}{15.51e9}\PYG{p}{,}\PYG{l+m+mf}{7.21e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{5.64e9}\PYG{p}{,}\PYG{l+m+mf}{7.21e9}\PYG{p}{,}\PYG{l+m+mf}{15.51e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{3.2e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{4.4e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+                      \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{4.4e9}\PYG{p}{]}\PYG{p}{]}\PYG{p}{)}\PYG{o}{/}\PYG{l+m+mf}{1e9}
+\PYG{c}{\PYGZsh{} Check to make sure the calculated values are correct}
+\PYG{n}{np}\PYG{o}{.}\PYG{n}{testing}\PYG{o}{.}\PYG{n}{assert\PYGZus{}array\PYGZus{}almost\PYGZus{}equal}\PYG{p}{(}\PYG{n}{Smat1}\PYG{p}{,}\PYG{n}{Smat1Test}\PYG{p}{,}\PYG{n}{decimal}\PYG{o}{=}\PYG{l+m+mi}{12}\PYG{p}{)}
+\PYG{n}{np}\PYG{o}{.}\PYG{n}{testing}\PYG{o}{.}\PYG{n}{assert\PYGZus{}array\PYGZus{}almost\PYGZus{}equal}\PYG{p}{(}\PYG{n}{Cmat1}\PYG{p}{,}\PYG{n}{Cmat1Test}\PYG{p}{,}\PYG{n}{decimal}\PYG{o}{=}\PYG{l+m+mi}{12}\PYG{p}{)}
+
+
+\PYG{c}{\PYGZsh{} MATERIAL PROPERTY ROTATION HELPER VALIDATION}
+\PYG{c}{\PYGZsh{} ============================================}
+\PYG{c}{\PYGZsh{} Create a rotation helper object}
+\PYG{n}{rh} \PYG{o}{=} \PYG{n}{RotationHelper}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create an array of x\PYGZhy{}y\PYGZhy{}z rotations}
+\PYG{n}{th} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{45.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Initialize a stiffness matrix}
+\PYG{n}{C} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{p}{[}\PYG{l+m+mf}{1.8403e11}\PYG{p}{,}\PYG{l+m+mf}{5.4101e9}\PYG{p}{,}\PYG{l+m+mf}{5.4101e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+              \PYG{p}{[}\PYG{l+m+mf}{5.4101e9}\PYG{p}{,}\PYG{l+m+mf}{1.31931e10}\PYG{p}{,}\PYG{l+m+mf}{6.12866e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+              \PYG{p}{[}\PYG{l+m+mf}{5.4101e9}\PYG{p}{,}\PYG{l+m+mf}{6.12866e9}\PYG{p}{,}\PYG{l+m+mf}{1.31931e10}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+              \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{5.21455e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+              \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{7.17e9}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{,}\PYGZbs{}
+              \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{7.17e9}\PYG{p}{]}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Convert it into a compliance matrix}
+\PYG{n}{S} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linalg}\PYG{o}{.}\PYG{n}{inv}\PYG{p}{(}\PYG{n}{C}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Rotate the compliance matrix}
+\PYG{n}{Sp} \PYG{o}{=} \PYG{n}{rh}\PYG{o}{.}\PYG{n}{transformCompl}\PYG{p}{(}\PYG{n}{S}\PYG{p}{,}\PYG{n}{th}\PYG{p}{,}\PYG{n}{xsect}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Convert it back to a stiffness matrix}
+\PYG{n}{Cp} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linalg}\PYG{o}{.}\PYG{n}{inv}\PYG{p}{(}\PYG{n}{Sp}\PYG{p}{)}
+\PYG{k}{print}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{The rotated stiffness matrix:}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{k}{print}\PYG{p}{(}\PYG{n}{tabulate}\PYG{p}{(}\PYG{n}{np}\PYG{o}{.}\PYG{n}{around}\PYG{p}{(}\PYG{n}{Cp}\PYG{o}{\PYGZhy{}}\PYG{n}{C}\PYG{p}{,}\PYG{n}{decimals}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}\PYG{p}{,}\PYG{n}{tablefmt}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{fancy\PYGZus{}grid}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} CLT VALIDATION}
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} Initialize the number of plies per each orientation}
+\PYG{n}{n\PYGZus{}i} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Initialize the materials to be used at each orientation}
+\PYG{n}{m\PYGZus{}i} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Initialize the angle orientations for the plies}
+\PYG{n}{th} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{30}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{30}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{45}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Create a laminate with default orientations (for 4 orientations, this will}
+\PYG{c}{\PYGZsh{} default to th\PYGZus{}defalt = [0,45,90,\PYGZhy{}45])}
+\PYG{n}{lam1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i}\PYG{p}{,}\PYG{n}{m\PYGZus{}i}\PYG{p}{,}\PYG{n}{matlib}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Print a summary of laminate 1}
+\PYG{k}{print}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate 1 summary:}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{lam1}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{decimals}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a laminate with default orientations (for more or less than 4}
+\PYG{c}{\PYGZsh{} orientations, th\PYGZus{}default = [0]*len(n\PYGZus{}i))}
+\PYG{n}{lam2} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i}\PYG{o}{+}\PYG{n}{n\PYGZus{}i}\PYG{p}{,}\PYG{n}{m\PYGZus{}i}\PYG{o}{+}\PYG{n}{m\PYGZus{}i}\PYG{p}{,}\PYG{n}{matlib}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Print summary of laminate 2}
+\PYG{k}{print}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate 2 summary:}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{lam2}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{decimals}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a laminate using the above rotation orientations}
+\PYG{n}{lam3} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i}\PYG{p}{,}\PYG{n}{m\PYGZus{}i}\PYG{p}{,}\PYG{n}{matlib}\PYG{p}{,}\PYG{n}{th}\PYG{o}{=}\PYG{n}{th}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Print Summary of laminate 3}
+\PYG{k}{print}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate 3 summary:}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{lam3}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{decimals}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}
+\end{Verbatim}
+
+
+\subsection{Tutorial 2 - CQUADX and Airfoil Classes}
+\label{tutorials:tutorial-2-cquadx-and-airfoil-classes}
+This tutorial is intended to expose the user to the CQUADX and airfoil classes.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} AEROCOMBAT TUTORIAL 2 \PYGZhy{} CQUADX AND AIRFOIL}
+\PYG{c}{\PYGZsh{} =============================================================================}
+
+\PYG{c}{\PYGZsh{} IMPORT SYSTEM PACKAGES}
+\PYG{c}{\PYGZsh{} ======================}
+\PYG{k+kn}{import} \PYG{n+nn}{sys}
+\PYG{k+kn}{import} \PYG{n+nn}{os}
+
+\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{os}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{abspath}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{..}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} IMPORT AEROCOMBAT CLASSES}
+\PYG{c}{\PYGZsh{} =========================}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Structures} \PYG{k+kn}{import} \PYG{n}{Node}\PYG{p}{,} \PYG{n}{MaterialLib}\PYG{p}{,} \PYG{n}{CQUADX}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Aerodynamics} \PYG{k+kn}{import} \PYG{n}{Airfoil}
+
+\PYG{c}{\PYGZsh{} IMPORT NUMPY MODULES}
+\PYG{c}{\PYGZsh{} ====================}
+\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+\PYG{k+kn}{import} \PYG{n+nn}{matplotlib.pyplot} \PYG{k+kn}{as} \PYG{n+nn}{plt}
+
+\PYG{c}{\PYGZsh{} Material Info}
+\PYG{n}{mat\PYGZus{}lib} \PYG{o}{=} \PYG{n}{MaterialLib}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add an aluminum isotropic material}
+\PYG{n}{mat\PYGZus{}lib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AL\PYGZhy{}2050}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{75.8}\PYG{p}{,} \PYG{l+m+mf}{0.33}\PYG{p}{,} \PYG{l+m+mf}{2.7e3}\PYG{p}{]}\PYG{p}{,} \PYG{o}{.}\PYG{l+m+mf}{15e\PYGZhy{}3}\PYG{p}{)}
+                
+
+\PYG{c}{\PYGZsh{} CQUADX 2D ELEMENT CREATION}
+\PYG{c}{\PYGZsh{} ==========================}
+\PYG{c}{\PYGZsh{} Create a node 1 object}
+\PYG{n}{n1} \PYG{o}{=} \PYG{n}{Node}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a node 2 object}
+\PYG{n}{n2} \PYG{o}{=} \PYG{n}{Node}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{2.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a node 3 object}
+\PYG{n}{n3} \PYG{o}{=} \PYG{n}{Node}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{2.}\PYG{p}{,}\PYG{l+m+mf}{3.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a node 4 object}
+\PYG{n}{n4} \PYG{o}{=} \PYG{n}{Node}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{5.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a CQUADX element}
+\PYG{n}{elem1} \PYG{o}{=} \PYG{n}{CQUADX}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{p}{[}\PYG{n}{n1}\PYG{p}{,}\PYG{n}{n2}\PYG{p}{,}\PYG{n}{n3}\PYG{p}{,}\PYG{n}{n4}\PYG{p}{]}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{mat\PYGZus{}lib}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Print a summary of the element}
+\PYG{n}{elem1}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{nodes}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} AIRFOIL OUTER MOLD LINE VALIDATION}
+\PYG{c}{\PYGZsh{} ==================================}
+\PYG{c}{\PYGZsh{} Initialize a chord length of 1}
+\PYG{n}{c} \PYG{o}{=} \PYG{l+m+mf}{1.}
+\PYG{c}{\PYGZsh{} Create an airfoil object with a \PYGZsq{}box\PYGZsq{} profile}
+\PYG{n}{af1} \PYG{o}{=} \PYG{n}{Airfoil}\PYG{p}{(}\PYG{n}{c}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{box}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Generate a set of non\PYGZhy{}dimensional x\PYGZhy{}coordinates}
+\PYG{n}{x} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{o}{\PYGZhy{}}\PYG{o}{.}\PYG{l+m+mi}{5}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{5}\PYG{p}{,}\PYG{l+m+mi}{50}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create the upper and lower box airfoil curves}
+\PYG{n}{xu}\PYG{p}{,}\PYG{n}{yu}\PYG{p}{,}\PYG{n}{xl}\PYG{p}{,}\PYG{n}{yl} \PYG{o}{=} \PYG{n}{af1}\PYG{o}{.}\PYG{n}{points}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a matplotlib figure}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{figure}\PYG{p}{(}\PYG{n}{num}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{xu}\PYG{p}{,}\PYG{n}{yu}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{xl}\PYG{p}{,}\PYG{n}{yl}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{axes}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{set\PYGZus{}aspect}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{equal}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{datalim}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{x coordinate along the airfoil}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{y coordinate along the airfoil}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Box airfoil profile}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{False}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} Create a NACA2412 airfoil profile}
+\PYG{n}{af2} \PYG{o}{=} \PYG{n}{Airfoil}\PYG{p}{(}\PYG{n}{c}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NACA2412}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Generate a set of non\PYGZhy{}dimensional x\PYGZhy{}coordinates}
+\PYG{n}{x} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mf}{1.}\PYG{p}{,}\PYG{l+m+mi}{500}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create the upper and lower airfoil curves}
+\PYG{n}{xu}\PYG{p}{,}\PYG{n}{yu}\PYG{p}{,}\PYG{n}{xl}\PYG{p}{,}\PYG{n}{yl} \PYG{o}{=} \PYG{n}{af2}\PYG{o}{.}\PYG{n}{points}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a matplotlib figure}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{figure}\PYG{p}{(}\PYG{n}{num}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{xu}\PYG{p}{,}\PYG{n}{yu}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{xl}\PYG{p}{,}\PYG{n}{yl}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{False}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{axes}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{set\PYGZus{}aspect}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{equal}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{datalim}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\end{Verbatim}
+
+
+\subsection{Tutorial 3 - Cross-Section Meshing and Analysis}
+\label{tutorials:tutorial-3-cross-section-meshing-and-analysis}
+This is the first extensive tutorial. It exposes the user to meshing several
+different cross-section types, all with varying complexities.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} AEROCOMBAT TUTORIAL 3 \PYGZhy{} Using XSect Objects}
+\PYG{c}{\PYGZsh{} =============================================================================}
+
+\PYG{c}{\PYGZsh{} IMPORT SYSTEM PACKAGES}
+\PYG{c}{\PYGZsh{} ======================}
+\PYG{k+kn}{import} \PYG{n+nn}{sys}
+\PYG{k+kn}{import} \PYG{n+nn}{os}
+
+\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{os}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{abspath}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{..}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} IMPORT AEROCOMBAT CLASSES}
+\PYG{c}{\PYGZsh{} =========================}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Structures} \PYG{k+kn}{import} \PYG{n}{MaterialLib}\PYG{p}{,} \PYG{n}{Laminate}\PYG{p}{,} \PYG{n}{XSect}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Aerodynamics} \PYG{k+kn}{import} \PYG{n}{Airfoil}
+
+\PYG{c}{\PYGZsh{} IMPORT NUMPY MODULES}
+\PYG{c}{\PYGZsh{} ====================}
+\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+
+
+\PYG{c}{\PYGZsh{} ADD MATERIALS TO THE MATERIAL LIBRARY}
+\PYG{c}{\PYGZsh{} =====================================}
+\PYG{c}{\PYGZsh{} Create a material library object}
+\PYG{n}{matLib} \PYG{o}{=} \PYG{n}{MaterialLib}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add material property from Hodges 1999 Asymptotically correct anisotropic}
+\PYG{c}{\PYGZsh{} beam theory (Imperial)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AS43501\PYGZhy{}6}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{20.6e6}\PYG{p}{,}\PYG{l+m+mf}{1.42e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{34}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{3}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mf}{87e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{005}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add material property from Hodges 1999 Asymptotically correct anisotropic}
+\PYG{c}{\PYGZsh{} beam theory (Imperial)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AS43501\PYGZhy{}6*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{20.6e6}\PYG{p}{,}\PYG{l+m+mf}{1.42e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{34}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{42}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mf}{87e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{005}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add an aluminum material (SI)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AL}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{71.7e9}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{33}\PYG{p}{,}\PYG{l+m+mi}{2810}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{005}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} CREATE A LAMINATE CROSS\PYGZhy{}SECTION}
+\PYG{c}{\PYGZsh{} ===============================}
+\PYG{c}{\PYGZsh{} Create a box airfoil object. Note that when creating an airfoil object, only}
+\PYG{c}{\PYGZsh{} the chord length is used. As such, it doesn\PYGZsq{}t truly matter if the airfoil}
+\PYG{c}{\PYGZsh{} has an airfoil profile or a box profile. In this case we will just give it a}
+\PYG{c}{\PYGZsh{} box profile.}
+\PYG{c}{\PYGZsh{} Initialize the chord length}
+\PYG{n}{c1} \PYG{o}{=} \PYG{l+m+mf}{1.}
+\PYG{c}{\PYGZsh{} Initialize the non\PYGZhy{}dimensional starting and stopping points of the cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} section. These bounds when dimensionalized will determine the overall}
+\PYG{c}{\PYGZsh{} dimesions of the cross\PYGZhy{}section. Therefore the total width of the laminate is:}
+\PYG{c}{\PYGZsh{} xdim[1]*c1\PYGZhy{}xdim[0]*x. In this case, the total width is 2!}
+\PYG{n}{xdim1} \PYG{o}{=} \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.}\PYG{p}{,}\PYG{l+m+mf}{1.}\PYG{p}{]}
+\PYG{n}{af1} \PYG{o}{=} \PYG{n}{Airfoil}\PYG{p}{(}\PYG{n}{c1}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{box}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create a layup schedule for the laminate. In this case, we will select a}
+\PYG{c}{\PYGZsh{} layup schedule of [0\PYGZus{}2/45/90/3]\PYGZus{}s}
+\PYG{n}{th\PYGZus{}1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{45}\PYG{p}{,}\PYG{l+m+mi}{90}\PYG{p}{]}
+\PYG{n}{n\PYGZus{}1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{3}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Notice how the orientations are stored in the \PYGZsq{}th\PYGZus{}1\PYGZsq{} array, the subscripts are}
+\PYG{c}{\PYGZsh{} stored in the \PYGZsq{}n\PYGZus{}1\PYGZsq{} array, and the material information is held in \PYGZsq{}m\PYGZus{}1\PYGZsq{}.}
+\PYG{c}{\PYGZsh{} Create the laminate object:}
+\PYG{n}{lam1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}1}\PYG{p}{,}\PYG{n}{m\PYGZus{}1}\PYG{p}{,}\PYG{n}{matLib}\PYG{p}{,}\PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}1}\PYG{p}{,}\PYG{n}{sym}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} In order to make a cross\PYGZhy{}section, we must add all of the laminates to be used}
+\PYG{c}{\PYGZsh{} to an array:}
+\PYG{n}{laminates1} \PYG{o}{=} \PYG{p}{[}\PYG{n}{lam1}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} We now have all the information necessary to make a laminate beam cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} section:}
+\PYG{n}{xsect1} \PYG{o}{=} \PYG{n}{XSect}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{af1}\PYG{p}{,}\PYG{n}{xdim1}\PYG{p}{,}\PYG{n}{laminates1}\PYG{p}{,}\PYG{n}{matLib}\PYG{p}{,}\PYG{n}{typeXSect}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{laminate}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{meshSize}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} With the cross\PYGZhy{}section object initialized, let\PYGZsq{}s run the cross\PYGZhy{}sectional}
+\PYG{c}{\PYGZsh{} analysis to get cross\PYGZhy{}section stiffnesses, etc.}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{xSectionAnalysis}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s see what our rigid cross\PYGZhy{}section looks like when plotted in 3D:}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{plotRigid}\PYG{p}{(}\PYG{n}{mesh}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Note that while it might look like the cross\PYGZhy{}section is made of triangular}
+\PYG{c}{\PYGZsh{} elements, it\PYGZsq{}s actually made of quadrilaterals. This is an artifact of how}
+\PYG{c}{\PYGZsh{} the visualizer mayavi works. Let\PYGZsq{}s get a summary of the cross\PYGZhy{}section\PYGZsq{}s}
+\PYG{c}{\PYGZsh{} stiffnesses, ect.}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{stiffMat}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Notice that from the command line output, all of the important cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} sectional geometric properties are located at the origin. By observing the}
+\PYG{c}{\PYGZsh{} cross\PYGZhy{}section stiffness matrix, it can be seen by the 1,3 entry that there}
+\PYG{c}{\PYGZsh{} is shear\PYGZhy{}axial coupling. From the non\PYGZhy{}zero 4,6 entry, we can also tell that}
+\PYG{c}{\PYGZsh{} the cross\PYGZhy{}section has bending\PYGZhy{}torsion coupling.}
+\PYG{c}{\PYGZsh{} We can apply a force to the face of this cross\PYGZhy{}section at the reference axis}
+\PYG{c}{\PYGZsh{} (which in this case is at x,y = 0,0) and see what the stresses look like. In}
+\PYG{c}{\PYGZsh{} this case we\PYGZsq{}ll apply [Fx,Fy,Fz,Mx,My,Mz]=[0.,0.,0.,100.,0.,0.] as if the}
+\PYG{c}{\PYGZsh{} beam belonging to this cross\PYGZhy{}section were in pure bending.}
+\PYG{n}{force1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{100.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{10.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{calcWarpEffects}\PYG{p}{(}\PYG{n}{force}\PYG{o}{=}\PYG{n}{force1}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Having applied the force, let\PYGZsq{}s see what the sigma\PYGZus{}zz (normal stresses of the}
+\PYG{c}{\PYGZsh{} beam) look like}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate Sigma\PYGZus{}33 Stress}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{sig\PYGZus{}33}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s look at the sigma\PYGZus{}13 stress state now since we know there is torsion}
+\PYG{c}{\PYGZsh{} coupling:}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate Sigma\PYGZus{}13 Stress}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{sig\PYGZus{}13}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Notice the increased stress in two of the plies? Recall which ones those are?}
+\PYG{c}{\PYGZsh{} Those plies are the 45 degree plies which are currently taking the shear!}
+
+\PYG{c}{\PYGZsh{} CREATE A LAMIANTE CROSS\PYGZhy{}SECTION WITH A DIFFERENT REFERENCE AXIS}
+\PYG{c}{\PYGZsh{} ===============================================================}
+\PYG{c}{\PYGZsh{} The cross\PYGZhy{}section we just made happened to have all of it\PYGZsq{}s geometrical}
+\PYG{c}{\PYGZsh{} locations (mass center, shear center, tension center) at the origin, which}
+\PYG{c}{\PYGZsh{} is where we applied our force resultant. Suppose we wanted to give the cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} section a different reference axis. We can do this by executing the}
+\PYG{c}{\PYGZsh{} xSectionAnalysis method again:}
+\PYG{n}{ref\PYGZus{}ax} \PYG{o}{=} \PYG{p}{[}\PYG{o}{.}\PYG{l+m+mi}{5}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} This will move the reference axis (location where we apply forces and}
+\PYG{c}{\PYGZsh{} moments) to x=0.5, y=0. Carrying out the cross\PYGZhy{}sectional analysis again, we}
+\PYG{c}{\PYGZsh{} get:}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{xSectionAnalysis}\PYG{p}{(}\PYG{n}{ref\PYGZus{}ax}\PYG{o}{=}\PYG{n}{ref\PYGZus{}ax}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s see how the cross\PYGZhy{}section\PYGZsq{}s stiffness matrix has changed:}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{stiffMat}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s not apply the same force resultant and see what the stresses look like:}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{calcWarpEffects}\PYG{p}{(}\PYG{n}{force}\PYG{o}{=}\PYG{n}{force1}\PYG{p}{)}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate Sigma\PYGZus{}33 Stress New Reference Axis}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{sig\PYGZus{}33}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{xsect1}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Laminate Sigma\PYGZus{}13 Stress New Reference Axis}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{sig\PYGZus{}13}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Notice how the stress resultants are fairly different once we moved the}
+\PYG{c}{\PYGZsh{} reference axis.}
+
+\PYG{c}{\PYGZsh{} CREATE A WRAPPED RECTANGULAR BOX\PYGZhy{}BEAM CROSS\PYGZhy{}SECTION}
+\PYG{c}{\PYGZsh{} ===================================================}
+\PYG{c}{\PYGZsh{} Layup 1 Box beam (0.5 x 0.923 in\PYGZca{}2 box with laminate schedule [0]\PYGZus{}6)}
+
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s make a slightly more complex cross\PYGZhy{}section. Using the \PYGZsq{}rectBox\PYGZsq{} key}
+\PYG{c}{\PYGZsh{} word and four laminates, we can make a cross\PYGZhy{}section box\PYGZhy{}beam. In the next}
+\PYG{c}{\PYGZsh{} case, we are going to make a cross\PYGZhy{}section from Hodges 1999 Asymptotically}
+\PYG{c}{\PYGZsh{} correct anisotropic beam theory paper. We will do the most simple box\PYGZhy{}beam}
+\PYG{c}{\PYGZsh{} in this case, which is the \PYGZdq{}Layup 1\PYGZdq{} case:}
+\PYG{c}{\PYGZsh{} Establish the chord length}
+\PYG{n}{c2} \PYG{o}{=} \PYG{l+m+mf}{0.53}
+\PYG{c}{\PYGZsh{} Establish the non\PYGZhy{}dimensional starting and stopping points of the cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} section.}
+\PYG{n}{xdim2} \PYG{o}{=} \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{o}{.}\PYG{l+m+mi}{953}\PYG{o}{/}\PYG{p}{(}\PYG{n}{c2}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{953}\PYG{o}{/}\PYG{p}{(}\PYG{n}{c2}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} This can be confirmed by plotting, but it should be noted that for the}
+\PYG{c}{\PYGZsh{} \PYGZsq{}rectBox\PYGZsq{} routine, the mesh y\PYGZhy{}coordinates will go from \PYGZhy{}c2/2 \PYGZhy{}\PYGZgt{} c2/2, and the}
+\PYG{c}{\PYGZsh{} x\PYGZhy{}coordinates will go from xdim2[0]*c \PYGZhy{}\PYGZgt{} xdim2[1]*c. Therefore the box\PYGZsq{}s}
+\PYG{c}{\PYGZsh{} overall dimesions should be from 0.53 in x 0.953 in. Next we will generate}
+\PYG{c}{\PYGZsh{} the airfoil box:}
+\PYG{n}{af2} \PYG{o}{=} \PYG{n}{Airfoil}\PYG{p}{(}\PYG{n}{c2}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{box}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Now let\PYGZsq{}s make all of the laminate objects we will need for the box beam. In}
+\PYG{c}{\PYGZsh{} this case it\PYGZsq{}s 4:}
+\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{6}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}i\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{th\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{]}
+\PYG{n}{lam1\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{n}{lam2\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{n}{lam3\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{n}{lam4\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Assemble the laminates into an array. Refer back to the documentation to}
+\PYG{c}{\PYGZsh{} remind yourself of stacking sequence direction, etc. It should be noted that}
+\PYG{c}{\PYGZsh{} the first laminate is at the top of the box cross\PYGZhy{}section. The next is the}
+\PYG{c}{\PYGZsh{} left laminate, and so on in a counter\PYGZhy{}clockwise direction.}
+\PYG{n}{laminates\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{n}{lam1\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{lam2\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{lam3\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{lam4\PYGZus{}Lay1}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Create the cross\PYGZhy{}section vector:}
+\PYG{n}{xsect\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{XSect}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{af2}\PYG{p}{,}\PYG{n}{xdim2}\PYG{p}{,}\PYG{n}{laminates\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{matLib}\PYG{p}{,}\PYG{n}{typeXSect}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{rectBox}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{meshSize}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create the cross\PYGZhy{}section object. Note that since we aren\PYGZsq{}t specifying the}
+\PYG{c}{\PYGZsh{} reference axis, it will automatically be set at the shear center. Since this}
+\PYG{c}{\PYGZsh{} cross\PYGZhy{}section is simple, this will still be at the origin.}
+\PYG{n}{xsect\PYGZus{}Lay1}\PYG{o}{.}\PYG{n}{xSectionAnalysis}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s look at the stiffness matrix:}
+\PYG{n}{xsect\PYGZus{}Lay1}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{stiffMat}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Since this cross\PYGZhy{}section is simple, we can analytically calculate some of the}
+\PYG{c}{\PYGZsh{} simpler parameters. For example, the 3,3 entry is just E1*A. Similarly, the}
+\PYG{c}{\PYGZsh{} bending stiffnesses of the cross\PYGZhy{}section are just E1*I\PYGZus{}xx and E1*I\PYGZus{}yy. Try}
+\PYG{c}{\PYGZsh{} calculating them on your own to verify this! Note that this will only work}
+\PYG{c}{\PYGZsh{} since all of the fibers have a 0 degree orientation. Let\PYGZsq{}s apply a load and}
+\PYG{c}{\PYGZsh{} see how it behaves!}
+\PYG{c}{\PYGZsh{} Force Resultant Vector:}
+\PYG{n}{force2} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{100.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Calculate the effects of the force resultant}
+\PYG{n}{xsect\PYGZus{}Lay1}\PYG{o}{.}\PYG{n}{calcWarpEffects}\PYG{p}{(}\PYG{n}{force}\PYG{o}{=}\PYG{n}{force2}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Plot the normal stress}
+\PYG{n}{xsect\PYGZus{}Lay1}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Layup 1 Box Beam Sigma\PYGZus{}33 Stress}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{100}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{sig\PYGZus{}33}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Now the shear 13 stress!}
+\PYG{n}{xsect\PYGZus{}Lay1}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Layup 1 Box Beam Sigma\PYGZus{}13 Stress}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{100}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{sig\PYGZus{}13}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} Look at the differences in magnitudes of the stress between the two plots.}
+\PYG{c}{\PYGZsh{} Notice anything? There is virtually no normal stress, but A LOT of shear}
+\PYG{c}{\PYGZsh{} stress. This makes sense though since we only applied a torque to the cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} section. Note that this warping profile is vero common for any box type cross}
+\PYG{c}{\PYGZsh{} section. Let\PYGZsq{}s try one more slightly more complex shape:}
+
+\PYG{c}{\PYGZsh{} NACA 2412 BOX BEAM}
+\PYG{c}{\PYGZsh{} ==================}
+
+\PYG{c}{\PYGZsh{} Now let\PYGZsq{}s mesh a NACA2412 box beam. We will use the last of the supported}
+\PYG{c}{\PYGZsh{} meshing routines for this. This is the less restrictive than the \PYGZsq{}rectBox\PYGZsq{}}
+\PYG{c}{\PYGZsh{} routine, and has different laminate mesh interfaces. This time we will also}
+\PYG{c}{\PYGZsh{} make a slightly more interesting mesh using unbalanced and unsymetric}
+\PYG{c}{\PYGZsh{} laminates. First let\PYGZsq{}s initialize the airfoil shape:}
+\PYG{c}{\PYGZsh{} Initialize a chord length of four inches}
+\PYG{n}{c3} \PYG{o}{=} \PYG{l+m+mf}{4.}
+\PYG{c}{\PYGZsh{} Initialize the non\PYGZhy{}dimesional locations for the airfoil points to be}
+\PYG{c}{\PYGZsh{} generated:}
+\PYG{n}{xdim3} \PYG{o}{=} \PYG{p}{[}\PYG{o}{.}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{7}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Create the airfoil object:}
+\PYG{n}{af3} \PYG{o}{=} \PYG{n}{Airfoil}\PYG{p}{(}\PYG{n}{c3}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NACA2412}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create the laminates to make up the cross\PYGZhy{}section}
+\PYG{n}{n\PYGZus{}i\PYGZus{}1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}i\PYGZus{}1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{th\PYGZus{}1} \PYG{o}{=} \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{]}
+\PYG{n}{lam1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}1}\PYG{p}{)}
+\PYG{n}{n\PYGZus{}i\PYGZus{}2} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}i\PYGZus{}2} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{th\PYGZus{}2} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{]}
+\PYG{n}{lam2} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}2}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}2}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}2}\PYG{p}{)}
+\PYG{n}{n\PYGZus{}i\PYGZus{}3} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}i\PYGZus{}3} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{th\PYGZus{}3} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{]}
+\PYG{n}{lam3} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}3}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}3}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}3}\PYG{p}{)}
+\PYG{n}{n\PYGZus{}i\PYGZus{}4} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}i\PYGZus{}4} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{th\PYGZus{}4} \PYG{o}{=} \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{15}\PYG{p}{,}\PYG{l+m+mi}{15}\PYG{p}{]}
+\PYG{n}{lam4} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}4}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}4}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}4}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Organize the laminates into an array}
+\PYG{n}{laminates\PYGZus{}Lay3} \PYG{o}{=} \PYG{p}{[}\PYG{n}{lam1}\PYG{p}{,}\PYG{n}{lam2}\PYG{p}{,}\PYG{n}{lam3}\PYG{p}{,}\PYG{n}{lam4}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Create the cross\PYGZhy{}section object and mesh it}
+\PYG{n}{xsect\PYGZus{}Lay3} \PYG{o}{=} \PYG{n}{XSect}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{n}{af3}\PYG{p}{,}\PYG{n}{xdim3}\PYG{p}{,}\PYG{n}{laminates\PYGZus{}Lay3}\PYG{p}{,}\PYG{n}{matLib}\PYG{p}{,}\PYG{n}{typeXSect}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{box}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{meshSize}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Run the cross\PYGZhy{}sectional analysis. Since this is an airfoil and for this,}
+\PYG{c}{\PYGZsh{} symmetric airfoils the AC is at the 1/c chord, we will put the reference axis}
+\PYG{c}{\PYGZsh{} here}
+\PYG{n}{xsect\PYGZus{}Lay3}\PYG{o}{.}\PYG{n}{xSectionAnalysis}\PYG{p}{(}\PYG{n}{ref\PYGZus{}ax}\PYG{o}{=}\PYG{p}{[}\PYG{l+m+mf}{0.25}\PYG{o}{*}\PYG{n}{c3}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s see what the rigid cross\PYGZhy{}section looks like:}
+\PYG{n}{xsect\PYGZus{}Lay3}\PYG{o}{.}\PYG{n}{plotRigid}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Print the stiffness matrix}
+\PYG{n}{xsect\PYGZus{}Lay3}\PYG{o}{.}\PYG{n}{printSummary}\PYG{p}{(}\PYG{n}{stiffMat}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create an applied force vector. For a wing shape such as this, let\PYGZsq{}s apply a}
+\PYG{c}{\PYGZsh{} semi\PYGZhy{}realistic set of loads:}
+\PYG{n}{force3} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mf}{10.}\PYG{p}{,}\PYG{l+m+mf}{100.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{10.}\PYG{p}{,}\PYG{l+m+mf}{1.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Calculate the force resultant effects}
+\PYG{n}{xsect\PYGZus{}Lay3}\PYG{o}{.}\PYG{n}{calcWarpEffects}\PYG{p}{(}\PYG{n}{force}\PYG{o}{=}\PYG{n}{force3}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} This time let\PYGZsq{}s plot the max principle stress:}
+\PYG{n}{xsect\PYGZus{}Lay3}\PYG{o}{.}\PYG{n}{plotWarped}\PYG{p}{(}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NACA2412 Box Beam Max Principle Stress}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{MaxPrin}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{colorbar}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\end{Verbatim}
+
+
+\subsection{Tutorial 4 - Using Superbeams to Conduct Simple Beam Analysis}
+\label{tutorials:tutorial-4-using-superbeams-to-conduct-simple-beam-analysis}
+This tutorial exposes users to conducting beam analysis using the SuperBeam
+class. It also exposes users to the Model class for the first time.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} AEROCOMBAT TUTORIAL 4 \PYGZhy{} Using Super Beams to Conduct Analysis}
+\PYG{c}{\PYGZsh{} =============================================================================}
+
+\PYG{c}{\PYGZsh{} IMPORT SYSTEM PACKAGES}
+\PYG{c}{\PYGZsh{} ======================}
+\PYG{k+kn}{import} \PYG{n+nn}{sys}
+\PYG{k+kn}{import} \PYG{n+nn}{os}
+
+\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{os}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{abspath}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{..}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} IMPORT AEROCOMBAT CLASSES}
+\PYG{c}{\PYGZsh{} =========================}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Structures} \PYG{k+kn}{import} \PYG{n}{MaterialLib}\PYG{p}{,} \PYG{n}{Laminate}\PYG{p}{,} \PYG{n}{XSect}\PYG{p}{,} \PYG{n}{SuperBeam}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Aerodynamics} \PYG{k+kn}{import} \PYG{n}{Airfoil}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.FEM} \PYG{k+kn}{import} \PYG{n}{Model}
+
+\PYG{c}{\PYGZsh{} IMPORT NUMPY MODULES}
+\PYG{c}{\PYGZsh{} ====================}
+\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+\PYG{k+kn}{import} \PYG{n+nn}{mayavi.mlab} \PYG{k+kn}{as} \PYG{n+nn}{mlab}
+
+\PYG{c}{\PYGZsh{} ADD MATERIALS TO THE MATERIAL LIBRARY}
+\PYG{c}{\PYGZsh{} =====================================}
+\PYG{c}{\PYGZsh{} Create a material library object}
+\PYG{n}{matLib} \PYG{o}{=} \PYG{n}{MaterialLib}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add material property from Hodges 1999 Asymptotically correct anisotropic}
+\PYG{c}{\PYGZsh{} beam theory (Imperial)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AS43501\PYGZhy{}6}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{20.6e6}\PYG{p}{,}\PYG{l+m+mf}{1.42e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{34}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{3}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mf}{87e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{005}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add material property from Hodges 1999 Asymptotically correct anisotropic}
+\PYG{c}{\PYGZsh{} beam theory (Imperial)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AS43501\PYGZhy{}6*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{20.6e6}\PYG{p}{,}\PYG{l+m+mf}{1.42e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{34}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{42}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mf}{87e6}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{005}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add an aluminum material (SI)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AL}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{71.7e9}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{33}\PYG{p}{,}\PYG{l+m+mi}{2810}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{005}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} CREATE A WRAPPED RECTANGULAR BOX\PYGZhy{}BEAM CROSS\PYGZhy{}SECTION}
+\PYG{c}{\PYGZsh{} ===================================================}
+\PYG{c}{\PYGZsh{} Layup 1 Box beam (0.5 x 0.923 in\PYGZca{}2 box with laminate schedule [0]\PYGZus{}6)}
+
+\PYG{c}{\PYGZsh{} Before we make a beam, we must first make the cross\PYGZhy{}section of that beam. We}
+\PYG{c}{\PYGZsh{} are going to start with a cross\PYGZhy{}section we used in the third tutorial.}
+\PYG{n}{c2} \PYG{o}{=} \PYG{l+m+mf}{0.53}
+\PYG{c}{\PYGZsh{} Establish the non\PYGZhy{}dimensional starting and stopping points of the cross\PYGZhy{}}
+\PYG{c}{\PYGZsh{} section.}
+\PYG{n}{xdim2} \PYG{o}{=} \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{o}{.}\PYG{l+m+mi}{953}\PYG{o}{/}\PYG{p}{(}\PYG{n}{c2}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{953}\PYG{o}{/}\PYG{p}{(}\PYG{n}{c2}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Generate the airfoil box:}
+\PYG{n}{af2} \PYG{o}{=} \PYG{n}{Airfoil}\PYG{p}{(}\PYG{n}{c2}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{box}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Now let\PYGZsq{}s make all of the laminate objects we will need for the box beam. In}
+\PYG{c}{\PYGZsh{} this case it\PYGZsq{}s 4:}
+\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{6}\PYG{p}{]}
+\PYG{n}{m\PYGZus{}i\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{th\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{]}
+\PYG{n}{lam1\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{n}{lam2\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{n}{lam3\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{n}{lam4\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{Laminate}\PYG{p}{(}\PYG{n}{n\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{m\PYGZus{}i\PYGZus{}Lay1}\PYG{p}{,} \PYG{n}{matLib}\PYG{p}{,} \PYG{n}{th}\PYG{o}{=}\PYG{n}{th\PYGZus{}Lay1}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Assemble the laminates into an array.}
+\PYG{n}{laminates\PYGZus{}Lay1} \PYG{o}{=} \PYG{p}{[}\PYG{n}{lam1\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{lam2\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{lam3\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{lam4\PYGZus{}Lay1}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Create the cross\PYGZhy{}section vector:}
+\PYG{n}{xsect\PYGZus{}Lay1} \PYG{o}{=} \PYG{n}{XSect}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{af2}\PYG{p}{,}\PYG{n}{xdim2}\PYG{p}{,}\PYG{n}{laminates\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{matLib}\PYG{p}{,}\PYG{n}{typeXSect}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{rectBox}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{meshSize}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create the cross\PYGZhy{}section object.}
+\PYG{n}{xsect\PYGZus{}Lay1}\PYG{o}{.}\PYG{n}{xSectionAnalysis}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Having created the cross\PYGZhy{}section, we can now generate a superbeam. A}
+\PYG{c}{\PYGZsh{} superbeam is just a collection of beam elements. In other words, a superbeam}
+\PYG{c}{\PYGZsh{} is just there to fascilitate beam meshing and other pre/post processing}
+\PYG{c}{\PYGZsh{} benefits. In order to make a superbeam, we need to initialize a few things.}
+\PYG{c}{\PYGZsh{} First, let\PYGZsq{}s initialize the starting and stopping location of the beam:}
+\PYG{n}{x1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{x2} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Initialize a superbeam ID}
+\PYG{n}{SBID} \PYG{o}{=} \PYG{l+m+mi}{1}
+\PYG{c}{\PYGZsh{} Next we need to initialize the number of elements the superbeam should mesh:}
+\PYG{n}{noe} \PYG{o}{=} \PYG{l+m+mi}{20}
+\PYG{c}{\PYGZsh{} Now let\PYGZsq{}s make the superbeam}
+\PYG{n}{sbeam1} \PYG{o}{=} \PYG{n}{SuperBeam}\PYG{p}{(}\PYG{n}{SBID}\PYG{p}{,}\PYG{n}{x1}\PYG{p}{,}\PYG{n}{x2}\PYG{p}{,}\PYG{n}{xsect\PYGZus{}Lay1}\PYG{p}{,}\PYG{n}{noe}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} In order to analyze this beam, we\PYGZsq{}ll need to add it to a finite element}
+\PYG{c}{\PYGZsh{} model. First let\PYGZsq{}s make a finite element model!}
+\PYG{n}{model} \PYG{o}{=} \PYG{n}{Model}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Easy right? Now let\PYGZsq{}s add the superbeam to the model.}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{addElements}\PYG{p}{(}\PYG{p}{[}\PYG{n}{sbeam1}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Now that our beam is loaded into the FEM, let\PYGZsq{}s visualize it!}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotRigidModel}\PYG{p}{(}\PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{8}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} First let\PYGZsq{}s constrain the beam at it\PYGZsq{}s root. Since we only added one}
+\PYG{c}{\PYGZsh{} superbeam and we never specified a starting node ID, we know that the first}
+\PYG{c}{\PYGZsh{} node ID is actually 1! So when we constrain the model, we can just select:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{applyConstraints}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{fix}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} There are two supported keywords for constraints, either \PYGZsq{}fix\PYGZsq{} or \PYGZsq{}pinned\PYGZsq{}.}
+\PYG{c}{\PYGZsh{} If the user wanted to apply a different constraint, they can just enter the}
+\PYG{c}{\PYGZsh{} degrees of freedom to constrain on the model. This can be done by supplying}
+\PYG{c}{\PYGZsh{} an array such as: [1,2,3,5]. Now let\PYGZsq{}s apply a load. We will make two load}
+\PYG{c}{\PYGZsh{} cases. In the first case, we are going to apply a simple tip load:}
+\PYG{n}{load1} \PYG{o}{=} \PYG{p}{\PYGZob{}}\PYG{l+m+mi}{21}\PYG{p}{:}\PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mf}{100.}\PYG{p}{,}\PYG{l+m+mf}{100.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{100.}\PYG{p}{]}\PYG{p}{)}\PYG{p}{\PYGZcb{}}
+\PYG{c}{\PYGZsh{} We can also create a function for a distributed load:}
+\PYG{k}{def} \PYG{n+nf}{load2}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}\PYG{p}{:}
+   \PYG{n}{vx} \PYG{o}{=} \PYG{p}{(}\PYG{l+m+mi}{1}\PYG{o}{/}\PYG{l+m+mi}{10}\PYG{p}{)}\PYG{o}{*}\PYG{l+m+mi}{10}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{7}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{2.1}
+   \PYG{n}{vy} \PYG{o}{=} \PYG{l+m+mi}{10}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{7}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+   \PYG{n}{pz} \PYG{o}{=} \PYG{l+m+mi}{0}
+   \PYG{n}{mx} \PYG{o}{=} \PYG{l+m+mi}{0}
+   \PYG{n}{my} \PYG{o}{=} \PYG{l+m+mi}{0}
+   \PYG{n}{tz} \PYG{o}{=} \PYG{p}{(}\PYG{l+m+mi}{10}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{7}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}\PYG{o}{/}\PYG{l+m+mi}{10}\PYG{o}{+}\PYG{l+m+mi}{3}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}
+   \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{vx}\PYG{p}{,}\PYG{n}{vy}\PYG{p}{,}\PYG{n}{pz}\PYG{p}{,}\PYG{n}{mx}\PYG{p}{,}\PYG{n}{my}\PYG{p}{,}\PYG{n}{tz}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Ok now let\PYGZsq{}s add these loads to the model:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{applyLoads}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{F}\PYG{o}{=}\PYG{n}{load1}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Notice that when I applied a tip load, I did it using the argument \PYGZsq{}F\PYGZsq{}. When}
+\PYG{c}{\PYGZsh{} we apply a distributed load function, we use the argument \PYGZsq{}f\PYGZsq{} instead.}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{applyLoads}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{f}\PYG{o}{=}\PYG{n}{load2}\PYG{p}{,}\PYG{n}{allElems}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Now with constraints and loads, we can run a static analysis! Let\PYGZsq{}s run the}
+\PYG{c}{\PYGZsh{} first load case.}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{staticAnalysis}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{tip load}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s see what results we get:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotDeformedModel}\PYG{p}{(}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{tip load}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Tip Load Analysis}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{8}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{VonMis}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{contLim}\PYG{o}{=}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mf}{1e5}\PYG{p}{]}\PYG{p}{,}\PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{50}\PYG{p}{,}\PYG{n}{displScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Now let\PYGZsq{}s try analyzing the distributed load:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{staticAnalysis}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{distributed load}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s see what results we get for the distributed load:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotDeformedModel}\PYG{p}{(}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{distributed load}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Distributed Load Analysis}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{8}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{VonMis}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{contLim}\PYG{o}{=}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mf}{1e5}\PYG{p}{]}\PYG{p}{,}\PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{50}\PYG{p}{,}\PYG{n}{displScale}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Really quickly, let\PYGZsq{}s discuss some of the keywords used in the analysis and}
+\PYG{c}{\PYGZsh{} plotting. The analysis\PYGZus{}name designates the name where the results should be}
+\PYG{c}{\PYGZsh{} stored for the beam. Therefore if you want to keep multiple results stored}
+\PYG{c}{\PYGZsh{} at once you can give it a name. Otherwise this will always result to the}
+\PYG{c}{\PYGZsh{} default name. figName is just the name of the MayaVi figure, and numXSects}
+\PYG{c}{\PYGZsh{} designates how many cross\PYGZhy{}sections should be plotted. Note that the more}
+\PYG{c}{\PYGZsh{} cross\PYGZhy{}sections are plotted, the slower the plotting process will be. Both}
+\PYG{c}{\PYGZsh{} contour, contLim and warpScale were discussed in Tutorial 3. displScale is}
+\PYG{c}{\PYGZsh{} the scalling factor applied to the beam displacements and rotations.}
+\PYG{c}{\PYGZsh{} We can also run a normal modes analysis on the beam as well: having already}
+\PYG{c}{\PYGZsh{} applied the constraints, we can run:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{normalModesAnalysis}\PYG{p}{(}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{normal modes}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} For now, the frequencies can be accessed via the model attribute \PYGZsq{}freqs\PYGZsq{}}
+\PYG{n}{Frequencies} \PYG{o}{=} \PYG{n}{model}\PYG{o}{.}\PYG{n}{freqs}
+\PYG{c}{\PYGZsh{} Let\PYGZsq{}s plot the first mode:}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotDeformedModel}\PYG{p}{(}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{normal modes}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Normal Modes 1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{none}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{displScale}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{mode}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} How about the second?}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotDeformedModel}\PYG{p}{(}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{normal modes}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Normal Modes 2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{none}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{displScale}\PYG{o}{=}\PYG{l+m+mi}{5}\PYG{p}{,}\PYG{n}{mode}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} How about the third? It happens to be the torsional mode.}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotDeformedModel}\PYG{p}{(}\PYG{n}{analysis\PYGZus{}name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{normal modes}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{figName}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Normal Modes 3}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{,}\PYG{n}{contour}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{none}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{warpScale}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{displScale}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{mode}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}
+\end{Verbatim}
+
+
+\subsection{Tutorial 5 - Creating a Wing and Conducting a Flutter Analysis}
+\label{tutorials:tutorial-5-creating-a-wing-and-conducting-a-flutter-analysis}
+This tutorial exposes users to creating a wing and conducting flutter analysis
+on it. Note that every analysis a superbeam can conduct can also be conducted
+on a wing.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c}{\PYGZsh{} =============================================================================}
+\PYG{c}{\PYGZsh{} AEROCOMBAT TUTORIAL 4 \PYGZhy{} Using Super Beams to Conduct Analysis}
+\PYG{c}{\PYGZsh{} =============================================================================}
+
+\PYG{c}{\PYGZsh{} IMPORT SYSTEM PACKAGES}
+\PYG{c}{\PYGZsh{} ======================}
+\PYG{k+kn}{import} \PYG{n+nn}{sys}
+\PYG{k+kn}{import} \PYG{n+nn}{os}
+\PYG{n}{sys}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{os}\PYG{o}{.}\PYG{n}{path}\PYG{o}{.}\PYG{n}{abspath}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{..}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} IMPORT NUMPY PACKAGES}
+\PYG{c}{\PYGZsh{} =====================}
+\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+\PYG{k+kn}{import} \PYG{n+nn}{matplotlib.pyplot} \PYG{k+kn}{as} \PYG{n+nn}{plt}
+
+\PYG{c}{\PYGZsh{} IMPORT AEROCOMBAT CLASSES}
+\PYG{c}{\PYGZsh{} =========================}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.Structures} \PYG{k+kn}{import} \PYG{n}{MaterialLib}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.AircraftParts} \PYG{k+kn}{import} \PYG{n}{Wing}
+\PYG{k+kn}{from} \PYG{n+nn}{AeroComBAT.FEM} \PYG{k+kn}{import} \PYG{n}{Model}
+
+\PYG{c}{\PYGZsh{} ADD MATERIALS TO THE MATERIAL LIBRARY}
+\PYG{c}{\PYGZsh{} =====================================}
+\PYG{c}{\PYGZsh{} Create a material library object}
+\PYG{n}{matLib} \PYG{o}{=} \PYG{n}{MaterialLib}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add an aluminum material (SI)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AL}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{68.9e9}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{33}\PYG{p}{,}\PYG{l+m+mi}{2700}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{00025}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add an soft material material (SI)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Weak\PYGZus{}mat}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mi}{100}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{33}\PYG{p}{,}\PYG{l+m+mi}{10}\PYG{p}{]}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{00025}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add material property from Hodges 1999 Asymptotically correct anisotropic}
+\PYG{c}{\PYGZsh{} beam theory (SI)}
+\PYG{n}{matLib}\PYG{o}{.}\PYG{n}{addMat}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{AS43501\PYGZhy{}6*}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{trans\PYGZus{}iso}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{p}{[}\PYG{l+m+mf}{142e9}\PYG{p}{,}\PYG{l+m+mf}{9.8e9}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{34}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{42}\PYG{p}{,}\PYG{l+m+mf}{6e9}\PYG{p}{,}\PYG{l+m+mi}{20000}\PYG{p}{]}\PYG{p}{,}\PYG{l+m+mf}{0.0005}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} CREATE THE WING}
+\PYG{c}{\PYGZsh{} ===============}
+\PYG{c}{\PYGZsh{} Define the chord length of the model}
+\PYG{n}{c} \PYG{o}{=} \PYG{o}{.}\PYG{l+m+mo}{076}
+\PYG{c}{\PYGZsh{} Define the chord length (this will be the hight of the box beam)}
+\PYG{n}{ctip} \PYG{o}{=} \PYG{l+m+mf}{0.0076}\PYG{o}{+}\PYG{o}{.}\PYG{l+m+mo}{001}
+\PYG{c}{\PYGZsh{} Since the wing isn\PYGZsq{}t tapered}
+\PYG{n}{croot} \PYG{o}{=} \PYG{l+m+mf}{0.0076}\PYG{o}{+}\PYG{o}{.}\PYG{l+m+mo}{001}
+\PYG{c}{\PYGZsh{} Define the non\PYGZhy{}dimensional starting point of the cross\PYGZhy{}section}
+\PYG{n}{x1} \PYG{o}{=} \PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{0.039}\PYG{o}{/}\PYG{n}{croot}\PYG{o}{/}\PYG{l+m+mi}{2}
+\PYG{c}{\PYGZsh{} Define the non\PYGZhy{}dimensional ending point of the cross\PYGZhy{}section}
+\PYG{n}{x2} \PYG{o}{=} \PYG{l+m+mf}{0.039}\PYG{o}{/}\PYG{n}{croot}\PYG{o}{/}\PYG{l+m+mi}{2}
+\PYG{c}{\PYGZsh{} Define the span of the beam}
+\PYG{n}{span} \PYG{o}{=} \PYG{l+m+mf}{0.76}
+\PYG{c}{\PYGZsh{} Define the starting and stopping point of the wing structure}
+\PYG{n}{p1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{c}\PYG{o}{/}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{p2} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{c}\PYG{o}{/}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{span}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Define the non\PYGZhy{}dimesional locations of the ribs in the wing.}
+\PYG{n}{Y\PYGZus{}rib} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{1.}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} Initilize the layup schedule for the cross\PYGZhy{}section.}
+\PYG{n}{n\PYGZus{}ply} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Initilize the material ID corresponding to an orientation in the}
+\PYG{c}{\PYGZsh{} cross\PYGZhy{}section}
+\PYG{n}{m\PYGZus{}ply} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{c}{\PYGZsh{} Initilize the orientations used in the box beam.}
+\PYG{n}{th\PYGZus{}ply} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{]}
+
+\PYG{c}{\PYGZsh{} Define the number of orientations used in each laminate. In this case, we\PYGZsq{}ll}
+\PYG{c}{\PYGZsh{} just use one.}
+\PYG{n}{n\PYGZus{}orients} \PYG{o}{=} \PYG{l+m+mi}{1}
+\PYG{c}{\PYGZsh{} Define the number of laminates per cross\PYGZhy{}section. In this case since we are}
+\PYG{c}{\PYGZsh{} using a box beam, it will be 4.}
+\PYG{n}{n\PYGZus{}lams} \PYG{o}{=} \PYG{l+m+mi}{4}
+\PYG{c}{\PYGZsh{} Define the type of cross\PYGZhy{}section. In this case it\PYGZsq{}ll be the \PYGZsq{}rectBox\PYGZsq{} mesh}
+\PYG{n}{typeXSect} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{rectBox}\PYG{l+s}{\PYGZsq{}}
+\PYG{c}{\PYGZsh{} Define the number of elements per unit length are to be used. The structure}
+\PYG{c}{\PYGZsh{} will have then 120*span beam elements.}
+\PYG{n}{noe\PYGZus{}dens} \PYG{o}{=} \PYG{l+m+mi}{120}
+\PYG{c}{\PYGZsh{} Define the aditional vector required to define the orientation of the beam.}
+\PYG{c}{\PYGZsh{} In this case, we\PYGZsq{}ll have it pointing down the length of the wing.}
+\PYG{n}{chordVec}\PYG{o}{=}\PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mf}{1.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Create the wing object. For more information about some of the input}
+\PYG{c}{\PYGZsh{} parameters see the AeroComBAT documentation}
+\PYG{n}{wing1} \PYG{o}{=} \PYG{n}{Wing}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{p1}\PYG{p}{,}\PYG{n}{p2}\PYG{p}{,}\PYG{n}{croot}\PYG{p}{,}\PYG{n}{ctip}\PYG{p}{,}\PYG{n}{x1}\PYG{p}{,}\PYG{n}{x2}\PYG{p}{,}\PYG{n}{Y\PYGZus{}rib}\PYG{p}{,}\PYG{n}{n\PYGZus{}ply}\PYG{p}{,}\PYG{n}{m\PYGZus{}ply}\PYG{p}{,}\PYG{n}{matLib}\PYG{p}{,}\PYG{n}{name}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{box}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{noe}\PYG{o}{=}\PYG{n}{noe\PYGZus{}dens}\PYG{p}{,}\PYG{n}{chordVec}\PYG{o}{=}\PYG{n}{chordVec}\PYG{p}{,}\PYG{n}{ref\PYGZus{}ax}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{shearCntr}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{n\PYGZus{}orients}\PYG{o}{=}\PYG{n}{n\PYGZus{}orients}\PYG{p}{,}\PYGZbs{}
+    \PYG{n}{n\PYGZus{}lams}\PYG{o}{=}\PYG{n}{n\PYGZus{}lams}\PYG{p}{,}\PYG{n}{typeXSect}\PYG{o}{=}\PYG{n}{typeXSect}\PYG{p}{,}\PYG{n}{meshSize}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{,}\PYG{n}{th\PYGZus{}ply}\PYG{o}{=}\PYG{n}{th\PYGZus{}ply}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} This is an optional step for ease of programming. Since only one wing section}
+\PYG{c}{\PYGZsh{} was created and the wing isn\PYGZsq{}t tapered, there is only one superbeam which}
+\PYG{c}{\PYGZsh{} contains all of the beam elements in the wing.}
+\PYG{n}{sbeam1} \PYG{o}{=} \PYG{n}{wing1}\PYG{o}{.}\PYG{n}{wingSects}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{.}\PYG{n}{SuperBeams}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}
+
+\PYG{c}{\PYGZsh{} ADD A LIFTING SURFCE TO THE WING}
+\PYG{c}{\PYGZsh{} ================================}
+\PYG{c}{\PYGZsh{} Define the root leading edge location}
+\PYG{n}{x1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Define the root trailing edge location}
+\PYG{n}{x2} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{c}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Define the tip trailing edge location}
+\PYG{n}{x3} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{c}\PYG{p}{,}\PYG{n}{span}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Define the tip leading edge location}
+\PYG{n}{x4} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{n}{span}\PYG{p}{,}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Determine the number of boxes to be used in the spanwise direction}
+\PYG{n}{nspan} \PYG{o}{=} \PYG{l+m+mi}{36}\PYG{o}{*}\PYG{l+m+mi}{2}
+\PYG{c}{\PYGZsh{} Determine the number of boxes to be used in the chordwise direction}
+\PYG{n}{nchord} \PYG{o}{=} \PYG{l+m+mi}{10}
+\PYG{c}{\PYGZsh{} Add the lifting surface to the wing.}
+\PYG{n}{wing1}\PYG{o}{.}\PYG{n}{addLiftingSurface}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{n}{x1}\PYG{p}{,}\PYG{n}{x2}\PYG{p}{,}\PYG{n}{x3}\PYG{p}{,}\PYG{n}{x4}\PYG{p}{,}\PYG{n}{nspan}\PYG{p}{,}\PYG{n}{nchord}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} MAKE THE FINITE ELEMENT MODEL (FEM)}
+\PYG{c}{\PYGZsh{} ===================================}
+\PYG{n}{model}  \PYG{o}{=} \PYG{n}{Model}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Add the aircraft wing to the model}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{addAircraftParts}\PYG{p}{(}\PYG{p}{[}\PYG{n}{wing1}\PYG{p}{]}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Apply the constraint for the model}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{applyConstraints}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{fix}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Plot the rigid wing in the finite elment model}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{plotRigidModel}\PYG{p}{(}\PYG{n}{numXSects}\PYG{o}{=}\PYG{l+m+mi}{10}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Conduct a normal modes analysis. Since the normal mode shapes are used in the}
+\PYG{c}{\PYGZsh{} flutter analysis it is good to run this ahead of time to make sure you are}
+\PYG{c}{\PYGZsh{} selecting enough mode shapes to include any relevant torsional and bending}
+\PYG{c}{\PYGZsh{} mode shapes.}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{normalModesAnalysis}\PYG{p}{(}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Save the frequencies of the modal analysis}
+\PYG{n}{freqs} \PYG{o}{=} \PYG{n}{model}\PYG{o}{.}\PYG{n}{freqs}
+
+\PYG{c}{\PYGZsh{} IMPORT NASTRAN RESULTS}
+\PYG{c}{\PYGZsh{} ======================}
+\PYG{c}{\PYGZsh{} The same analysis was conducted on a plate model in NX NASTRAN to verify the}
+\PYG{c}{\PYGZsh{} results produced by AeroComBAT}
+\PYG{n}{NASTRAN} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{genfromtxt}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRANFlutterResults.csv}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{delimiter}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{,}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{UNAST} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{0}\PYG{p}{]}
+\PYG{n}{Damp1} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{n}{Freq1} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{Damp2} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{3}\PYG{p}{]}
+\PYG{n}{Freq2} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{4}\PYG{p}{]}
+\PYG{n}{Damp3} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{5}\PYG{p}{]}
+\PYG{n}{Freq3} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{6}\PYG{p}{]}
+\PYG{n}{Damp4} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{7}\PYG{p}{]}
+\PYG{n}{Freq4} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{8}\PYG{p}{]}
+\PYG{n}{Damp5} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{9}\PYG{p}{]}
+\PYG{n}{Freq5} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{10}\PYG{p}{]}
+\PYG{n}{Damp6} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{11}\PYG{p}{]}
+\PYG{n}{Freq6} \PYG{o}{=} \PYG{n}{NASTRAN}\PYG{p}{[}\PYG{p}{:}\PYG{p}{,}\PYG{l+m+mi}{12}\PYG{p}{]}
+
+\PYG{c}{\PYGZsh{} CONDUCT FLUTTER ANALYSIS}
+\PYG{c}{\PYGZsh{} ========================}
+\PYG{c}{\PYGZsh{} Whenever a flutter analysis is conducted, several quantities need to be}
+\PYG{c}{\PYGZsh{} defined. The first is an array of free\PYGZhy{}stream airspeeds:}
+\PYG{n}{U\PYGZus{}vec} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{342}\PYG{p}{,}\PYG{l+m+mi}{100}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} In addition, a vector of trial reduced frequencies must be initialized. Keep}
+\PYG{c}{\PYGZsh{} in mind that the because the non\PYGZhy{}looping pk method is used, a wide range of}
+\PYG{c}{\PYGZsh{} reduced frequencies may need to be used.}
+\PYG{n}{kr\PYGZus{}vec} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{,}\PYG{l+m+mf}{1e\PYGZhy{}06}\PYG{p}{,}\PYG{l+m+mf}{1e\PYGZhy{}04}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{001}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{01}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mo}{05}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{5}\PYG{p}{,}\PYG{l+m+mf}{1.}\PYG{p}{,}\PYG{l+m+mf}{5.}\PYG{p}{,}\PYG{l+m+mf}{10.}\PYG{p}{,}\PYG{l+m+mi}{50}\PYG{p}{]}\PYG{p}{)}\PYG{o}{*}\PYG{l+m+mi}{10}
+\PYG{c}{\PYGZsh{} A vector of mach numbers must also be used. These should be kept close to}
+\PYG{c}{\PYGZsh{} The suspected flutter mach number. If mach numbers greater than 0.7 are used,}
+\PYG{c}{\PYGZsh{} is is likely doublet lattice method is no\PYGZhy{}longer valid.}
+\PYG{n}{M\PYGZus{}vec} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mf}{0.}\PYG{p}{]}\PYG{o}{*}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{kr\PYGZus{}vec}\PYG{p}{)}
+\PYG{c}{\PYGZsh{} Initialize the sea level density}
+\PYG{n}{rho\PYGZus{}0} \PYG{o}{=} \PYG{l+m+mf}{1.225}
+\PYG{c}{\PYGZsh{} Determine the number of modes to be used}
+\PYG{n}{nmodes} \PYG{o}{=} \PYG{l+m+mi}{6}
+\PYG{c}{\PYGZsh{} Run the flutter analysis. Depending on how many reduced frequencies and}
+\PYG{c}{\PYGZsh{} velocities sampled, this could take anywhere from a 30 seconds to 2 minutes.}
+\PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterAnalysis}\PYG{p}{(}\PYG{n}{U\PYGZus{}vec}\PYG{p}{,}\PYG{n}{kr\PYGZus{}vec}\PYG{p}{,}\PYG{n}{M\PYGZus{}vec}\PYG{p}{,}\PYG{n}{c}\PYG{p}{,}\PYG{n}{rho\PYGZus{}0}\PYG{p}{,}\PYG{n}{nmodes}\PYG{p}{,}\PYG{n}{symxz}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{,}\PYG{n}{g}\PYG{o}{=}\PYG{l+m+mf}{0.0}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} POST\PYGZhy{}PROCESS THE FLUTTER RESULTS}
+\PYG{c}{\PYGZsh{} ================================}
+\PYG{c}{\PYGZsh{} Note that in these figures, the dashed lines are the NASTRAN results, whereas}
+\PYG{c}{\PYGZsh{} the solid lines are the AeroComBAT results.}
+\PYG{n}{cvec} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{b}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{g}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{r}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{c}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{m}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{y}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{figure}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{k}{for} \PYG{n}{PID}\PYG{p}{,} \PYG{n}{point} \PYG{o+ow}{in} \PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterPoints}\PYG{o}{.}\PYG{n}{iteritems}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
+    \PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{U\PYGZus{}vec}\PYG{p}{,}\PYG{n}{point}\PYG{o}{.}\PYG{n}{gamma}\PYG{p}{,}\PYG{n}{color}\PYG{o}{=}\PYG{n}{cvec}\PYG{p}{[}\PYG{n}{PID}\PYG{p}{]}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Mode }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{PID}\PYG{o}{+}\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{(}\PYG{n}{loc}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylim}\PYG{p}{(}\PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Damp1}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Damp2}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Damp3}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 3}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Damp4}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 4}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Damp5}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{4}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 5}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Damp6}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{5}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 6}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Damping of the Wing Modes}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Free\PYGZhy{}stream airspeed, m/s}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Damping, g}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{grid}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{False}\PYG{p}{)}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{figure}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{k}{for} \PYG{n}{PID}\PYG{p}{,} \PYG{n}{point} \PYG{o+ow}{in} \PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterPoints}\PYG{o}{.}\PYG{n}{iteritems}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
+    \PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{U\PYGZus{}vec}\PYG{p}{,}\PYG{n}{point}\PYG{o}{.}\PYG{n}{omega}\PYG{p}{,}\PYG{n}{color} \PYG{o}{=} \PYG{n}{cvec}\PYG{p}{[}\PYG{n}{PID}\PYG{p}{]}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Mode }\PYG{l+s}{\PYGZsq{}}\PYG{o}{+}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{PID}\PYG{o}{+}\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{(}\PYG{n}{loc}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Freq1}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Freq2}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Freq3}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 3}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Freq4}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 4}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Freq5}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{4}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 5}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{UNAST}\PYG{p}{,}\PYG{n}{Freq6}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{5}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{\PYGZhy{}\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{NASTRAN Mode 6}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Frequency of the Wing Modes}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Free\PYGZhy{}stream airspeed, m/s}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Mode Frequency, Hz}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{grid}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{False}\PYG{p}{)}
+
+\PYG{c}{\PYGZsh{} The following figures demonstrate how the damping and frequencies are}
+\PYG{c}{\PYGZsh{} interpolated.}
+\PYG{n}{Uind} \PYG{o}{=} \PYG{l+m+mi}{80}
+\PYG{n}{point1} \PYG{o}{=} \PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterPoints}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}
+\PYG{n}{point2} \PYG{o}{=} \PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterPoints}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}
+\PYG{n}{point3} \PYG{o}{=} \PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterPoints}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+\PYG{n}{point4} \PYG{o}{=} \PYG{n}{model}\PYG{o}{.}\PYG{n}{flutterPoints}\PYG{p}{[}\PYG{l+m+mi}{3}\PYG{p}{]}
+\PYG{n}{omegaAeros} \PYG{o}{=} \PYG{n}{point1}\PYG{o}{.}\PYG{n}{omegaAeroDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{omegaRoots1} \PYG{o}{=} \PYG{n}{point1}\PYG{o}{.}\PYG{n}{omegaRootDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{omegaRoots2} \PYG{o}{=} \PYG{n}{point2}\PYG{o}{.}\PYG{n}{omegaRootDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{omegaRoots3} \PYG{o}{=} \PYG{n}{point3}\PYG{o}{.}\PYG{n}{omegaRootDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{omegaRoots4} \PYG{o}{=} \PYG{n}{point4}\PYG{o}{.}\PYG{n}{omegaRootDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{gammas1} \PYG{o}{=} \PYG{n}{point1}\PYG{o}{.}\PYG{n}{gammaDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{gammas2} \PYG{o}{=} \PYG{n}{point2}\PYG{o}{.}\PYG{n}{gammaDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{gammas3} \PYG{o}{=} \PYG{n}{point3}\PYG{o}{.}\PYG{n}{gammaDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+\PYG{n}{gammas4} \PYG{o}{=} \PYG{n}{point4}\PYG{o}{.}\PYG{n}{gammaDict}\PYG{p}{[}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{]}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{figure}\PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{omega\PYGZus{}aero}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{omegaRoots1}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{omega\PYGZus{}root\PYGZus{}1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{omegaRoots2}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{omega\PYGZus{}root\PYGZus{}2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{omegaRoots3}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{omega\PYGZus{}root\PYGZus{}3}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{omegaRoots4}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{4}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{omega\PYGZus{}root\PYGZus{}4}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{(}\PYG{n}{loc}\PYG{o}{=}\PYG{l+m+mi}{2}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylim}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{20000}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlim}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{25000}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Aerodynamic frequency, rad}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Root frequency, rad}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Interpolation of Root Requencies at V=}\PYG{l+s+si}{\PYGZpc{}4.2f}\PYG{l+s}{ m/s}\PYG{l+s}{\PYGZsq{}}\PYG{o}{\PYGZpc{}}\PYG{p}{(}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{)}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{grid}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{False}\PYG{p}{)}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{figure}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{gammas1}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{gamma\PYGZus{}root\PYGZus{}1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{gammas2}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{gamma\PYGZus{}root\PYGZus{}2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{gammas3}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{gamma\PYGZus{}root\PYGZus{}3}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{omegaAeros}\PYG{p}{,}\PYG{n}{gammas4}\PYG{p}{,}\PYG{n+nb}{str}\PYG{p}{(}\PYG{n}{cvec}\PYG{p}{[}\PYG{l+m+mi}{4}\PYG{p}{]}\PYG{p}{)}\PYG{o}{+}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{o\PYGZhy{}}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,}\PYG{n}{label}\PYG{o}{=}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{gamma\PYGZus{}root\PYGZus{}4}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{(}\PYG{n}{loc}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylim}\PYG{p}{(}\PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{o}{.}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlim}\PYG{p}{(}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{25000}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Aerodynamic frequency, rad}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Damping (g)}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{Interpolation of Root Damping at V=}\PYG{l+s+si}{\PYGZpc{}4.2f}\PYG{l+s}{ m/s}\PYG{l+s}{\PYGZsq{}}\PYG{o}{\PYGZpc{}}\PYG{p}{(}\PYG{n}{U\PYGZus{}vec}\PYG{p}{[}\PYG{n}{Uind}\PYG{p}{]}\PYG{p}{)}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{grid}\PYG{p}{(}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{hold}\PYG{p}{(}\PYG{n+nb+bp}{False}\PYG{p}{)}
+\end{Verbatim}
+
+
+\section{FEM Interface Module}
+\label{FEM:module-AeroComBAT.FEM}\label{FEM::doc}\label{FEM:fem-interface-module}\index{AeroComBAT.FEM (module)}
 This module contains a basic environment for conducting finite element analysis.
 
 The primary purpose of this library is to fascilitate the creation of a FEM
@@ -155,6 +1097,20 @@ static aeroelastic, or dynamic flutter analysis.
 
 \end{description}
 
+\item {} \begin{description}
+\item[{\emph{LoadSet}: This class is used to fascilitate the created of many loads that}] \leavevmode
+cal be individually applied to a finite element model. Typically this class
+is not explicitly used. Instead the are created by the applyLoads method of
+the Model class.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{FlutterPoint}: Primarily as a way to fascilitate the interpolation of}] \leavevmode
+flutter results generated from the flutterAnalysis method of Model.
+
+\end{description}
+
 \end{itemize}
 
 \begin{notice}{note}{Note:}
@@ -162,9 +1118,9 @@ Currently the only avaliable part in the AeroComBAT package are wing
 parts, however this is likely to change as parts such as masses, fuselages
 and other types of aircraft parts are added.
 \end{notice}
-\phantomsection\label{FEM:module-AeroComBAT.FEM}\index{AeroComBAT.FEM (module)}
 
-\section{MODEL}
+
+\subsection{MODEL}
 \label{FEM:model}\index{Model (class in AeroComBAT.FEM)}
 
 \begin{fulllineitems}
@@ -245,8 +1201,41 @@ constrained.
 \end{description}
 
 \item {} \begin{description}
-\item[{\emph{parts (Array{[}int{]})}: This array contains all of the part IDs}] \leavevmode
-corresponding to the parts that have been added to the model.
+\item[{\emph{parts (dict{[}PID, part{]})}: This dictionary is a mapping of part ID's}] \leavevmode
+(PID) and the aircraft part objects that are added to the model.
+Currently the only suported parts are wings.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{loads (dict{[}LID,int{]})}: This dictionary is a mapping of the load ID}] \leavevmode
+(LID) and the load set objects.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{aeroBox (dict{[}PANID,panel{]})}: This dictionary is a mapping of the}] \leavevmode
+aerodynamic panel ID's (PANID) and the aerodynamic panel objects used
+in the flutter analysis.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{SuperBeams (array{[}obj{]})}: This array contains all of the superbeam's}] \leavevmode
+added to the model through addElements. In otherwords, this superbeam
+object is without an associated part.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{u (dict{[}str,1xDOF np.array{[}float{]}{]})}: This dictionary maps analysis}] \leavevmode
+names to displacement results for a static analysis.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{freqs (1x(DOF-CON) np.array{[}float{]})}: This is a 1D array which holds the}] \leavevmode
+frequencies of a normal modes analysis.
 
 \end{description}
 
@@ -298,6 +1287,12 @@ the model.
 
 \end{description}
 
+\item {} \begin{description}
+\item[{\emph{flutterAnalysis}: A method which conducts a linearized flutter pk-method}] \leavevmode
+analysis on the model.
+
+\end{description}
+
 \item {} 
 \emph{plotRigidModel}: A method to plot and visualize the model.
 
@@ -308,21 +1303,18 @@ analysis on the model.
 \end{description}
 
 \end{itemize}
-
-\begin{notice}{note}{Note:}
-When constraining nodes, only 0 displacement and rotation
-constraints are currently supported.
-\end{notice}
 \index{addAircraftParts() (AeroComBAT.FEM.Model method)}
 
 \begin{fulllineitems}
 \phantomsection\label{FEM:AeroComBAT.FEM.Model.addAircraftParts}\pysiglinewithargsret{\bfcode{addAircraftParts}}{\emph{parts}}{}
 A method to add an array of aircraft parts to the model.
 
-This method is a robust version of addElements. provided an array of
-part objects, this method will add the parts to the model. This
+This method is a more robust version of addElements. Provided an array
+of part objects, this method will add the parts to the model. This
 includes adding all of the elements and nodes to the model, as well as
-a few other pieces of information.
+a few other pieces of information. In addition, if a wing has
+aerodynamic panels associated with it, these will also be added to the
+model.
 \begin{quote}\begin{description}
 \item[{Args}] \leavevmode
 \end{description}\end{quote}
@@ -412,12 +1404,18 @@ None
 
 \end{itemize}
 
+\begin{notice}{note}{Note:}
+When constraining nodes, only 0 displacement and rotation
+\end{notice}
+
+constraints are currently supported.
+
 \end{fulllineitems}
 
 \index{applyLoads() (AeroComBAT.FEM.Model method)}
 
 \begin{fulllineitems}
-\phantomsection\label{FEM:AeroComBAT.FEM.Model.applyLoads}\pysiglinewithargsret{\bfcode{applyLoads}}{\emph{**kwargs}}{}
+\phantomsection\label{FEM:AeroComBAT.FEM.Model.applyLoads}\pysiglinewithargsret{\bfcode{applyLoads}}{\emph{LID}, \emph{**kwargs}}{}
 A method to apply nodal and distributed loads to the model.
 
 This method allows the user to apply nodal loads to nodes and
@@ -467,23 +1465,114 @@ None
 
 \end{itemize}
 
-Distributed load example:
-\textgreater{}\textgreater{}\textgreater{}def f(x):
-\begin{quote}
+Distributed load function example:
 
-vx = (1/10)*10*x{[}2{]}**2-7*x{[}2{]}-2.1
-vy = 10*x{[}2{]}**2-7*x{[}2{]}
-pz = 0
-tz = (10*x{[}2{]}**2-7*x{[}2{]})/10+3*x{[}0{]}**2
-return np.array({[}vx,vy,pz,tz{]})
-\end{quote}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{def} \PYG{n+nf}{f}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}\PYG{p}{:}
+   \PYG{n}{vx} \PYG{o}{=} \PYG{p}{(}\PYG{l+m+mi}{1}\PYG{o}{/}\PYG{l+m+mi}{10}\PYG{p}{)}\PYG{o}{*}\PYG{l+m+mi}{10}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{7}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{2.1}
+   \PYG{n}{vy} \PYG{o}{=} \PYG{l+m+mi}{10}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{7}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}
+   \PYG{n}{pz} \PYG{o}{=} \PYG{l+m+mi}{0}
+   \PYG{n}{mx} \PYG{o}{=} \PYG{l+m+mi}{0}
+   \PYG{n}{my} \PYG{o}{=} \PYG{l+m+mi}{0}
+   \PYG{n}{tz} \PYG{o}{=} \PYG{p}{(}\PYG{l+m+mi}{10}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{7}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{p}{)}\PYG{o}{/}\PYG{l+m+mi}{10}\PYG{o}{+}\PYG{l+m+mi}{3}\PYG{o}{*}\PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{*}\PYG{o}{*}\PYG{l+m+mi}{2}
+   \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{vx}\PYG{p}{,}\PYG{n}{vy}\PYG{p}{,}\PYG{n}{pz}\PYG{p}{,}\PYG{n}{mx}\PYG{p}{,}\PYG{n}{my}\PYG{p}{,}\PYG{n}{tz}\PYG{p}{]}\PYG{p}{)}
+\end{Verbatim}
 
-Nodal load example:
-\begin{description}
-\item[{::}] \leavevmode
-F{[}NID{]} = np.array({[}Qx,Qy,P,Mx,My,T{]})
+Nodal load dictionary example:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{F}\PYG{p}{[}\PYG{n}{NID}\PYG{p}{]} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{p}{[}\PYG{n}{Qx}\PYG{p}{,}\PYG{n}{Qy}\PYG{p}{,}\PYG{n}{P}\PYG{p}{,}\PYG{n}{Mx}\PYG{p}{,}\PYG{n}{My}\PYG{p}{,}\PYG{n}{T}\PYG{p}{]}\PYG{p}{)}
+\end{Verbatim}
+
+\end{fulllineitems}
+
+\index{flutterAnalysis() (AeroComBAT.FEM.Model method)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.Model.flutterAnalysis}\pysiglinewithargsret{\bfcode{flutterAnalysis}}{\emph{U\_vec}, \emph{kr\_vec}, \emph{M\_vec}, \emph{b}, \emph{rho\_0}, \emph{nModes}, \emph{**kwargs}}{}
+Conducts a flutter analysis.
+
+This method calculates the flutter modes and damping provided
+velocities, reduced frequencies, Mach numbers, and the reference
+semi-chord.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{U\_vec (1xN np.array{[}float{]})}: A vector of trial velocities where the}] \leavevmode
+damping and frequency of all of the respective mode shapes will be
+calculated.
 
 \end{description}
+
+\item {} \begin{description}
+\item[{\emph{kr\_vec (1xM np.array{[}float{]})}: A vector of reduced frequencies for}] \leavevmode
+which the AIC's will be calculated. The minimum possible value can
+be 0.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{M\_vec (1xM np.array{[}float{]})}: A vector of mach numbers at which the}] \leavevmode
+AIC's will be calculated. Currently interpolating results by Mach
+number aren't possible. As such, select mach numbers to be close to
+the suspected instability.
+
+\end{description}
+
+\item {} 
+\emph{b (float)}: The reference semi-chord.
+
+\item {} 
+\emph{rho\_0 (float)}: The reference density at sea level.
+
+\item {} \begin{description}
+\item[{\emph{nmodes (int)}: The number of modes to be considered for the flutter}] \leavevmode
+analysis. For a composite cantilevered wing, 6 modes should usually
+be sufficient.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{g (float)}: A proportional structural damping term. Acceptable}] \leavevmode
+ranges of g can be approximated between 0. and 0.05.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{symxz (bool)}: A boolean value indicating whether the aerodynamics}] \leavevmode
+should be mirrored over the xz-plane.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{rho\_rat (1xN np.array{[}float{]})}: An array of density ratios to allow}] \leavevmode
+for flutter calculations at different altitudes.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{analysis\_name (str)}: The string name to be associated with this}] \leavevmode
+analysis. By default, this is chosen to be `analysis\_untitled'.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Currently static aeroelastic instability (divergence) cannot
+\end{notice}
+
+be captured by AeroComBAT.
 
 \end{fulllineitems}
 
@@ -702,7 +1791,7 @@ None
 \index{staticAnalysis() (AeroComBAT.FEM.Model method)}
 
 \begin{fulllineitems}
-\phantomsection\label{FEM:AeroComBAT.FEM.Model.staticAnalysis}\pysiglinewithargsret{\bfcode{staticAnalysis}}{\emph{**kwargs}}{}
+\phantomsection\label{FEM:AeroComBAT.FEM.Model.staticAnalysis}\pysiglinewithargsret{\bfcode{staticAnalysis}}{\emph{LID}, \emph{**kwargs}}{}
 Linear static analysis.
 
 This method conducts a linear static analysis on the model. This will
@@ -713,6 +1802,12 @@ beam elements.
 \item[{Args}] \leavevmode
 \end{description}\end{quote}
 \begin{itemize}
+\item {} \begin{description}
+\item[{\emph{LID (int)}: The ID corresponding to the load set to be applied to}] \leavevmode
+the model.
+
+\end{description}
+
 \item {} \begin{description}
 \item[{\emph{analysis\_name (str)}: The string name to be associated with this}] \leavevmode
 analysis. By default, this is chosen to be `analysis\_untitled'.
@@ -736,8 +1831,633 @@ None
 
 
 
-\chapter{The Structures Module}
-\label{structures:the-structures-module}\label{structures::doc}\label{structures:module-AeroComBAT.Structures}\index{AeroComBAT.Structures (module)}
+\subsection{LOAD SET}
+\label{FEM:load-set}\index{LoadSet (class in AeroComBAT.FEM)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.LoadSet}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.FEM.}\bfcode{LoadSet}}{\emph{LID}}{}
+Creates a Model which is used to organize and analyze FEM.
+
+The primary use of LoadSet is to fascilitate the application of many
+different complex loads to a finite element model.
+\begin{quote}\begin{description}
+\item[{Attributes}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{LID (int)}: The integer identifier for the load set object.
+
+\item {} \begin{description}
+\item[{\emph{pointLoads (dict{[}pointLoads{[}NID,F{]})}: A dictionary mapping applied point}] \leavevmode
+loads to the node ID's of the node where the load is applied.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{distributedLoads (dict{[}EID,f{]})}: A dictionary mapping the distributed}] \leavevmode
+load vector to the element ID of the element where the load is applied.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Methods}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{\_\_init\_\_}: The constructor of the class. This method initializes the}] \leavevmode
+dictionaries used by the loads
+
+\end{description}
+
+\item {} 
+\emph{addPointLoad}: Adds point loads to the pointLoads dictionary attribute.
+
+\item {} \begin{description}
+\item[{\emph{addDictibutedLoad}: Adds distributed loads to the distributedLoads}] \leavevmode
+dictionary attribute.
+
+\end{description}
+
+\end{itemize}
+\index{addDistributedLoad() (AeroComBAT.FEM.LoadSet method)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.LoadSet.addDistributedLoad}\pysiglinewithargsret{\bfcode{addDistributedLoad}}{\emph{f}, \emph{eid}}{}
+Initialized the load set ibject.
+
+This method is a simple constructor for the load set object.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{LID (int)}: The integer ID linked with the load set object.
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{addPointLoad() (AeroComBAT.FEM.LoadSet method)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.LoadSet.addPointLoad}\pysiglinewithargsret{\bfcode{addPointLoad}}{\emph{F}, \emph{NID}}{}
+Initialized the load set ibject.
+
+This method is a simple constructor for the load set object.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{LID (int)}: The integer ID linked with the load set object.
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
+\subsection{FLUTTER POINT}
+\label{FEM:flutter-point}\index{FlutterPoint (class in AeroComBAT.FEM)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.FlutterPoint}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.FEM.}\bfcode{FlutterPoint}}{\emph{FPID}, \emph{U\_vec}, \emph{nModes}}{}
+Creates a flutter point object.
+
+The primary purpose for the flutter point class is to allow for easier
+post processing of the data from the flutter modes.
+\begin{quote}\begin{description}
+\item[{Attributes}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{FPID (int)}: The integer identifier associated with the flutter point}] \leavevmode
+object.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{U\_vec (1xN np.array{[}float{]})}: A vector of the velocities where the}] \leavevmode
+flutter point frequency and damping have been solved.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{omegaAeroDict(dict{[}U,array{[}float{]})}: This dictionary maps velocities to}] \leavevmode
+the aerodynamic frequencies used to generate the AIC matricies.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{omegaRootDict(dict{[}U,array{[}float{]})}: This dictionary maps velocities to}] \leavevmode
+the root frequencies of the flutter mode solution for particular
+reduced frequencies.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{gammaDict(dict{[}U,array{[}float{]})}: This dictionary maps velocities to}] \leavevmode
+the root damping of the flutter mode solution for particular
+reduced frequencies.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{gammaDict(dict{[}U,array{[}float{]})}: This dictionary maps velocities to}] \leavevmode
+the root mode shape of the flutter mode solution for particular
+reduced frequencies.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{omega (array{[}float{]})}: An array of floats which are the}] \leavevmode
+flutter mode frequencies corresponding to the velocities in U\_vec.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{gamma (array{[}float{]})}: An array of floats which are the}] \leavevmode
+flutter mode damping values corresponding to the velocities in U\_vec.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{shape (array{[}MxN np.array{[}float{]}{]})}: An MxL numpy array which}] \leavevmode
+contain the eigenvector solutions of the flutter mode. The values in
+the eigenvectors are the coefficient weighting factors for the normal
+mode shapes.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Methods}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{\_\_init\_\_}: The constructor of the class. This method initializes the}] \leavevmode
+attributes of the model, as well as the flutter
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{saveSol}: Saves solutions to the flutter equation for the particular}] \leavevmode
+mode.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{interpOmegaRoot}: Interpolates the flutter mode frequency, damping and}] \leavevmode
+mode shapes for the different velocities.
+
+\end{description}
+
+\end{itemize}
+\index{\_\_init\_\_() (AeroComBAT.FEM.FlutterPoint method)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.FlutterPoint.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{FPID}, \emph{U\_vec}, \emph{nModes}}{}
+Creates a flutter point object.
+
+This is the constructor for the flutter point object.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{FPID (int)}: The integer ID linked with the flutter point object.
+
+\item {} \begin{description}
+\item[{\emph{U\_vec (1xN np.array{[}float{]})}: An array of velocities where the}] \leavevmode
+flutter problem will be solved.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{nModes (int)}: The number of modes that are used for the flutter}] \leavevmode
+solution.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{interpOmegaRoot() (AeroComBAT.FEM.FlutterPoint method)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.FlutterPoint.interpOmegaRoot}\pysiglinewithargsret{\bfcode{interpOmegaRoot}}{}{}
+Interpolates correct dynamic frequencies and damping.
+
+From the data saved using the saveSol method, this method interpolates
+the correct dynamic frequencies and damping for the different flutter
+velocities.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{saveSol() (AeroComBAT.FEM.FlutterPoint method)}
+
+\begin{fulllineitems}
+\phantomsection\label{FEM:AeroComBAT.FEM.FlutterPoint.saveSol}\pysiglinewithargsret{\bfcode{saveSol}}{\emph{U}, \emph{omega\_aero}, \emph{omega\_root}, \emph{gamma\_root}, \emph{shape}}{}
+Saves data from the flutter solutions.
+
+This method saves the damping, frequencies and mode shapes for the
+different flutter velocities and reduced frequencies.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{U (float)}: The flutter velocity of the data.
+
+\item {} \begin{description}
+\item[{\emph{omega\_aero (float)}: The aerodynamic frequency corresponding to the}] \leavevmode
+reduced frequency.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{omega\_root (float)}: The root frequency corresponding to the}] \leavevmode
+flutter solution of the particular aerodynamic frequency.
+
+\end{description}
+
+\item {} 
+\emph{gamma\_root (float)}: The root damping of the flutter solution
+
+\item {} \begin{description}
+\item[{\emph{shape (1xM np.array{[}float{]})}: The mode shape of the flutter}] \leavevmode
+solution.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
+\section{Aircraft Parts Module}
+\label{AircraftParts:aircraft-parts-module}\label{AircraftParts::doc}\label{AircraftParts:module-AeroComBAT.AircraftParts}\index{AeroComBAT.AircraftParts (module)}
+This module contains a library of classes devoted to modeling aircraft parts.
+
+The main purpose of this library is to model various types of aircraft parts.
+Currently only wing objects are suported, however in the future it is possible
+that fuselages as well as other parts will be added.
+\begin{quote}\begin{description}
+\item[{SUMARRY OF THE CLASSES}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{Wing}: Creates a wing aircraft. This wing is capable of modeling the}] \leavevmode
+structures of the aircraft wing as well as the aerodynamics. The structures
+are modeled with a combination of beam models currently, however it is
+likely that Ritz method laminates will also incorporated for buckling
+prediction purposes. The aerodynamics are currently modeled with potential
+flow doublet panels.
+
+\end{description}
+
+\end{itemize}
+
+
+\subsection{Wing}
+\label{AircraftParts:wing}\index{Wing (class in AeroComBAT.AircraftParts)}
+
+\begin{fulllineitems}
+\phantomsection\label{AircraftParts:AeroComBAT.AircraftParts.Wing}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.AircraftParts.}\bfcode{Wing}}{\emph{PID}, \emph{p1}, \emph{p2}, \emph{croot}, \emph{ctip}, \emph{x0\_spar}, \emph{xf\_spar}, \emph{Y\_rib}, \emph{n\_ply}, \emph{m\_ply}, \emph{mat\_lib}, \emph{**kwargs}}{}~\index{\_\_init\_\_() (AeroComBAT.AircraftParts.Wing method)}
+
+\begin{fulllineitems}
+\phantomsection\label{AircraftParts:AeroComBAT.AircraftParts.Wing.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{PID}, \emph{p1}, \emph{p2}, \emph{croot}, \emph{ctip}, \emph{x0\_spar}, \emph{xf\_spar}, \emph{Y\_rib}, \emph{n\_ply}, \emph{m\_ply}, \emph{mat\_lib}, \emph{**kwargs}}{}
+Creates a wing object.
+
+This object represents a wing and contains both structural and
+aerodynamic models.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{PID (int)}: The integer ID linked to this part.
+
+\item {} 
+\emph{p1 (1x3 np.array{[}float{]})}: The initial x,y,z coordinates of the wing.
+
+\item {} 
+\emph{p2 (1x3 np.array{[}float{]}}: The final x,y,z coordinates of the wing.
+
+\item {} 
+\emph{croot (float)}: The root chord length.
+
+\item {} 
+\emph{ctip (float)}: The tip chord length.
+
+\item {} \begin{description}
+\item[{\emph{x0\_spar (float)}: The non-dimensional starting location of the cross}] \leavevmode
+section.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{xf\_spar (float)}: The non-dimensional ending location of the cross}] \leavevmode
+section.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Y\_rib (1xN Array{[}float{]})}: The non-dimensional rib locations within}] \leavevmode
+the wing. This dimension is primarily used to create wing-sections
+which primarily define the buckling span's for laminate objects.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{n\_ply (1xM Array{[}int{]})}: An array of integers specifying the number}] \leavevmode
+plies to be used in the model. Each integer refers to the number of
+plies to be used for at a given orientation.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{m\_ply (1xM Array{[}int{]})}: An array of integers specifying the}] \leavevmode
+material ID to be used for the corresponding number of plies in
+n\_ply at a given orientation.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{th\_ply (1xM Array{[}int{]})}: An array of floats specifying the}] \leavevmode
+degree orientations of the plies used by the lamiantes in the
+model.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{mat\_lib (obj)}: A material library containing all of the material}] \leavevmode
+objets to be used in the model.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{name (str)}: The name of the airfoil section to be used for cross}] \leavevmode
+section generation.
+
+\end{description}
+
+\item {} 
+\emph{wing\_SNID (int)}: The first node ID associated with the wing.
+
+\item {} 
+\emph{wing\_SEID (int)}: The first beam element ID associated with the wing.
+
+\item {} 
+\emph{wing\_SSBID (int)}: The first superbeam ID associated with the wing.
+
+\item {} 
+\emph{SXID (int)}: The starting cross-section ID used by the wing.
+
+\item {} \begin{description}
+\item[{\emph{noe (float)}: The number of beam elements to be used in the wing per}] \leavevmode
+unit length.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{n\_orients (int)}: The number of fiber orientations to be used in}] \leavevmode
+each laminate.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{n\_lams (int)}: The number of laminates required to mesh the desired}] \leavevmode
+cross-section.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{meshSize (float)}: The maximum aspect ratio a 2D element may have in}] \leavevmode
+the cross-section.
+
+\end{description}
+
+\item {} 
+\emph{ref\_ax (str)}: The reference axis to be loaded in the wing.
+
+\item {} \begin{description}
+\item[{\emph{chordVec (1x3 np.array{[}float{]})}: This numpy array is used to orient}] \leavevmode
+the cross-section in 3D space. It corresponds to the local unit x-
+vector in the cross-section, expressed in the global frame.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{typeXSect (str)}: The type of cross-section to be used by the wing}] \leavevmode
+structure. Currently the suported typed are `boxbeam', `laminate',
+and `rectBoxBeam'. See the meshing class in the structures module
+for more details.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{addLiftingSurface() (AeroComBAT.AircraftParts.Wing method)}
+
+\begin{fulllineitems}
+\phantomsection\label{AircraftParts:AeroComBAT.AircraftParts.Wing.addLiftingSurface}\pysiglinewithargsret{\bfcode{addLiftingSurface}}{\emph{SID}, \emph{x1}, \emph{x2}, \emph{x3}, \emph{x4}, \emph{nspan}, \emph{nchord}}{}
+Adds a potential flow lifting surface to the model.
+
+This method adds a potential flow panel aerodynamic model to the wing
+part. The x1,x2,x3, and x4 points correspond to the root leading edge,
+root trailing edge, tip trailing edge, and tip leading edge of the wing
+respectively. Currently the only suported types of panels are doublet-
+lattice panels to be used for unsteady aerodynamic models.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{SID (int)}: The lifting surface integer identifier corresponding to}] \leavevmode
+the lifting surface.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{x1 (1x3 numpy array)}: The point in 3D space corresponding to the}] \leavevmode
+root leading edge point of the lifting surface.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{x2 (1x3 numpy array)}: The point in 3D space corresponding to the}] \leavevmode
+root trailing edge point of the lifting surface.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{x3 (1x3 numpy array)}: The point in 3D space corresponding to the}] \leavevmode
+tip trailing edge point of the lifting surface.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{x4 (1x3 numpy array)}: The point in 3D space corresponding to the}] \leavevmode
+tip leading edge point of the lifting surface.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{nspan (int)}: The number of boxes to be used in the spanwise}] \leavevmode
+direction.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{nchord (int)}: The number of boxes to be used in the chordwise}] \leavevmode
+direction.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Mutliple surfaces could be added to the wing part.
+\end{notice}
+
+\begin{notice}{warning}{Warning:}
+In order to use the doublet lattice method, the chord
+lines of the lifting surface must run in the x-direction, and there
+can be no geometric angles of attack present. The geometry of a
+general wing can be seen in the figure below:
+\end{notice}
+
+{\hfill\includegraphics{DoubletLatticeWing.png}\hfill}
+
+\end{fulllineitems}
+
+\index{plotRigidWing() (AeroComBAT.AircraftParts.Wing method)}
+
+\begin{fulllineitems}
+\phantomsection\label{AircraftParts:AeroComBAT.AircraftParts.Wing.plotRigidWing}\pysiglinewithargsret{\bfcode{plotRigidWing}}{\emph{**kwargs}}{}
+Plots the rigid wing.
+
+This method plots the rigid model of the wing. This includes the
+reference axis of the beams, the cross-sections of the beams, and the
+lifting surfaces that make up the wing. This is an excellent check to
+perform before adding the part to a FEM model.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{figName (str)}: The name of the MayaVi figure. `Rigid Wing' by}] \leavevmode
+default.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{numXSects (int)}: The number of cross-sections that each wing}] \leavevmode
+section will display. By default it is 2.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{color (1x3 tuple(int))}: This is a length 3 tuple to be used as the}] \leavevmode
+color of the beam reference axes. Black by default.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
+\section{Structures Module}
+\label{structures::doc}\label{structures:structures-module}\label{structures:module-AeroComBAT.Structures}\index{AeroComBAT.Structures (module)}
 This module contains a library of classes devoted to structural analysis.
 
 The primary purpose of this library is to fascilitate the ROM (reduced order
@@ -749,7 +2469,7 @@ such as composites) complex cross-sections.
 
 It should be noted that classes are ordered by model complexity. The further
 down the structures.py library, the more complex the objects, often requiring
-multiple of their predecessors. For example, the CQUAD4 class requires four
+multiple of their predecessors. For example, the CQUADX class requires four
 node objects and a material object.
 \begin{quote}\begin{description}
 \item[{SUMARRY OF THE CLASSES}] \leavevmode
@@ -768,7 +2488,7 @@ using micro-mechanical models where fibers are long and continuous.
 \end{description}
 
 \item {} \begin{description}
-\item[{\emph{CQUAD4}: Creates a 2D linear quadrilateral element, mainly used to fascilitate    cross-sectional analysis, this class could be modified in future updates}] \leavevmode
+\item[{\emph{CQUADX}: Creates a 2D linear quadrilateral element, mainly used to fascilitate    cross-sectional analysis, this class could be modified in future updates}] \leavevmode
 such that they could also be used to create plate or laminate element
 objects as well.
 
@@ -821,13 +2541,13 @@ plates for simple closed-form composite buckling load aproximations.
 Currently the inclusion of thermal strains are not supported for any
 structural model.
 \end{notice}
-\phantomsection\label{structures:module-AeroComBAT.Structures}\index{AeroComBAT.Structures (module)}
 
-\section{NODE}
+
+\subsection{NODE}
 \label{structures:node}\index{Node (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.Node}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{Node}}{\emph{nid}, \emph{x}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.Node}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{Node}}{\emph{NID}, \emph{x}}{}
 Creates a node object.
 
 Node objects could be used in any finite element implementation.
@@ -865,7 +2585,7 @@ object, such as it's node ID and it's x-y-z coordinates
 \index{\_\_init\_\_() (AeroComBAT.Structures.Node method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.Node.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{nid}, \emph{x}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.Node.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{NID}, \emph{x}}{}
 Initializes the node object.
 \begin{quote}\begin{description}
 \item[{Args}] \leavevmode
@@ -876,6 +2596,14 @@ Initializes the node object.
 
 \item {} 
 \emph{x (Array{[}float{]})}: The position of the node in 3D space.
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
 
 \end{itemize}
 
@@ -913,7 +2641,7 @@ A printed table including the node ID and it's coordinates
 
 
 
-\section{MATERIAL}
+\subsection{MATERIAL}
 \label{structures:material}\index{Material (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -952,8 +2680,8 @@ the material is to be used in a composite.
 \end{description}
 
 \item {} \begin{description}
-\item[{\emph{rho (float)}: A signle float which represents the density of the}] \leavevmode
-material.
+\item[{\emph{rho (float)}: A single float which represents the density of the}] \leavevmode
+materials.
 
 \end{description}
 
@@ -985,7 +2713,7 @@ matricies if requested.
 \end{itemize}
 
 \begin{notice}{note}{Note:}
-The CQUAD4 element assumes that the fibers are oriented along
+The CQUADX element assumes that the fibers are oriented along
 the (1,0,0) in the global coordinate system.
 \end{notice}
 \index{\_\_init\_\_() (AeroComBAT.Structures.Material method)}
@@ -1043,7 +2771,7 @@ None
 
 \begin{notice}{note}{Note:}
 While this class supports material direction rotations, it is more
-robust to simply let the CQUAD4 and Mesher class handle all material
+robust to simply let the CQUADX and Mesher class handle all material
 rotations.
 \end{notice}
 
@@ -1096,11 +2824,11 @@ this includes the material stiffness and compliance matricies.
 
 
 
-\section{CQUAD4}
-\label{structures:cquad4}\index{CQUAD4 (class in AeroComBAT.Structures)}
+\subsection{CQUADX}
+\label{structures:cquadx}\index{CQUADX (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{CQUAD4}}{\emph{EID}, \emph{nodes}, \emph{MID}, \emph{matLib}, \emph{**kwargs}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{CQUADX}}{\emph{EID}, \emph{nodes}, \emph{MID}, \emph{matLib}, \emph{**kwargs}}{}
 Creates a linear, 2D 4 node quadrilateral element object.
 
 The main purpose of this class is to assist in the cross-sectional
@@ -1111,7 +2839,7 @@ analysis of a beam, however it COULD be modified to serve as an element for
 \end{description}\end{quote}
 \begin{itemize}
 \item {} 
-\emph{type (str)}: A string designating it a CQUAD4 element.
+\emph{type (str)}: A string designating it a CQUADX element.
 
 \item {} \begin{description}
 \item[{\emph{xsect (bool)}: States whether the element is to be used in cross-}] \leavevmode
@@ -1127,7 +2855,7 @@ material fiber frame to the global CSYS. In degrees.
 \end{description}
 
 \item {} 
-\emph{EID (int)}: An integer identifier for the CQUAD4 element.
+\emph{EID (int)}: An integer identifier for the CQUADX element.
 
 \item {} \begin{description}
 \item[{\emph{MID (int)}: An integer refrencing the material ID used for the}] \leavevmode
@@ -1166,7 +2894,7 @@ nodes used in the element
 \emph{mass (float)}: Mass per unit length (or thickness) of the element.
 
 \item {} \begin{description}
-\item[{\emph{U (12x1 np.array{[}float{]})}: This column vector contains the CQUAD4s}] \leavevmode
+\item[{\emph{U (12x1 np.array{[}float{]})}: This column vector contains the CQUADXs}] \leavevmode
 3 DOF (x-y-z) displacements in the local xsect CSYS due to cross-
 section warping effects.
 
@@ -1174,13 +2902,13 @@ section warping effects.
 
 \item {} \begin{description}
 \item[{\emph{Eps (6x4 np.array{[}float{]})}: A matrix containing the 3D strain state}] \leavevmode
-within the CQUAD4 element.
+within the CQUADX element.
 
 \end{description}
 
 \item {} \begin{description}
 \item[{\emph{Sig (6x4 np.array{[}float{]})}: A matrix containing the 3D stress state}] \leavevmode
-within the CQUAD4 element.
+within the CQUADX element.
 
 \end{description}
 
@@ -1235,10 +2963,10 @@ as the node ID's referenced by the element.
 \end{description}
 
 \end{itemize}
-\index{J() (AeroComBAT.Structures.CQUAD4 method)}
+\index{J() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.J}\pysiglinewithargsret{\bfcode{J}}{\emph{eta}, \emph{xi}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.J}\pysiglinewithargsret{\bfcode{J}}{\emph{eta}, \emph{xi}}{}
 Calculates the jacobian at a point in the element.
 
 This method calculates the jacobian at a local point within the element
@@ -1272,17 +3000,17 @@ Xi and eta can both vary between -1 and 1 respectively.
 
 \end{fulllineitems}
 
-\index{\_\_init\_\_() (AeroComBAT.Structures.CQUAD4 method)}
+\index{\_\_init\_\_() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{EID}, \emph{nodes}, \emph{MID}, \emph{matLib}, \emph{**kwargs}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{EID}, \emph{nodes}, \emph{MID}, \emph{matLib}, \emph{**kwargs}}{}
 Initializes the element.
 \begin{quote}\begin{description}
 \item[{Args}] \leavevmode
 \end{description}\end{quote}
 \begin{itemize}
 \item {} 
-\emph{EID (int)}: An integer identifier for the CQUAD4 element.
+\emph{EID (int)}: An integer identifier for the CQUADX element.
 
 \item {} \begin{description}
 \item[{\emph{nodes (1x4 Array{[}obj{]})}: Contains the properly ordered nodes objects}] \leavevmode
@@ -1304,7 +3032,7 @@ with the material corresponding to the provided MID.
 
 \item {} \begin{description}
 \item[{\emph{xsect (bool)}: A boolean to determine whether this quad element is}] \leavevmode
-to be usedfor cross-sectional analysis. Defualt value is True.
+to be used for cross-sectional analysis. Defualt value is True.
 
 \end{description}
 
@@ -1334,10 +3062,10 @@ element, and the z-axis is perpendicular to the plane of the element.
 
 \end{fulllineitems}
 
-\index{getDeformed() (AeroComBAT.Structures.CQUAD4 method)}
+\index{getDeformed() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.getDeformed}\pysiglinewithargsret{\bfcode{getDeformed}}{\emph{**kwargs}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.getDeformed}\pysiglinewithargsret{\bfcode{getDeformed}}{\emph{**kwargs}}{}
 Returns the warping displacement of the element.
 
 Provided an analysis has been conducted, this method
@@ -1380,10 +3108,10 @@ points.
 
 \end{fulllineitems}
 
-\index{getStressState() (AeroComBAT.Structures.CQUAD4 method)}
+\index{getStressState() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.getStressState}\pysiglinewithargsret{\bfcode{getStressState}}{\emph{crit='VonMis'}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.getStressState}\pysiglinewithargsret{\bfcode{getStressState}}{\emph{crit='VonMis'}}{}
 Returns the stress state of the element.
 
 Provided an analysis has been conducted, this method
@@ -1398,7 +3126,9 @@ state at the four guass points by default.*
 stress state at the sample points within the element. By
 default the Von Mises stress is returned. Currently supported
 options include: Von Mises (`VonMis'), maximum principle stress
-(`MaxPrin'), and the minimum principle stress (`MinPrin').
+(`MaxPrin'), the minimum principle stress (`MinPrin'), and the
+local cross-section stress states `sig\_xx' where the subindeces can
+go from 1-3. The keyword `none' is also an option.
 
 \end{description}
 
@@ -1409,7 +3139,7 @@ options include: Von Mises (`VonMis'), maximum principle stress
 \begin{itemize}
 \item {} \begin{description}
 \item[{\emph{sigData (2x2 np.array{[}float{]})}: The stress state evaluated at four}] \leavevmode
-points within the CQUAD4 element.
+points within the CQUADX element.
 
 \end{description}
 
@@ -1424,11 +3154,11 @@ Guass points where the stress/strain will be most accurate.
 
 \end{fulllineitems}
 
-\index{printSummary() (AeroComBAT.Structures.CQUAD4 method)}
+\index{printSummary() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.printSummary}\pysiglinewithargsret{\bfcode{printSummary}}{}{}
-A method for printing a summary of the CQUAD4 element.
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.printSummary}\pysiglinewithargsret{\bfcode{printSummary}}{\emph{nodes=False}}{}
+A method for printing a summary of the CQUADX element.
 
 Prints out a tabulated form of the element ID, as well as the node ID's
 referenced by the element.
@@ -1445,8 +3175,8 @@ None
 \end{description}\end{quote}
 \begin{itemize}
 \item {} \begin{description}
-\item[{(str): Prints the tabulated EID, node IDs and material IDs associated}] \leavevmode
-with the CQUAD4 element.
+\item[{\emph{summary (str)}: Prints the tabulated EID, node IDs and material IDs}] \leavevmode
+associated with the CQUADX element.
 
 \end{description}
 
@@ -1454,10 +3184,10 @@ with the CQUAD4 element.
 
 \end{fulllineitems}
 
-\index{resetResults() (AeroComBAT.Structures.CQUAD4 method)}
+\index{resetResults() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.resetResults}\pysiglinewithargsret{\bfcode{resetResults}}{}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.resetResults}\pysiglinewithargsret{\bfcode{resetResults}}{}{}
 Resets stress, strain and warping displacement results.
 
 Method is mainly intended to prevent results for one analysis or
@@ -1481,10 +3211,10 @@ None
 
 \end{fulllineitems}
 
-\index{x() (AeroComBAT.Structures.CQUAD4 method)}
+\index{x() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.x}\pysiglinewithargsret{\bfcode{x}}{\emph{eta}, \emph{xi}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.x}\pysiglinewithargsret{\bfcode{x}}{\emph{eta}, \emph{xi}}{}
 Calculate the x-coordinate within the element.
 
 Calculates the local xsect x-coordinate provided the desired master
@@ -1505,7 +3235,7 @@ coordinates eta and xi.
 \end{description}\end{quote}
 \begin{itemize}
 \item {} 
-\emph{float}: The x-coordinate within the element.
+\emph{x (float)}: The x-coordinate within the element.
 
 \end{itemize}
 
@@ -1515,10 +3245,10 @@ Xi and eta can both vary between -1 and 1 respectively.
 
 \end{fulllineitems}
 
-\index{y() (AeroComBAT.Structures.CQUAD4 method)}
+\index{y() (AeroComBAT.Structures.CQUADX method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.CQUAD4.y}\pysiglinewithargsret{\bfcode{y}}{\emph{eta}, \emph{xi}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.CQUADX.y}\pysiglinewithargsret{\bfcode{y}}{\emph{eta}, \emph{xi}}{}
 Calculate the y-coordinate within the element.
 
 Calculates the local xsect y-coordinate provided the desired master
@@ -1539,7 +3269,7 @@ coordinates eta and xi.
 \end{description}\end{quote}
 \begin{itemize}
 \item {} 
-{\color{red}\bfseries{}{}`}(float)': The y-coordinate within the element.
+{\color{red}\bfseries{}{}`}y (float)': The y-coordinate within the element.
 
 \end{itemize}
 
@@ -1554,7 +3284,7 @@ Xi and eta can both vary between -1 and 1 respectively.
 
 
 
-\section{MATERIAL LIBRARY}
+\subsection{MATERIAL LIBRARY}
 \label{structures:material-library}\index{MaterialLib (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -1696,7 +3426,7 @@ Method that returns a material from the material libary
 
 \end{itemize}
 \begin{quote}\begin{description}
-\item[{Returns{}`}] \leavevmode
+\item[{Returns}] \leavevmode
 \end{description}\end{quote}
 \begin{itemize}
 \item {} 
@@ -1714,12 +3444,22 @@ Prints summary of all Materials in MaterialLib
 
 A method used to print out tabulated summary of all of the materials
 held within the material library object.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
 
-Args:
-- None
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+(str): A tabulated summary of the materials.
 
-Returns:
-- (str): A tabulated summary of the materials.
+\end{itemize}
 
 \end{fulllineitems}
 
@@ -1728,7 +3468,7 @@ Returns:
 
 
 
-\section{PLY}
+\subsection{PLY}
 \label{structures:ply}\index{Ply (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -1896,7 +3636,7 @@ None
 \end{description}\end{quote}
 \begin{itemize}
 \item {} 
-{\color{red}\bfseries{}{}`}(str): Printed tabulated summary of the ply.
+\emph{(str)}: Printed tabulated summary of the ply.
 
 \end{itemize}
 
@@ -1907,7 +3647,7 @@ None
 
 
 
-\section{LAMINATE}
+\subsection{LAMINATE}
 \label{structures:laminate}\index{Laminate (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -2130,7 +3870,7 @@ None
 
 
 
-\section{MESHER}
+\subsection{MESHER}
 \label{structures:mesher}\index{Mesher (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -2160,9 +3900,20 @@ a 2D box beam cross-section.
 
 \end{description}
 
+\item {} 
+\emph{laminate}: Meshes the cross-section of a single laminate.
+
 \item {} \begin{description}
 \item[{\emph{cylindricalTube}: Taking several inputs including n laminate objects and}] \leavevmode
 meshes a 2D cylindrical tube cross-section.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{rectBoxBeam}: Meshes a rectangular cross-section, but it is more}] \leavevmode
+restrictive than boxBeam method. In this method, each of the four
+laminates must have the same number of plies, each of which are the
+same thickness.
 
 \end{description}
 
@@ -2173,11 +3924,17 @@ meshes a 2D cylindrical tube cross-section.
 \phantomsection\label{structures:AeroComBAT.Structures.Mesher.boxBeam}\pysiglinewithargsret{\bfcode{boxBeam}}{\emph{xsect}, \emph{meshSize}, \emph{x0}, \emph{xf}, \emph{matlib}}{}
 Meshes a box beam cross-section.
 
-This method is currently the only supported and tested meshing method.
-The mesher assumes that the laminates in the box beam are oriented such
-that the top surfaces of the laminate are facing inwards. Therefore if
-you would like a particular fiber orientation on the outter or inner
-most surfaces, create your laminate layup schedules appropriately.
+This meshing routine takes several parameters including a cross-section
+object \emph{xsect}. This cross-section object should also contain the
+laminate objects used to construct it. There are no restrictions place
+on these laminates. Furthermore the outer mold line of this cross-
+section can take the form of any NACA 4-series airfoil. Finally, the
+convention is that for the four laminates that make up the box-beam,
+the the first ply in the laminate (which in CLT corresponds to the last
+ply in the stack) is located on the outside of the box beam. This
+convention can be seen below:
+
+{\hfill\includegraphics{boxBeamGeom.png}\hfill}
 \begin{quote}\begin{description}
 \item[{Args}] \leavevmode
 \end{description}\end{quote}
@@ -2201,7 +3958,112 @@ on the airfoil.
 \end{description}
 
 \item {} \begin{description}
-\item[{\emph{matlib (obj)}: The material library object used to create CQUAD4}] \leavevmode
+\item[{\emph{matlib (obj)}: The material library object used to create CQUADX}] \leavevmode
+elements.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{laminate() (AeroComBAT.Structures.Mesher method)}
+
+\begin{fulllineitems}
+\phantomsection\label{structures:AeroComBAT.Structures.Mesher.laminate}\pysiglinewithargsret{\bfcode{laminate}}{\emph{xsect}, \emph{meshSize}, \emph{x0}, \emph{xf}, \emph{matlib}}{}
+Meshes laminate cross-section.
+
+This method meshes a simple laminate cross-section. It is assumed that
+the unit normal vector of the laminate points in the y-direction. This
+method only requires one laminate, which can take any shape. The cross-
+section geometry can be seen below:
+
+{\hfill\includegraphics{laminateGeom.png}\hfill}
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{xsect (obj)}: The cross-section object to be meshed.
+
+\item {} 
+\emph{meshSize (int)}: The maximum aspect ratio an element can have
+
+\item {} \begin{description}
+\item[{\emph{x0 (float)}: The non-dimensional starting point of the cross-section}] \leavevmode
+on the airfoil.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{xf (float)}: The non-dimesnional ending point of the cross-section}] \leavevmode
+on the airfoil.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{matlib (obj)}: The material library object used to create CQUADX}] \leavevmode
+elements.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{rectBoxBeam() (AeroComBAT.Structures.Mesher method)}
+
+\begin{fulllineitems}
+\phantomsection\label{structures:AeroComBAT.Structures.Mesher.rectBoxBeam}\pysiglinewithargsret{\bfcode{rectBoxBeam}}{\emph{xsect}, \emph{meshSize}, \emph{x0}, \emph{xf}, \emph{matlib}}{}
+Meshes a box beam cross-section.
+
+This method meshes a similar cross-section as the boxBeam method. The
+geometry of this cross-section can be seen below. The interfaces
+between the laminates is different, and more restrictive. In this case
+all of the laminates must have the same number of plies, which must
+also all be the same thickness.
+
+{\hfill\includegraphics{rectBoxGeom.png}\hfill}
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{xsect (obj)}: The cross-section object to be meshed.
+
+\item {} 
+\emph{meshSize (int)}: The maximum aspect ratio an element can have
+
+\item {} \begin{description}
+\item[{\emph{x0 (float)}: The non-dimensional starting point of the cross-section}] \leavevmode
+on the airfoil.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{xf (float)}: The non-dimesnional ending point of the cross-section}] \leavevmode
+on the airfoil.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{matlib (obj)}: The material library object used to create CQUADX}] \leavevmode
 elements.
 
 \end{description}
@@ -2223,7 +4085,7 @@ None
 
 
 
-\section{CROSS-SECTION}
+\subsection{CROSS-SECTION}
 \label{structures:cross-section}\index{XSect (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -2482,7 +4344,7 @@ cross-section will come in later updates.
 
 \item {} \begin{description}
 \item[{\emph{meshSize (int)}: The maximum aspect ratio you would like your 2D}] \leavevmode
-CQUAD4 elements to exhibit within the cross-section.
+CQUADX elements to exhibit within the cross-section.
 
 \end{description}
 
@@ -2735,16 +4597,91 @@ reference axis should be printed.
 
 \end{fulllineitems}
 
+\index{resetResults() (AeroComBAT.Structures.XSect method)}
+
+\begin{fulllineitems}
+\phantomsection\label{structures:AeroComBAT.Structures.XSect.resetResults}\pysiglinewithargsret{\bfcode{resetResults}}{}{}
+Resets displacements, stress and strains within an xsect
+
+This method clears all results (both warping, stress, and strain)
+within the elements in the xsect object.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{xSectionAnalysis() (AeroComBAT.Structures.XSect method)}
+
+\begin{fulllineitems}
+\phantomsection\label{structures:AeroComBAT.Structures.XSect.xSectionAnalysis}\pysiglinewithargsret{\bfcode{xSectionAnalysis}}{\emph{**kwargs}}{}
+Analyzes an initialized corss-section.
+
+This is the main workhorse of the class. This method assembles the
+finite element model generated using the meshing class, and solve the
+HIGH dimensional equilibrium equations associated with the cross-
+section. In doing so, it generates the warping displacement, the
+section strain, and the gradient of the warping displacement along the
+beam axis as a function of force-moment resultants. With these three
+things, the 3D strains-\textgreater{}stresses can be recovered.
+
+This method has been EXTENSIVELY tested and validated against
+various sources (see theory guide for more info). Since this method
+is so robust, the biggest limitation of the XSect class is what the
+mesher is capable of meshing. Finally, keep in mind that due to the
+high dimensionality of this problem, this method uses up a lot of
+resources (primarily memory). If this method is taking too many
+resources, choose a larger aspect ratio for your XSect initialization.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{ref\_ax (str or 1x2 array{[}float{]})}: Currently there are two supported}] \leavevmode
+input types for this class. The first is the are string key-words.
+These are `shearCntr', `massCntr', and `origin'. Currently
+`shearCntr' is the default value. Also suported is the ability to
+pass a length 2 array containing the x and y coordinates of the
+reference axis relative to the origin. This would take the form of:
+ref\_ax={[}1.,3.{]} to put the reference axis at x,y = 1.,3.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
 
 \end{fulllineitems}
 
 
 
-\section{TIMOSHENKO BEAM}
+\subsection{TIMOSHENKO BEAM}
 \label{structures:timoshenko-beam}\index{TBeam (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.TBeam}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{TBeam}}{\emph{x1}, \emph{x2}, \emph{xsect}, \emph{EID=0}, \emph{SBID=0}, \emph{nid1=0}, \emph{nid2=1}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.TBeam}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{TBeam}}{\emph{EID}, \emph{x1}, \emph{x2}, \emph{xsect}, \emph{SBID=0}, \emph{nid1=0}, \emph{nid2=1}, \emph{chordVec=array({[} 1.}, \emph{0.}, \emph{0.{]})}}{}
 Creates a Timoshenko beam finite element object.
 
 The primary beam finite element used by AeroComBAT, this beam element is
@@ -2868,6 +4805,9 @@ beam.
 
 \end{description}
 
+\item {} 
+\emph{T (12x12 np.array{[}float{]})}:
+
 \end{itemize}
 \begin{quote}\begin{description}
 \item[{Methods}] \leavevmode
@@ -2902,7 +4842,7 @@ cross-sections. DO NOT rely on this information being meaningful.
 \index{\_\_init\_\_() (AeroComBAT.Structures.TBeam method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.TBeam.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{x1}, \emph{x2}, \emph{xsect}, \emph{EID=0}, \emph{SBID=0}, \emph{nid1=0}, \emph{nid2=1}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.TBeam.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{EID}, \emph{x1}, \emph{x2}, \emph{xsect}, \emph{SBID=0}, \emph{nid1=0}, \emph{nid2=1}, \emph{chordVec=array({[} 1.}, \emph{0.}, \emph{0.{]})}}{}
 Instantiates a timoshenko beam element.
 
 This method instatiates a finite element timoshenko beam element.
@@ -3140,11 +5080,11 @@ and moment vector should be printed.
 
 
 
-\section{SUPER-BEAM}
+\subsection{SUPER-BEAM}
 \label{structures:super-beam}\index{SuperBeam (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.SuperBeam}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{SuperBeam}}{\emph{x1}, \emph{x2}, \emph{xsect}, \emph{noe}, \emph{SBID}, \emph{btype='Tbeam'}, \emph{sNID=1}, \emph{sEID=1}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.SuperBeam}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Structures.}\bfcode{SuperBeam}}{\emph{SBID}, \emph{x1}, \emph{x2}, \emph{xsect}, \emph{noe}, \emph{btype='Tbeam'}, \emph{sNID=1}, \emph{sEID=1}, \emph{**kwargs}}{}
 Create a superbeam object.
 
 The superbeam object is mainly to fascilitate creating a whole series of
@@ -3248,7 +5188,7 @@ as well as the coordinates of those nodes.
 \index{\_\_init\_\_() (AeroComBAT.Structures.SuperBeam method)}
 
 \begin{fulllineitems}
-\phantomsection\label{structures:AeroComBAT.Structures.SuperBeam.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{x1}, \emph{x2}, \emph{xsect}, \emph{noe}, \emph{SBID}, \emph{btype='Tbeam'}, \emph{sNID=1}, \emph{sEID=1}}{}
+\phantomsection\label{structures:AeroComBAT.Structures.SuperBeam.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{SBID}, \emph{x1}, \emph{x2}, \emph{xsect}, \emph{noe}, \emph{btype='Tbeam'}, \emph{sNID=1}, \emph{sEID=1}, \emph{**kwargs}}{}
 Creates a superelement object.
 
 This method instantiates a superelement. What it effectively does is
@@ -3531,7 +5471,7 @@ working directory.
 
 
 
-\section{WING SECTION}
+\subsection{WING SECTION}
 \label{structures:wing-section}\index{WingSection (class in AeroComBAT.Structures)}
 
 \begin{fulllineitems}
@@ -3888,6 +5828,988 @@ will increase substantially.
 
 
 
+\section{Aerodynamics Module}
+\label{aerodynamics::doc}\label{aerodynamics:aerodynamics-module}\label{aerodynamics:module-AeroComBAT.Aerodynamics}\index{AeroComBAT.Aerodynamics (module)}
+This module contains a library of classes devoted to modeling aircraft parts.
+
+The main purpose of this library is to model various types of aircraft parts.
+Currently only wing objects are suported, however in the future it is possible
+that fuselages as well as other parts will be added.
+\begin{quote}\begin{description}
+\item[{SUMARRY OF THE METHODS}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{K}: The kernel function used in the doublet-lattice method to relate}] \leavevmode
+downwashes to panel pressures.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{calcAIC}: Provided several vectors of numbers as well as a reduced frequency}] \leavevmode
+and mach number, this method calculates a matrix of AIC's using doublet-
+lattice method elementary solutions. This method is used by the FEM class
+flutterAnalysis method.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{SUMARRY OF THE CLASSES}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{Airfoil}: Primarily used for the generation of structural cross-sectional}] \leavevmode
+meshes, this class represent an airfoil. This class could be expanded in
+future to use simple 2D panel methods for an airfoil of arbitrary shape.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{CQUADA}: This class creates quadrilateral panels intended to be used for}] \leavevmode
+potential flow panel methods. Currently it is used for the unsteady
+doublet-lattice panels.
+
+\end{description}
+
+\item {} 
+\emph{CAERO1}: This class is used to generate a lattice of CQUADA panels.
+
+\end{itemize}
+
+
+\subsection{DOUBLET-LATTICE KERNEL FUNCTION}
+\label{aerodynamics:doublet-lattice-kernel-function}\index{K() (in module AeroComBAT.Aerodynamics)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.K}\pysiglinewithargsret{\code{AeroComBAT.Aerodynamics.}\bfcode{K}}{}{}
+Evaluates the doublet-lattice kernel function.
+
+Provided several geometric parameters about the sending and recieving
+panels, this method evaluates the kernel function which relates the
+pressure on one panel to the downwash induced at another panel.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{Xr (1x3 np.array{[}float{]})}: The location of the recieving point.
+
+\item {} 
+\emph{Xs (1x3 np.array{[}float{]})}: The location of the sending point.
+
+\item {} \begin{description}
+\item[{\emph{gamma\_r (1x3 np.array{[}float{]})}: The dihedral of the panel corresponding}] \leavevmode
+to the recieving point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{gamma\_s (1x3 np.array{[}float{]})}: The dihedral of the panel corresponding}] \leavevmode
+to the sending point.
+
+\end{description}
+
+\item {} 
+\emph{M (float)}: The mach number
+
+\item {} 
+\emph{br (float)}: The reference semi-chord
+
+\item {} 
+\emph{kr (float)}: The reduced frequency
+
+\item {} \begin{description}
+\item[{\emph{r1 (float)}: The scalar distance between the sending point and the}] \leavevmode
+recieving point.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{Kbar (complex128)}: The evaluation of the unsteady kernel function which}] \leavevmode
+is complex in nature.
+
+\end{description}
+
+\end{itemize}
+
+\end{fulllineitems}
+
+
+
+\subsection{DOUBLET-LATTICE AIC METHOD}
+\label{aerodynamics:doublet-lattice-aic-method}\index{calcAIC() (in module AeroComBAT.Aerodynamics)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.calcAIC}\pysiglinewithargsret{\code{AeroComBAT.Aerodynamics.}\bfcode{calcAIC}}{}{}
+Calculate the doublet-lattice AIC's.
+
+Provided the geometry of all of the doublet-lattice panels, this method
+calculates the AIC matrix.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{M (float)}: The mach number.
+
+\item {} 
+\emph{kr (float)}: The reduced frequency.
+
+\item {} 
+\emph{br (float)}: The reference semi-chord.
+
+\item {} 
+\emph{delta\_x\_vec (1xN array{[}float{]}}: An array of chord length of the panels.
+
+\item {} 
+\emph{sweep\_vec (1xN array{[}float{]})}: An array of sweep angles of the panels.
+
+\item {} \begin{description}
+\item[{\emph{l\_vec (1xN array{[}float{]})}: An array of average doublet line lengths of}] \leavevmode
+the panels.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{dihedral\_vec (1xN array{[}float{]})}: An array of dihedral angles of the}] \leavevmode
+panels.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Xr\_vec (Nx3 np.array{[}float{]})}: A matrix of recieving points, where a row}] \leavevmode
+are the 3D coordinates of the point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Xi\_vec (Nx3 np.array{[}float{]})}: A matrix of inboard sending points, where}] \leavevmode
+a row are the 3D coordinates of the point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Xc\_vec (Nx3 np.array{[}float{]})}: A matrix of center sending points, where}] \leavevmode
+a row are the 3D coordinates of the point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Xo\_vec (Nx3 np.array{[}float{]})}: A matrix of outboard sending points,}] \leavevmode
+where a row are the 3D coordinates of the point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{symxz (bool)}: A boolean operater intended to determine whether or not}] \leavevmode
+a reflection of the panels should be considered over the xz-plane.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{D (NPANxNPAN np.array{[}complex128{]})}: The matrix which relates pressures}] \leavevmode
+over panels to induced velocities over those panels. In more simple
+terms, this is the inverse of the desired AIC matrix.
+
+\end{description}
+
+\end{itemize}
+
+\end{fulllineitems}
+
+
+
+\subsection{AIRFOIL}
+\label{aerodynamics:airfoil}\index{Airfoil (class in AeroComBAT.Aerodynamics)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.Airfoil}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Aerodynamics.}\bfcode{Airfoil}}{\emph{c}, \emph{**kwargs}}{}
+Creates an airfoil object.
+
+This class creates an airfoil object. Currently this class is primarily
+used in the generation of cross-sectional meshes. Currently only NACA 4
+series arfoil and rectangular boxes are supported.
+\begin{quote}\begin{description}
+\item[{Attributes}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{c (float)}: The chord length of the airfoil.
+
+\item {} 
+\emph{t (float)}: The max percent thickness of the airfoil.
+
+\item {} \begin{description}
+\item[{\emph{p (float)}: The location of the max camber of the airfoil, in 10\%}] \leavevmode
+increments.
+
+\end{description}
+
+\item {} 
+\emph{m (float)}: The max camber of the airfoil as a percent of the chord.
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Methods}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{points}: Generates the x and y upper and lower coordinates of the}] \leavevmode
+airfoil.
+
+\end{description}
+
+\end{itemize}
+\index{\_\_init\_\_() (AeroComBAT.Aerodynamics.Airfoil method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.Airfoil.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{c}, \emph{**kwargs}}{}
+Airfoil object constructor.
+
+Initializes the airfoil object.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{c (float)}: The chord length of the airfoil.
+
+\item {} \begin{description}
+\item[{\emph{name (str)}: The name of the airfoil section. This can either be }] \leavevmode
+a `NACAXXXX' airfoil or `box' which signifies the OML is a
+rectangle.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{points() (AeroComBAT.Aerodynamics.Airfoil method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.Airfoil.points}\pysiglinewithargsret{\bfcode{points}}{\emph{x}}{}
+Generates upper and lower airfoil curves.
+
+This method will generate the x and y coordinates for the upper and
+lower airfoil surfaces provided the non-dimensional array of points x.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{x (1xN np.array{[}float{]})}: An array of floats for which the upper and}] \leavevmode
+lower airfoil curves should be generated.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{xu (1xN np.array{[}float{]})}: The upper x-coordinates of the curve.
+
+\item {} 
+\emph{yu (1xN np.array{[}float{]})}: The upper y-coordinates of the curve.
+
+\item {} 
+\emph{xl (1xN np.array{[}float{]})}: The lower x-coordinates of the curve.
+
+\item {} 
+\emph{yl (1xN np.array{[}float{]})}: The lower y-coordinates of the curve.
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{printSummary() (AeroComBAT.Aerodynamics.Airfoil method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.Airfoil.printSummary}\pysiglinewithargsret{\bfcode{printSummary}}{\emph{x}}{}
+A method for printing a summary of the airfoil object.
+
+Prints the airfoil chord length as well as airfoil name.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+(str): Prints the tabulated chord length and name of the airfoil
+
+\end{itemize}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
+\subsection{CQUADA}
+\label{aerodynamics:cquada}\index{CQUADA (class in AeroComBAT.Aerodynamics)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Aerodynamics.}\bfcode{CQUADA}}{\emph{PANID}, \emph{xs}}{}
+Represents a CQUADA aerodynamic panel.
+
+This CQUADA panel object is used for the unsteady aerodynamic doublet-
+lattice method currently, although it could likely easily be extended to
+support the vortex lattice method as well. The geometry of a generic panel
+can be seen in the figure below.
+
+{\hfill\includegraphics{DoubletLatticePanel.png}\hfill}
+\begin{quote}\begin{description}
+\item[{Attributes}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{type (str)}: The type of object.
+
+\item {} 
+\emph{PANID (int)}: The integer ID linked with the panel.
+
+\item {} 
+\emph{xs (1x4 np.array{[}float{]})}: The x coordinates of the panel.
+
+\item {} 
+\emph{ys (1x4 np.array{[}float{]})}: The y coordinates of the panel.
+
+\item {} 
+\emph{zs (1x4 np.array{[}float{]})}: The z coordinates of the panel.
+
+\item {} \begin{description}
+\item[{\emph{DOF (dict{[}NID,factor{]})}: This dictionary is for connecting the movement}] \leavevmode
+of the panel to the movement of an associated structure. Since a
+panel's control point could be between two nodes (in the middle of an
+element), the position of the panel can interpolated using a finite
+element formulation. The NID's link the movement of the panel to the
+movement of a corresponding node. The factor allows for a finite
+element interpolation.
+
+\end{description}
+
+\item {} 
+\emph{Area (float)}: The area of the panel.
+
+\item {} 
+\emph{sweep (float)}: The average sweep of the panel's doublet line.
+
+\item {} 
+\emph{delta\_x (float)}: The average chord line of the panel.
+
+\item {} 
+\emph{l (float)}: The length of the panel's doublet line.
+
+\item {} 
+\emph{dihedral (float)}: The dihedral of the panel.
+
+\item {} 
+\emph{Xr (1x3 np.array{[}float{]})}: The coordiantes of the panel's sending point.
+
+\item {} \begin{description}
+\item[{\emph{Xi (1x3 np.array{[}float{]})}: The coordinates of the panel's inboard}] \leavevmode
+sending point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Xc (1x3 np.array{[}float{]})}: The coordinates of the panel's center}] \leavevmode
+sending point.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{Xo (1x3 np.array{[}float{]})}: The coordinates of the panel's outboard}] \leavevmode
+sending point.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Methods}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{x}: Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns corresponding the x coordinates.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{y}: Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns corresponding the y coordinates.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{z}: Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns corresponding the z coordinates.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{J}:Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns the jacobian matrix at that point. This
+method is primarily used to fascilitate the calculation of the panels
+area.
+
+\end{description}
+
+\item {} 
+\emph{printSummary}: Prints a summary of the panel.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+The ordering of the xs, ys, and zs arrays should be ordered in a
+\end{notice}
+
+finite element convention. The first point refers to the root trailing edge
+point, followed by the tip trailling edge, then the tip leading edge, then
+root leading edge.
+\index{J() (AeroComBAT.Aerodynamics.CQUADA method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA.J}\pysiglinewithargsret{\bfcode{J}}{\emph{eta}, \emph{xi}}{}
+Calculates the jacobian at a point in the element.
+
+This method calculates the jacobian at a local point within the panel
+provided the master coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{Jmat (3x3 np.array{[}float{]})}: The stress-resutlant transformation}] \leavevmode
+array.
+
+\end{description}
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+\index{\_\_init\_\_() (AeroComBAT.Aerodynamics.CQUADA method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{PANID}, \emph{xs}}{}
+Initializes the panel.
+
+This method initializes the panel, including generating many of the
+geometric properties required for the doublet lattice method such as
+Xr, Xi, etc.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{PANID (int)}: The integer ID associated with the panel.
+
+\item {} \begin{description}
+\item[{\emph{xs (1x4 array{[}1x3 np.array{[}float{]}{]})}: The coordinates of the four}] \leavevmode
+corner points of the elements.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{printSummary() (AeroComBAT.Aerodynamics.CQUADA method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA.printSummary}\pysiglinewithargsret{\bfcode{printSummary}}{}{}
+A method for printing a summary of the CQUADA panel.
+
+Prints out a tabulated information about the panel such as it's panel
+ID, and the coordinates of it's four corner points.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{summary (str)}: The summary of the CQUADA attributes.
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{x() (AeroComBAT.Aerodynamics.CQUADA method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA.x}\pysiglinewithargsret{\bfcode{x}}{\emph{eta}, \emph{xi}}{}
+Calculate the x-coordinate within the panel.
+
+Calculates the x-coordinate on the panel provided the desired master
+coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{x (float)}: The x-coordinate within the element.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+\index{y() (AeroComBAT.Aerodynamics.CQUADA method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA.y}\pysiglinewithargsret{\bfcode{y}}{\emph{eta}, \emph{xi}}{}
+Calculate the y-coordinate within the panel.
+
+Calculates the y-coordinate on the panel provided the desired master
+coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{y (float)}: The y-coordinate within the element.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+\index{z() (AeroComBAT.Aerodynamics.CQUADA method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CQUADA.z}\pysiglinewithargsret{\bfcode{z}}{\emph{eta}, \emph{xi}}{}
+Calculate the z-coordinate within the panel.
+
+Calculates the z-coordinate on the panel provided the desired master
+coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{z (float)}: The z-coordinate within the element.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
+\subsection{CAERO1}
+\label{aerodynamics:caero1}\index{CAERO1 (class in AeroComBAT.Aerodynamics)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1}\pysiglinewithargsret{\strong{class }\code{AeroComBAT.Aerodynamics.}\bfcode{CAERO1}}{\emph{SID}, \emph{x1}, \emph{x2}, \emph{x3}, \emph{x4}, \emph{nspan}, \emph{nchord}, \emph{**kwargs}}{}
+Represents an aerodynamic surface.
+
+This CAERO1 object represents an aerodynamic lifting surface to be modeled
+using the doublet-lattice method.
+\begin{quote}\begin{description}
+\item[{Attributes}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{type (str)}: The type of object.
+
+\item {} 
+\emph{SID (int)}: The integer ID linked with the surface.
+
+\item {} 
+\emph{xs (1x4 np.array{[}float{]})}: The x coordinates of the panel.
+
+\item {} 
+\emph{ys (1x4 np.array{[}float{]})}: The y coordinates of the panel.
+
+\item {} 
+\emph{zs (1x4 np.array{[}float{]})}: The z coordinates of the panel.
+
+\item {} \begin{description}
+\item[{\emph{mesh ((NPAN+1)x(NPAN+1) np.array{[}int{]})}: The panel ID's in the relative}] \leavevmode
+positions of their corresponding panels.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{xmesh ((NPAN+1)x(NPAN+1) np.array{[}float{]})}: The x-coordinates of the}] \leavevmode
+lifting surface nodes.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{ymesh ((NPAN+1)x(NPAN+1) np.array{[}float{]})}: The y-coordinates of the}] \leavevmode
+lifting surface nodes.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{zmesh ((NPAN+1)x(NPAN+1) np.array{[}float{]})}: The z-coordinates of the}] \leavevmode
+lifting surface nodes.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{CQUADAs (dict{[}PANID, CQUADA{]})}: A dictionary mapping panel ID's to}] \leavevmode
+CQUADA panel objects.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Methods}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} \begin{description}
+\item[{\emph{x}: Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns corresponding the x coordinates.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{y}: Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns corresponding the y coordinates.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{z}: Provided the non-dimensional coordinates eta and xi which go from -1}] \leavevmode
+to 1, this method returns corresponding the z coordinates.
+
+\end{description}
+
+\item {} \begin{description}
+\item[{\emph{plotLiftingSurface}: Plots the lifting surface in 3D space. Useful for}] \leavevmode
+debugging purposes.
+
+\end{description}
+
+\item {} 
+\emph{printSummary}: Prints a summary of the panel.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+The ordering of the xs, ys, and zs arrays should be ordered in a
+\end{notice}
+
+finite element convention. The first point refers to the root leading edge
+point, followed by the root trailling edge, then the tip trailing edge,
+then tip leading edge.
+\index{\_\_init\_\_() (AeroComBAT.Aerodynamics.CAERO1 method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1.__init__}\pysiglinewithargsret{\bfcode{\_\_init\_\_}}{\emph{SID}, \emph{x1}, \emph{x2}, \emph{x3}, \emph{x4}, \emph{nspan}, \emph{nchord}, \emph{**kwargs}}{}
+Constructor for the CAERO1 lifting surface object.
+
+Provided several geometric parameters, this method initializes and
+discretizes a lifting surface using CQUADA panel objects.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{SID (int)}: The integer ID for the surface.
+
+\item {} 
+\emph{x1 (1x3 np.array{[}float{]})}: The coordinate of the root leading edge.
+
+\item {} 
+\emph{x2 (1x3 np.array{[}float{]})}: The coordinate of the root trailing edge.
+
+\item {} 
+\emph{x3 (1x3 np.array{[}float{]})}: The coordinate of the tip trailing edge.
+
+\item {} 
+\emph{x4 (1x3 np.array{[}float{]})}: The coordinate of the tip leading edge.
+
+\item {} 
+\emph{nspan (int)}: The number of panels to run in the spanwise direction.
+
+\item {} \begin{description}
+\item[{\emph{nchord (int)}: The number of panels to run in the chordwise}] \leavevmode
+direction.
+
+\end{description}
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{plotLiftingSurface() (AeroComBAT.Aerodynamics.CAERO1 method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1.plotLiftingSurface}\pysiglinewithargsret{\bfcode{plotLiftingSurface}}{\emph{**kwargs}}{}
+Plots the lifting surface using the MayaVi environment.
+
+This method plots the lifting surface using the MayaVi engine. It is
+most useful for debugging models, allowing the user to verify that the
+wing they thought they generated is actually what was generated.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{figName (str)}: The name of the figure
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{(figure)}: MayaVi Figure of the laminate.
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{printSummary() (AeroComBAT.Aerodynamics.CAERO1 method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1.printSummary}\pysiglinewithargsret{\bfcode{printSummary}}{}{}
+A method for printing a summary of the CAERO1 element.
+
+Prints out the surface ID, as well as the number of chordwise and
+spanwise panels.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+None
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{summary (str)}: A summary of the CAERO1 surface attributes.
+
+\end{itemize}
+
+\end{fulllineitems}
+
+\index{x() (AeroComBAT.Aerodynamics.CAERO1 method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1.x}\pysiglinewithargsret{\bfcode{x}}{\emph{eta}, \emph{xi}}{}
+Calculate the x-coordinate within the lifting surface.
+
+Calculates the x-coordinate within the lifting surface provided the
+desired master coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{x (float)}: The x-coordinate within the element.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+\index{y() (AeroComBAT.Aerodynamics.CAERO1 method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1.y}\pysiglinewithargsret{\bfcode{y}}{\emph{eta}, \emph{xi}}{}
+Calculate the y-coordinate within the lifting surface.
+
+Calculates the y-coordinate within the lifting surface provided the
+desired master coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{y (float)}: The y-coordinate within the element.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+\index{z() (AeroComBAT.Aerodynamics.CAERO1 method)}
+
+\begin{fulllineitems}
+\phantomsection\label{aerodynamics:AeroComBAT.Aerodynamics.CAERO1.z}\pysiglinewithargsret{\bfcode{z}}{\emph{eta}, \emph{xi}}{}
+Calculate the z-coordinate within the lifting surface.
+
+Calculates the z-coordinate within the lifting surface provided the
+desired master coordinates eta and xi.
+\begin{quote}\begin{description}
+\item[{Args}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{eta (float)}: The eta coordinate in the master coordinate domain.*
+
+\item {} 
+\emph{xi (float)}: The xi coordinate in the master coordinate domain.*
+
+\end{itemize}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+\end{description}\end{quote}
+\begin{itemize}
+\item {} 
+\emph{z (float)}: The y-coordinate within the element.
+
+\end{itemize}
+
+\begin{notice}{note}{Note:}
+Xi and eta can both vary between -1 and 1 respectively.
+\end{notice}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
 \chapter{Indices and tables}
 \label{index:indices-and-tables}\begin{itemize}
 \item {} 
@@ -3906,6 +6828,8 @@ will increase substantially.
 \begin{theindex}
 \def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
 \bigletter{a}
+\item {\texttt{AeroComBAT.Aerodynamics}}, \pageref{aerodynamics:module-AeroComBAT.Aerodynamics}
+\item {\texttt{AeroComBAT.AircraftParts}}, \pageref{AircraftParts:module-AeroComBAT.AircraftParts}
 \item {\texttt{AeroComBAT.FEM}}, \pageref{FEM:module-AeroComBAT.FEM}
 \item {\texttt{AeroComBAT.Structures}}, \pageref{structures:module-AeroComBAT.Structures}
 \end{theindex}

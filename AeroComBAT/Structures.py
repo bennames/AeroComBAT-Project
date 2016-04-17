@@ -12,15 +12,16 @@ such as composites) complex cross-sections.
 
 It should be noted that classes are ordered by model complexity. The further
 down the structures.py library, the more complex the objects, often requiring
-multiple of their predecessors. For example, the CQUAD4 class requires four
+multiple of their predecessors. For example, the CQUADX class requires four
 node objects and a material object.
 
 :SUMARRY OF THE CLASSES:
+
 - `Node`: Creates a node object with 3D position.
 - `Material`: Creates a material object, generating the 3D constitutive relations.
 - `MicroMechanics`: Class to fascilitate the calculation of composite stiffnesses
     using micro-mechanical models where fibers are long and continuous.
-- `CQUAD4`: Creates a 2D linear quadrilateral element, mainly used to fascilitate\
+- `CQUADX`: Creates a 2D linear quadrilateral element, mainly used to fascilitate\
     cross-sectional analysis, this class could be modified in future updates
     such that they could also be used to create plate or laminate element
     objects as well.
@@ -45,6 +46,7 @@ node objects and a material object.
 
 .. Note:: Currently the inclusion of thermal strains are not supported for any
     structural model.
+    
 """
 __docformat__ = 'restructuredtext'
 # =============================================================================
@@ -72,6 +74,7 @@ class Node:
     Node objects could be used in any finite element implementation.
     
     :Attributes:
+    
     - `NID (int)`: The integer identifier given to the object.
     - `x (Array[float])`: An array containing the 3 x-y-z coordinates of the
         node.
@@ -79,36 +82,33 @@ class Node:
         summary of the important attributes of the object.
         
     :Methods:
+    
     - `printSummary`: This method prints out basic information about the node
         object, such as it's node ID and it's x-y-z coordinates
         
     """
-    def __init__(self,nid,x):
+    def __init__(self,NID,x):
         """Initializes the node object.
         
         :Args:
+        
         - `nid (int)`: The desired integer node ID
         - `x (Array[float])`: The position of the node in 3D space.
             
+        :Returns:
+        
+        - None
+        
         """
         # Verify that a correct NID was given
-        if type(nid) is int:
-            self.NID = nid
+        if type(NID) is int:
+            self.NID = NID
         else:
-            raise TypeError('The node ID given was not an integer.') #Can the nid be any integer? What about repeats?
-        # Initialize the undeformed nodal position
-        #TODO: Remove this conditional statements
-        if len(x)==0:
-            self.x = [0.,0.,0.]
-        elif len(x)==1:
-            self.x = x+[0.,0.]
-        elif len(x)==2:
-            self.x = x+[0.]
-        elif len(x)==3:
-            self.x = x
-        else:
-            raise ValueError('An array of length 3 or greater was provided'\
-                'for the 3 dimensional coordinate.')
+            raise TypeError('The node ID given was not an integer.')
+        if not len(x)==3:
+            raise ValueError("An array of length 3 is required to create a "+
+                "node object.")
+        self.x = x
         # Initialize the summary info:
         self.summary = tabulate(([[self.NID,self.x]]),('NID','Coordinates'))
     def printSummary(self):
@@ -118,13 +118,15 @@ class Node:
         fashion. This includes the node ID and x-y-z global coordinates.
         
         :Args:
+        
         - None
-        
+            
         :Returns:
-        - A printed table including the node ID and it's coordinates
         
+        - A printed table including the node ID and it's coordinates
+            
         """
-        print(self.summary) #Quick guess: you could add more getters for versatile access to attributes
+        print(self.summary)
 
 class Material:
     """creates a linear elastic material object.
@@ -133,6 +135,7 @@ class Material:
     material library object. The material can be in general orthotropic.
     
     :Attributes:
+    
     - `name (str)`: A name for the material.
     - `MID (int)`: An integer identifier for the material.
     - `matType (str)`: A string expressing what type of material it is.
@@ -150,12 +153,13 @@ class Material:
         stiffness matrix in the fiber coordinate system.*
         
     :Methods:
+    
     - `printSummary`: This method prints out basic information about the
         material, including the type, the material constants, material
         thickness, as well as the tabulated stiffness or compliance
         matricies if requested.
         
-    .. Note:: The CQUAD4 element assumes that the fibers are oriented along
+    .. Note:: The CQUADX element assumes that the fibers are oriented along
         the (1,0,0) in the global coordinate system.
         
     """ # why is thickness defined in material and not ply?
@@ -167,6 +171,7 @@ class Material:
             
         
         :Args:
+        
         - `MID (int)`: Material ID.
         - `name (str)`: Name of the material.
         - `matType (str)`: The type of the material. Supported material types
@@ -181,12 +186,13 @@ class Material:
         - `th (1x3 Array[float])`: The angles about which the material can be
             rotated when it is initialized. In degrees.
             
-                
-        :Returns:
-        - None
         
+        :Returns:
+        
+        - None
+            
         .. Note:: While this class supports material direction rotations, it is more
-            robust to simply let the CQUAD4 and Mesher class handle all material
+            robust to simply let the CQUADX and Mesher class handle all material
             rotations.
             
         """
@@ -269,7 +275,7 @@ class Material:
         # Initialize the compliance matrix in the local fiber 123 CSYS:
         self.Smat = np.array([[1./self.E1,-self.nu_12/self.E1,-self.nu_13/self.E1,0.,0.,0.],\
                                      [-self.nu_12/self.E1,1./self.E2,-self.nu_23/self.E2,0.,0.,0.],\
-                                     [-self.nu_13/self.E1,-self.nu_23/self.E2,1./self.E2,0.,0.,0.],\
+                                     [-self.nu_13/self.E1,-self.nu_23/self.E2,1./self.E3,0.,0.,0.],\
                                      [0.,0.,0.,1./self.G_23,0.,0.],\
                                      [0.,0.,0.,0.,1./self.G_13,0.],\
                                      [0.,0.,0.,0.,0.,1./self.G_12]])
@@ -287,21 +293,22 @@ class Material:
         matricies if requested.
         
         :Args:
+        
         - `compliance (str)`: A boolean input to signify if the compliance
             matrix should be printed.
         - `stiffness (str)`: A boolean input to signify if the stiffness matrix
             should be printed.
-        
+            
         :Returns:
+        
         - String print out containing the material name, as well as material
             constants and other defining material attributes. If requested
             this includes the material stiffness and compliance matricies.
-        
+            
         """
         # Print Name
         print(self.name)
         # Print string summary attribute
-        #TODO: Add printSummary fix
         print(self.summary)
         # Print compliance matrix if requested
         if kwargs.pop('compliance',False):
@@ -322,12 +329,14 @@ class Material:
         coordinate system.
         
         :Args:
+        
         - `th (1x3 Array[float])`: The angles about which the material can be
         rotated when it is initialized. In degrees.
-        
+            
         :Returns:
-        - `Sp`: The transformed compliance matrix.
         
+        - `Sp`: The transformed compliance matrix.
+            
         """
         # Method to return the compliance matrix
         rh = RotationHelper()
@@ -354,7 +363,8 @@ class MicroMechanics:
         methods and formula have been tested, however the class an not been
         used or implemented with any other piece in the module.
         
-        Args:
+        :Args:
+        
         - `Vf (float)`: The fiber volume fraction
         - `E1f (float)`: The fiber stiffness in the 1-direction
         - `E2f (float)`: The fiber stiffness in the 2-direction
@@ -367,10 +377,11 @@ class MicroMechanics:
         - `thermal (1x3 Array[float])`: Coefficients of thermal expansion
         - `moisture (1x3 Array[float])`: Coeffiecients of moisture expansion
             
-        Returns
-        - An array containing the transversely isotropic material properties
-        of the smeared material.
+        :Returns:
         
+        - An array containing the transversely isotropic material properties
+            of the smeared material.
+            
         """
         #thermal = [a1f, a2f, a_m]
         thermal = kwargs.pop('thermal', [0,0,0])
@@ -410,8 +421,8 @@ class MicroMechanics:
             b2 = (b2f-(E_m/E1)*Vf*(b_m-b1f)*(1-Vf))*Vf+(b_m+(E1f/E1)*nu_m*(b_m-b1f)*Vf)*(1-Vf)
         return [E1, E2, nu_12, nu_23, G_12, rho]
 
-# 2-D CQUAD4 class, can be used for cross-sectional analysis
-class CQUAD4:
+# 2-D CQUADX class, can be used for cross-sectional analysis
+class CQUADX:
     """ Creates a linear, 2D 4 node quadrilateral element object.
     
     The main purpose of this class is to assist in the cross-sectional
@@ -419,13 +430,14 @@ class CQUAD4:
     2D plate or laminate FE analysis.
     
     :Attributes:
-    - `type (str)`: A string designating it a CQUAD4 element.
+    
+    - `type (str)`: A string designating it a CQUADX element.
     - `xsect (bool)`: States whether the element is to be used in cross-
         sectional analysis.
     - `th (1x3 Array[float])`: Array containing the Euler-angles expressing how
         the element constitutive relations should be rotated from the
         material fiber frame to the global CSYS. In degrees.
-    - `EID (int)`: An integer identifier for the CQUAD4 element.
+    - `EID (int)`: An integer identifier for the CQUADX element.
     - `MID (int)`: An integer refrencing the material ID used for the
         constitutive relations.
     - `NIDs (1x4 Array[int])`: Contains the integer node identifiers for the
@@ -438,15 +450,16 @@ class CQUAD4:
         nodes used in the element
     - `rho (float)`: Density of the material used in the element.
     - `mass (float)`: Mass per unit length (or thickness) of the element.
-    - `U (12x1 np.array[float])`: This column vector contains the CQUAD4s
+    - `U (12x1 np.array[float])`: This column vector contains the CQUADXs
         3 DOF (x-y-z) displacements in the local xsect CSYS due to cross-
         section warping effects.
     - `Eps (6x4 np.array[float])`: A matrix containing the 3D strain state
-        within the CQUAD4 element.
+        within the CQUADX element.
     - `Sig (6x4 np.array[float])`: A matrix containing the 3D stress state
-        within the CQUAD4 element.
-            
+        within the CQUADX element.
+        
     :Methods:
+    
     - `x`: Calculates the local xsect x-coordinate provided the desired master
         coordinates eta and xi.
     - `y`: Calculates the local xsect y-coordinate provided the desired master
@@ -470,7 +483,8 @@ class CQUAD4:
         """ Initializes the element.
         
         :Args:
-        - `EID (int)`: An integer identifier for the CQUAD4 element.
+        
+        - `EID (int)`: An integer identifier for the CQUADX element.
         - `nodes (1x4 Array[obj])`: Contains the properly ordered nodes objects
             used to create the element.
         - `MID (int)`: An integer refrencing the material ID used for the
@@ -484,15 +498,16 @@ class CQUAD4:
             the material fiber frame to the global CSYS. In degrees.
             
         :Returns:
-        - None
         
+        - None
+            
         .. Note:: The reference coordinate system for cross-sectional analysis is a
         local coordinate system in which the x and y axes are planer with the
         element, and the z-axis is perpendicular to the plane of the element.
         
         """
         # Initialize type
-        self.type = 'CQUAD4'
+        self.type = 'CQUADX'
         # Used for xsect analysis?
         xsect = kwargs.pop('xsect', True)
         self.xsect = xsect
@@ -505,8 +520,15 @@ class CQUAD4:
         else:
             raise TypeError('The element ID given was not an integer')
         if not len(nodes) == 4:
-            raise ValueError('A CQUAD4 element requires 4 nodes, %d were'+
+            raise ValueError('A CQUADX element requires 4 nodes, %d were'+
                 'supplied in the nodes array' % (len(nodes)))
+        nids = []
+        for node in nodes:
+            nids+= [node.NID]
+        if not len(np.unique(nids))==4:
+            raise ValueError('The node objects used to create this CQUADX '+
+                'share at least 1 NID. Make sure that no repeated node '+
+                'objects were used.')
         # Error checking on MID input
         if not MID in matLib.matDict.keys():
             raise KeyError('The MID provided is not linked with any materials'+
@@ -609,11 +631,13 @@ class CQUAD4:
         coordinates eta and xi.
         
         :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
         :Returns:
-        - `float`: The x-coordinate within the element.
+        
+        - `x (float)`: The x-coordinate within the element.
             
         .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
@@ -628,11 +652,13 @@ class CQUAD4:
         coordinates eta and xi.
         
         :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
         :Returns:
-        - `(float)': The y-coordinate within the element.
+        
+        - `y (float)': The y-coordinate within the element.
             
         .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
@@ -648,11 +674,13 @@ class CQUAD4:
         and moment resultants.
         
         :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
         :Returns:
-        - `(3x6 np.array[float])`: The stress-resutlant transformation array.
+        
+        - `Z (3x6 np.array[float])`: The stress-resutlant transformation array.
             
         .. Note:: Xi and eta can both vary between -1 and 1 respectively.
         
@@ -667,10 +695,12 @@ class CQUAD4:
         provided the master coordinates eta and xi.
         
         :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
         :Returns:
+        
         - `Jmat (3x3 np.array[float])`: The stress-resutlant transformation
             array.
             
@@ -694,10 +724,12 @@ class CQUAD4:
         analysis process.
         
         :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
         :Returns:
+        
         - `Nmat (3x12 np.array[float])`: The shape-function value weighting
             matrix.
             
@@ -723,10 +755,12 @@ class CQUAD4:
         is mainly reserved for the cross-sectional analysis process.
         
         :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
         :Returns:
+        
         - `dNdxi_mat (3x12 np.array[float])`: The gradient of the shape-
             function value weighting matrix with respect to xi.
             
@@ -751,11 +785,13 @@ class CQUAD4:
         is used to interpolate values within the element. This method however
         is mainly reserved for the cross-sectional analysis process.
         
-        Args:
+        :Args:
+        
         - `eta (float)`: The eta coordinate in the master coordinate domain.*
         - `xi (float)`: The xi coordinate in the master coordinate domain.*
             
-        Returns:
+        :Returns:
+        
         - `dNdeta_mat (3x12 np.array[float])`: The gradient of the shape-
             function value weighting matrix with respect to eta.
             
@@ -779,11 +815,13 @@ class CQUAD4:
         sampling location in the matrix to effect the results in another.
         
         :Args:
-        - None
         
+        - None
+            
         :Returns:
-        - None
         
+        - None
+            
         """
         # Initialize array for element warping displacement results
         self.U = np.zeros((12,1))
@@ -799,10 +837,12 @@ class CQUAD4:
         displacements in the local xsect CSYS.
         
         :Args:
+        
         - `warpScale (float)`: A multiplicative scaling factor intended to
             exagerate the warping displacement within the cross-section.
-        
+            
         :Returns:
+        
         - `xdef (2x2 np.array[float])`: warped x-coordinates at the four corner
             points.
         - `ydef (2x2 np.array[float])`: warped y-coordinates at the four corner
@@ -845,16 +885,20 @@ class CQUAD4:
         state at the four guass points by default.*
         
         :Args:
+        
         - `crit (str)`: Determines what criteria is used to evaluate the 3D
             stress state at the sample points within the element. By
             default the Von Mises stress is returned. Currently supported
             options include: Von Mises ('VonMis'), maximum principle stress
-            ('MaxPrin'), and the minimum principle stress ('MinPrin').
-        
+            ('MaxPrin'), the minimum principle stress ('MinPrin'), and the
+            local cross-section stress states 'sig_xx' where the subindeces can
+            go from 1-3. The keyword 'none' is also an option.
+            
         :Returns:
+        
         - `sigData (2x2 np.array[float])`: The stress state evaluated at four
-            points within the CQUAD4 element.
-                
+            points within the CQUADX element.
+            
         .. Note:: The XSect method calcWarpEffects is what determines where strain
         and stresses are sampled. By default it samples this information at the
         Guass points where the stress/strain will be most accurate.
@@ -920,23 +964,28 @@ class CQUAD4:
                     
         return sigData
     
-    def printSummary(self):
-        """A method for printing a summary of the CQUAD4 element.
+    def printSummary(self,nodes=False):
+        """A method for printing a summary of the CQUADX element.
         
         Prints out a tabulated form of the element ID, as well as the node ID's
         referenced by the element.
         
         :Args:
+        
         - None
             
         :Returns:
-        - (str): Prints the tabulated EID, node IDs and material IDs associated
-            with the CQUAD4 element.
+        
+        - `summary (str)`: Prints the tabulated EID, node IDs and material IDs
+            associated with the CQUADX element.
             
         """
-        print('CQUAD4 Summary:')
+        print('CQUADX Summary:')
         headers = ('EID','NID 1','NID 2','NID 3','NID 4','MID')
         print(tabulate([[self.EID]+self.NIDs+[self.MID]],headers,tablefmt="fancy_grid"))
+        if nodes:
+            for node in self.nodes:
+                node.printSummary()
     def clearXSectionMatricies(self):
         """Clears large matricies associated with cross-sectional analaysis.
         
@@ -961,10 +1010,12 @@ class MaterialLib:
     material types.
     
     :Attributes:
+    
     - `matDict (dict)`: A dictionary which stores material objects as the
         values with the MIDs as the associated keys.
-    
+        
     :Methods:
+    
     - `addMat`: Adds a material to the MaterialLib object dictionary.
     - `getMat`: Returns a material object provided an MID
     - `printSummary`: Prints a summary of all of the materials held within the
@@ -978,11 +1029,13 @@ class MaterialLib:
         which houses material objects.
         
         :Args:
+        
         - None
             
         :Returns:
-        - None
         
+        - None
+            
         """
         self.matDict = {}
     def addMat(self,MID, mat_name, mat_type, mat_constants,mat_t,**kwargs):
@@ -992,6 +1045,7 @@ class MaterialLib:
         obects and then add them to the library for later use.
         
         :Args:
+        
         - `MID (int)`: Material ID.
         - `name (str)`: Name of the material.
         - `matType (str)`: The type of the material. Supported material types
@@ -1010,8 +1064,9 @@ class MaterialLib:
             held by the material library with the same MID.
             
         :Returns:
-        - None
         
+        - None
+            
         """
         # Whether a material has the right to overwrite other materials
         overwrite = kwargs.pop('overwrite',False)
@@ -1027,11 +1082,13 @@ class MaterialLib:
         """Method that returns a material from the material libary
         
         :Args:
+        
         - `MID (int)`: The ID of the material which is desired
             
-        :Returns`:
-        - `(obj): A material object associated with the key MID
+        :Returns:
         
+        - `(obj): A material object associated with the key MID
+            
         """
         if not MID in self.matDict.keys():
             raise KeyError('The MID provided is not linked with any materials'+
@@ -1043,12 +1100,14 @@ class MaterialLib:
         A method used to print out tabulated summary of all of the materials
         held within the material library object.
         
-        Args:
+        :Args:
+        
         - None
             
-        Returns:
-        - (str): A tabulated summary of the materials.
+        :Returns:
         
+        - (str): A tabulated summary of the materials.
+            
         """
         if len(self.matDict)==0:
             print('The material library is currently empty.\n')
@@ -1069,6 +1128,7 @@ class Ply:
     effectively at most transversely isotropic.
     
     :Attributes:
+    
     - `E1 (float)`: Stiffness in the fiber direction.
     - `E2 (float)`: Stiffness transverse to the fiber direction.
     - `nu_12 (float)`: In plane poisson ratio.
@@ -1080,8 +1140,9 @@ class Ply:
         constitutive relations.
     - `th (float)`: The angle about which the fibers are rotated in the plane
         in degrees.
-            
+        
     :Methods:
+    
     - `genQ`: Given the in-plane stiffnesses used by the material of the ply,
         the method calculates the terms of ther reduced stiffness matrix.
     - `printSummary`: This prints out a summary of the object, including
@@ -1096,14 +1157,16 @@ class Ply:
         stiffness repsonse.
         
         :Args:
+        
         - `Material (obj)`: A material object, most likely coming from a
             material library.
         - `th (float)`: The angle about which the fibers are rotated in the
             plane in degrees.
             
         :Returns:
-        - None
         
+        - None
+            
         """
         self.E1 = Material.E1
         self.E2 = Material.E2
@@ -1127,12 +1190,14 @@ class Ply:
         used during the ply instantiation.
         
         :Args:
+        
         - `E1 (float)`: The fiber direction stiffness.
         - `E2 (float)`: The stiffness transverse to the fibers.
         - `nu12 (float)`: The in-plane poisson ratio.
         - `G12 (float)`: The in-plane shear stiffness.
             
         :Returns:
+        
         - `(1x4 np.array[float])`: The terms used in the reduced stiffness
             matrix. The ordering is: [Q11,Q12,Q22,Q66].
             
@@ -1148,12 +1213,14 @@ class Ply:
         the local laminate coordinate system.
         
         :Args:
+        
         - `Q (1x4 np.array[float])`: The reduced compliance array containing
             [Q11,Q12,Q22,Q66]
         - `th(float)`: The angle the fibers are to be rotated in plane of the
             laminate.
-        
+            
         :Returns:
+        
         - `(1x6 np.array[float])`: The reduced and rotated stiffness matrix terms
             for the ply. The ordering is: [Q11, Q12, Q16, Q22, Q26, Q66].
             
@@ -1179,11 +1246,13 @@ class Ply:
         the material ID, fiber orientation and ply thickness.
         
         :Args:
+        
         - None
-        
+            
         :Returns:
-        - `(str): Printed tabulated summary of the ply.
         
+        - `(str)`: Printed tabulated summary of the ply.
+            
         """
         headers = ['MID','Theta, degrees','Thickness']
         print(tabulate(([[self.MID,self.th, self.t]]),headers))
@@ -1195,6 +1264,7 @@ class Laminate:
     can be used to build up a 2D mesh for a descretized cross-section.
     
     :Attributes:
+    
     - `mesh (NxM np.array[int])`: This 2D array holds NIDs and is used
         to represent how nodes are organized in the 2D cross-section of
         the laminate.
@@ -1227,6 +1297,7 @@ class Laminate:
         
         
     :Methods:
+    
     - `printSummary`: This method prints out defining attributes of the
         laminate, such as the ABD matrix and layup schedule.
         
@@ -1243,6 +1314,7 @@ class Laminate:
         the number of plies at a given orientation and using a given material.
         
         :Args:
+        
         - `n_i_tmp (1xN array[int])`: An array containing the number of plies
             using a material at a particular orientation such as:
             (theta=0,theta=45...)
@@ -1255,6 +1327,7 @@ class Laminate:
             the fibers are positioned within the laminate.
             
         :Returns:
+        
         - None
             
         .. Note:: If you wanted to create a [0_2/45_2/90_2/-45_2]_s laminate of the
@@ -1365,6 +1438,7 @@ class Laminate:
         of the laminate.
         
         :Args:
+        
         - `ABD (bool)`: This optional argument asks whether the ABD matrix
             should be printed.
         - `decimals (int)`: Should the ABD matrix be printed, python should
@@ -1373,8 +1447,9 @@ class Laminate:
             for the laminate should be printed.
             
         :Returns:
-        - None
         
+        - None
+            
         """
         ABD = kwargs.pop('ABD',True)
         decimals = kwargs.pop('decimals',4)
@@ -1395,11 +1470,13 @@ class Laminate:
         longer used.
         
         :Args:
+        
         - `figName (str)`: The name of the figure
             
         :Returns:
-        - `(figure)`: MayaVi Figure of the laminate.
         
+        - `(figure)`: MayaVi Figure of the laminate.
+            
         """
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         mlab.figure(figure=figName)
@@ -1416,35 +1493,51 @@ class Mesher:
     population of the nodeDict and elemDict attributes for the cross-section.
     
     :Attributes:
+    
     - None
         
     :Methods:
+    
     - `boxBeam`: Taking several inputs including 4 laminate objects and meshes
-        a 2D box beam cross-section. 
+        a 2D box beam cross-section.
+    - `laminate`: Meshes the cross-section of a single laminate.
     - `cylindricalTube`: Taking several inputs including n laminate objects and
         meshes a 2D cylindrical tube cross-section.
+    - `rectBoxBeam`: Meshes a rectangular cross-section, but it is more
+        restrictive than boxBeam method. In this method, each of the four
+        laminates must have the same number of plies, each of which are the
+        same thickness.
         
     """
     def boxBeam(self,xsect,meshSize,x0,xf,matlib):
         """Meshes a box beam cross-section.
         
-        This method is currently the only supported and tested meshing method.
-        The mesher assumes that the laminates in the box beam are oriented such
-        that the top surfaces of the laminate are facing inwards. Therefore if
-        you would like a particular fiber orientation on the outter or inner
-        most surfaces, create your laminate layup schedules appropriately.
+        This meshing routine takes several parameters including a cross-section
+        object `xsect`. This cross-section object should also contain the
+        laminate objects used to construct it. There are no restrictions place
+        on these laminates. Furthermore the outer mold line of this cross-
+        section can take the form of any NACA 4-series airfoil. Finally, the
+        convention is that for the four laminates that make up the box-beam,
+        the the first ply in the laminate (which in CLT corresponds to the last
+        ply in the stack) is located on the outside of the box beam. This
+        convention can be seen below:
+        
+        .. image:: images/boxBeamGeom.png
+            :align: center
         
         :Args:
+        
         - `xsect (obj)`: The cross-section object to be meshed.
         - `meshSize (int)`: The maximum aspect ratio an element can have
         - `x0 (float)`: The non-dimensional starting point of the cross-section
             on the airfoil.
         - `xf (float)`: The non-dimesnional ending point of the cross-section
             on the airfoil.
-        - `matlib (obj)`: The material library object used to create CQUAD4
+        - `matlib (obj)`: The material library object used to create CQUADX
             elements.
-                
+            
         :Returns:
+        
         - None
             
         """
@@ -1651,31 +1744,35 @@ class Mesher:
                         
                         #if newEID in [0,1692,1135,1134,2830,2831]:
                         #    print(th)
-                    elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
+                    elemDict[newEID] = CQUADX(newEID,nodes,MID,matlib,th=th)
                     xsect.laminates[k].EIDmesh[i,j] = newEID
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
         del xsect.elemDict[-1]
     def laminate(self,xsect,meshSize,x0,xf,matlib):
-        """Meshes a box beam cross-section.
+        """Meshes laminate cross-section.
         
-        This method is currently the only supported and tested meshing method.
-        The mesher assumes that the laminates in the box beam are oriented such
-        that the top surfaces of the laminate are facing inwards. Therefore if
-        you would like a particular fiber orientation on the outter or inner
-        most surfaces, create your laminate layup schedules appropriately.
+        This method meshes a simple laminate cross-section. It is assumed that
+        the unit normal vector of the laminate points in the y-direction. This
+        method only requires one laminate, which can take any shape. The cross-
+        section geometry can be seen below:
+        
+        .. image:: images/laminateGeom.png
+            :align: center
         
         :Args:
+        
         - `xsect (obj)`: The cross-section object to be meshed.
         - `meshSize (int)`: The maximum aspect ratio an element can have
         - `x0 (float)`: The non-dimensional starting point of the cross-section
             on the airfoil.
         - `xf (float)`: The non-dimesnional ending point of the cross-section
             on the airfoil.
-        - `matlib (obj)`: The material library object used to create CQUAD4
+        - `matlib (obj)`: The material library object used to create CQUADX
             elements.
-                
+            
         :Returns:
+        
         - None
             
         """
@@ -1743,7 +1840,7 @@ class Mesher:
                 nodes = [xsect.nodeDict[NID] for NID in NIDs]
                 MID = laminate.plies[ylen-1-i].MID
                 th = [0,laminate.plies[i].th,0.]
-                elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
+                elemDict[newEID] = CQUADX(newEID,nodes,MID,matlib,th=th)
                 laminate.EIDmesh[i,j] = newEID
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
@@ -1822,7 +1919,7 @@ class Mesher:
                     nodes = [xsect.nodeDict[NID] for NID in NIDs]
                     th = [0,lam.plies[i].th,lam.thmesh[i,j]]
                     MID = xsect.lam.plies[i].MID
-                    elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
+                    elemDict[newEID] = CQUADX(newEID,nodes,MID,matlib,th=th)
                     xsect.lam.EIDmesh[i,j] = newEID
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
@@ -1830,23 +1927,28 @@ class Mesher:
     def rectBoxBeam(self,xsect,meshSize,x0,xf,matlib):
         """Meshes a box beam cross-section.
         
-        This method is currently the only supported and tested meshing method.
-        The mesher assumes that the laminates in the box beam are oriented such
-        that the top surfaces of the laminate are facing inwards. Therefore if
-        you would like a particular fiber orientation on the outter or inner
-        most surfaces, create your laminate layup schedules appropriately.
+        This method meshes a similar cross-section as the boxBeam method. The
+        geometry of this cross-section can be seen below. The interfaces
+        between the laminates is different, and more restrictive. In this case
+        all of the laminates must have the same number of plies, which must
+        also all be the same thickness.
+        
+        .. image:: images/rectBoxGeom.png
+            :align: center
         
         :Args:
+        
         - `xsect (obj)`: The cross-section object to be meshed.
         - `meshSize (int)`: The maximum aspect ratio an element can have
         - `x0 (float)`: The non-dimensional starting point of the cross-section
             on the airfoil.
         - `xf (float)`: The non-dimesnional ending point of the cross-section
             on the airfoil.
-        - `matlib (obj)`: The material library object used to create CQUAD4
+        - `matlib (obj)`: The material library object used to create CQUADX
             elements.
-                
+            
         :Returns:
+        
         - None
             
         """
@@ -1886,16 +1988,10 @@ class Mesher:
         # Note, the following curves represent the x-coordinate mesh
         # seeding along key regions, such as the connection region
         # between laminate 1 and 2
-        '''x2 = np.zeros(len(laminates[1].plies))
-        x4 = np.zeros(len(laminates[3].plies))
-        x3 = np.linspace(x0+laminates[1].H/c,xf-laminates[3].H/c,int(((xf-laminates[3].H/c)\
-            -(x0+laminates[1].H/c))/(meshSize*min(laminates[0].t)/c)))[1:]
-        x5 = np.linspace(x0+laminates[1].H/c,xf-laminates[3].H/c,int(((xf-laminates[3].H/c)\
-            -(x0+laminates[1].H/c))/(meshSize*min(laminates[2].t)/c)))[1:]'''
+        
         # Populates the x-coordinates of the mesh seeding in curves x2 and
         # x4, which are the joint regions between the 4 laminates.
-        '''x2 = x0+(laminates[1].z+laminates[1].H/2)/c
-        x4 = xf-(laminates[3].z[::-1]+laminates[3].H/2)/c'''
+        
         
         # Calculate important x points:
         x0 = x0*c
@@ -1936,18 +2032,7 @@ class Mesher:
         # Create 3 empty numpy arrays for each laminate (we will start with
         # lamiantes 1 and 3). The first is holds node ID's, the second and
         # third hold the corresponding x and y coordinates of the node
-        '''lam1Mesh = np.zeros((1+nlam1,len(x1top)),dtype=int)
-        lam1xMesh = np.zeros((1+nlam1,len(x1top)))
-        lam1yMesh = np.zeros((1+nlam1,len(x1top)))
-        lam3Mesh = np.zeros((1+nlam3,len(x3bot)),dtype=int)
-        lam3xMesh = np.zeros((1+nlam3,len(x3bot)))
-        lam3yMesh = np.zeros((1+nlam3,len(x3bot)))
-        #Generate the xy points of the top airfoil curve
-        xu,yu,trash1,trash2 = Airfoil.points(x1top)
-        #Generate the xy points of the bottom airfoil curve
-        trash1,trash2,xl,yl = Airfoil.points(x3bot)
-        #Generate the node objects for laminate 1
-        ttmp = [0]+(laminates[0].z+laminates[0].H/2)'''
+        
         for i in range(0,np.size(lam1xMesh,axis=0)):
             for j in range(0,np.size(lam1xMesh,axis=1)):
                 #Create node/populate mesh array
@@ -1972,13 +2057,7 @@ class Mesher:
         # Create 3 empty numpy arrays for each laminate (we will start with
         # lamiantes 2 and 4). The first is holds node ID's, the second and
         # third hold the corresponding x and y coordinates of the node
-        '''lam2Mesh = np.zeros((meshLen2,nlam2+1),dtype=int)
-        lam2xMesh = np.zeros((meshLen2,nlam2+1))
-        lam2yMesh = np.zeros((meshLen2,nlam2+1))
-        lam4Mesh = np.zeros((meshLen4,nlam4+1),dtype=int)
-        lam4xMesh = np.zeros((meshLen4,nlam4+1))
-        lam4yMesh = np.zeros((meshLen4,nlam4+1))
-        '''
+        
         xis24 = np.linspace(-1,1,nlam2+1)
         etas24 = np.linspace(1,-1,lam24ySeeding+1)
         lam2Mesh = np.zeros((len(etas24),1+nlam2),dtype=int)
@@ -2071,7 +2150,7 @@ class Mesher:
                     else:
                         MID = xsect.laminates[k].plies[j].MID
                         th = [0,xsect.laminates[k].plies[j].th,thz[k]]
-                    elemDict[newEID] = CQUAD4(newEID,nodes,MID,matlib,th=th)
+                    elemDict[newEID] = CQUADX(newEID,nodes,MID,matlib,th=th)
                     xsect.laminates[k].EIDmesh[i,j] = newEID
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
@@ -2084,6 +2163,7 @@ class XSect:
     library.
     
     :Attributes:
+    
     - `Color (touple)`: A length 3 touple used to define the color of the
         cross-section.
     - `Airfoil (obj)`: The airfoil object used to define the OML of the cross-
@@ -2147,6 +2227,7 @@ class XSect:
         
 
     :Methods:
+    
     - `resetResults`: This method resets all results (displacements, strains
         and stresse) within the elements used by the cross-section object.
     - `calcWarpEffects`: Given applied force and moment resultants, this method
@@ -2173,6 +2254,7 @@ class XSect:
         creating all of the framework for the cross-sectional analysis.
         
         :Args:
+        
         - `XID (int)`: The cross-section integer identifier.
         - `Airfoil (obj)`: An airfoil object used to determine the OML shape of
             the cross-section.
@@ -2190,11 +2272,12 @@ class XSect:
             More shapes and the ability to add stiffeners to the
             cross-section will come in later updates.
         - `meshSize (int)`: The maximum aspect ratio you would like your 2D
-            CQUAD4 elements to exhibit within the cross-section.
+            CQUADX elements to exhibit within the cross-section.
             
         :Returns:
-        - None
         
+        - None
+            
         """
         #Save the cross-section ID
         self.XID = XID
@@ -2245,16 +2328,20 @@ class XSect:
         resources (primarily memory). If this method is taking too many
         resources, choose a larger aspect ratio for your XSect initialization.
         
-        Args:
+        :Args:
+        
         - `ref_ax (str or 1x2 array[float])`: Currently there are two supported
-            inputs of this class. The reference axis can be selected as the
-            shear center ('shear_center'), or the user can input a length
-            2 array containing the x-y coordinates of the reference axis
-            within the plane of the xsect.
+            input types for this class. The first is the are string key-words.
+            These are 'shearCntr', 'massCntr', and 'origin'. Currently
+            'shearCntr' is the default value. Also suported is the ability to
+            pass a length 2 array containing the x and y coordinates of the
+            reference axis relative to the origin. This would take the form of:
+            ref_ax=[1.,3.] to put the reference axis at x,y = 1.,3.
+            
+        :Returns:
         
-        Returns:
         - None
-        
+            
         """
         # Initialize the reference axis:
         ref_ax = kwargs.pop('ref_ax','shearCntr')
@@ -2305,8 +2392,8 @@ class XSect:
             xm+= elem.mass*elem.x(0.,0.)
             # Update the first mass moment of ineratia about y
             ym+= elem.mass*elem.y(0.,0.)
-            # If the 2D element is a CQUAD4
-            if (str(elem.type)=='CQUAD4'):
+            # If the 2D element is a CQUADX
+            if (str(elem.type)=='CQUADX'):
                 # Create local references to the element equilibrium matricies
                 A = A + elem.Ae
                 Re = elem.Re
@@ -2440,7 +2527,7 @@ class XSect:
         self.K = np.dot(np.linalg.inv(self.T2),np.dot(self.K_raw,self.T1))
         # Reset all element cross-section matricies to free up memory
         for EID, elem in self.elemDict.iteritems():
-            elem.clearXSectionMatricies()
+            #elem.clearXSectionMatricies()
             # Initialize Guass points for integration
             etas = np.array([-1,1])*np.sqrt(3)/3
             xis = np.array([-1,1])*np.sqrt(3)/3
@@ -2469,11 +2556,13 @@ class XSect:
         within the elements in the xsect object.
         
         :Args:
+        
         - None
             
         :Returns:
-        - None
         
+        - None
+            
         """
         # For all elements within the cross-section
         for EID, elem in self.elemDict.iteritems():
@@ -2492,12 +2581,14 @@ class XSect:
         surveying your beam or wing for displacements, stresses and strains.
         
         :Args:
+        
         - `force (6x1 np.array[float])`: This is the internal force and moment
             resultant experienced by the cross-section.
-        
+            
         :Returns:
-        - None
         
+        - None
+            
         """
         # Initialize the applied force
         frc = kwargs.pop('force',np.zeros((6,1)))
@@ -2511,7 +2602,6 @@ class XSect:
         # Generate gradient of warping
         dudz = np.dot(self.dXdz,th)
         # For each element in the cross-section:
-        #TODO: Make stress/strain calculation more efficient at guass points (save matricies)
         for EID, elem in self.elemDict.iteritems():
             # Initialize the element warping vector for strain calc
             uelem = np.zeros((12,1))
@@ -2576,11 +2666,13 @@ class XSect:
         meshes within the cross-section.
         
         :Args:
+        
         - `figName (str)`: The name of the figure.
             
         :Returns:
-        - `(fig)`: Will plot a mayavi figure
         
+        - `(fig)`: Will plot a mayavi figure
+            
         """
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         mlab.figure(figure=figName)
@@ -2595,6 +2687,7 @@ class XSect:
         if requested will also print the stiffness and mass matricies.
         
         :Args:
+        
         - `refAxis (bool)`: Boolean to determine if the stiffness matrix
             printed should be about the reference axis (True) or about the
             local xsect origin (False).
@@ -2610,6 +2703,7 @@ class XSect:
             reference axis should be printed.
         
         :Returns:
+        
         - `(str)`: Prints out a string of information about the cross-section.
         
         """
@@ -2660,6 +2754,7 @@ class XSect:
         the reference axis.
         
         :Args:
+        
         - `x (1x3 np.array[float])`: The rigid location on your beam you are
             trying to plot:
         - `beam_axis (1x3 np.array[float])`: The vector pointing in the
@@ -2667,9 +2762,11 @@ class XSect:
         - `figName (str)`: The name of the figure.
         - `wireMesh (bool)`: A boolean to determine of the wiremesh outline
             should be plotted.*
+            
         :Returns:
-        - `(fig)`: Plots the cross-section in a mayavi figure.
         
+        - `(fig)`: Plots the cross-section in a mayavi figure.
+            
         .. Note:: Because of how the mayavi wireframe keyword works, it will
         apear as though the cross-section is made of triangles as opposed to
         quadrilateras. Fear not! They are made of quads, the wireframe is just
@@ -2714,6 +2811,7 @@ class XSect:
         order to plot the results anywhere along the beam.
         
         :Args:
+        
         - `displScale (float)`: The scale by which all rotations and
             displacements will be mutliplied in order make it visually
             easier to detect displacements.
@@ -2732,10 +2830,11 @@ class XSect:
             contour color scale.
         - `warpScale (float)`: The scaling factor by which all warping
             displacements in the cross-section will be multiplied.
-        
+            
         :Returns:
-        - `(fig)`: Plots the cross-section in a mayavi figure.
         
+        - `(fig)`: Plots the cross-section in a mayavi figure.
+            
         .. Note:: Because of how the mayavi wireframe keyword works, it will
         apear as though the cross-section is made of triangles as opposed to
         quadrilateras. Fear not! They are made of quads, the wireframe is just
@@ -2759,15 +2858,18 @@ class XSect:
         # Show wire mesh?
         wireMesh = kwargs.pop('mesh',False)
         # Stress Limits
-        contLim = kwargs.pop('contLim',[0.,1.])
+        contLim = kwargs.pop('contLim',[])
         # Establish the warping scaling factor
         warpScale = kwargs.pop('warpScale',1.)
+        # Establish if the colorbar should be generated:
+        colorbar = kwargs.pop('colorbar',False)
+        plots = kwargs.pop('plots',[])
         # Initialize on what figure the cross-section is to be plotted
         mlab.figure(figure=figName)
         # Create a rotation helper
         rh = RotationHelper()
         # Rotate the rotations from the global frame to the local frame:
-        UlocalRot = np.dot(RotMat.T,U[3:6])
+        UlocalRot = np.dot(RotMat.T,np.reshape(U[3:6],(3,1)))
         # Calculate the rotation matrix about the local z axis
         RotZ = rh.rotXYZ(np.array([0.,0.,UlocalRot[2]]),deg2rad=False)
         # Calculate the rotation matrix about the local x-axis
@@ -2822,43 +2924,23 @@ class XSect:
                     plotx[i,j] = newPos[0]
                     ploty[i,j] = newPos[1]
                     plotz[i,j] = newPos[2]
-            '''# Translate the cross-section points to the tension center
-            plotx = plotx+xsc-xtc
-            ploty = ploty+ysc-ytc
-            # Conduct moment rotations about the tension center
-            for i in range(0,np.size(plotx,axis=0)):
-                for j in range(0,np.size(plotx,axis=1)):
-                    # Establish the temporary position vector
-                    tmpPos = np.array([[plotx[i,j]],[ploty[i,j]],[plotz[i,j]]])
-                    # Apply moment rotations
-                    newPos = np.dot(RotY,np.dot(RotX,tmpPos))
-                    # Add rotated points back
-                    plotx[i,j] = newPos[0]
-                    ploty[i,j] = newPos[1]
-                    plotz[i,j] = newPos[2]
-            # Translate the cross-section points to the reference axis
-            plotx = plotx+xtc-refAxis[0]
-            ploty = ploty+ytc-refAxis[1]
-            # Conduct rotations to go from local frame to global frame
-            for i in range(0,np.size(plotx,axis=0)):
-                for j in range(0,np.size(plotx,axis=1)):
-                    # Establish the temporary position vector
-                    tmpPos = np.array([[plotx[i,j]],[ploty[i,j]],[plotz[i,j]]])
-                    # Apply rotation to global frame
-                    newPos = np.dot(RotMat,tmpPos)
-                    # Add rotated points back
-                    plotx[i,j] = newPos[0]
-                    ploty[i,j] = newPos[1]
-                    plotz[i,j] = newPos[2]'''
             # Plot the laminate surface
             if isinstance(contour,str):
-                mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],scalars=plotc,\
-                    vmin=contLim[0],vmax=contLim[1])
+                if len(contLim)==0:
+                    surf = mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],\
+                        scalars=plotc)
+                else:
+                    surf = mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],scalars=plotc,\
+                        vmin=contLim[0],vmax=contLim[1])
+                if colorbar:
+                    mlab.colorbar()
             else:
-                mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],color=tuple(self.color))
+                surf = mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],color=tuple(self.color))
             if wireMesh:
-                mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],\
+                mesh = mlab.mesh(plotx+x[0]+U[0],ploty+x[1]+U[1],plotz+x[2]+U[2],\
                     representation='wireframe',color=tuple(self.color[::-1]))
+                plots += [mesh]
+            plots += [surf]
 class Beam(object):
     """The parent class for all beams finite elements.
     
@@ -2867,6 +2949,7 @@ class Beam(object):
     currently supported and validated (being the TBeam class).
     
     :Attributes:
+    
     - `U1 (dict)`: This dictionary contains the results of an analysis set. The
         keys are the string names of the analysis and the values stored are
         6x1 np.array[float] vectors containing the 3 displacements and
@@ -2917,8 +3000,9 @@ class Beam(object):
     - `analysis_names (array[str])`: An array containing all of the string
         names being used as keys in either U1,U2,F1,F2,Umode1,Umode2,Fmode1
         Fmode2
-    
+        
     :Methods:
+    
     - `printSummary`: This method prints out characteristic attributes of the
         beam finite element.
         
@@ -2936,11 +3020,13 @@ class Beam(object):
         possible beam elements.
         
         :Args:
+        
         - `xsect (obj)`: The cross-section object used by the beam.
         - `EID (int)`: The integer identifier of the beam element.
         - `SBID (int)`: The associated superbeam ID
             
         :Returns:
+        
         - None
             
         """
@@ -2984,6 +3070,7 @@ class Beam(object):
         distributed force vector.
         
         :Args:
+        
         - `nodeCoord (bool)`: A boolean to determine if the node coordinate
             information should also be printed.
         - `Ke (bool)`: A boolean to determine if the element stiffness matrix
@@ -2996,8 +3083,9 @@ class Beam(object):
             and moment vector should be printed.
             
         :Returns:
-        - `(str)`: Printed summary of the requested attributes.
         
+        - `(str)`: Printed summary of the requested attributes.
+            
         """
         # Print the element ID
         print('Element: %d' %(self.EID))
@@ -3101,7 +3189,6 @@ class EBBeam(Beam):
                           [0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]])
         self.Keg = kgtmp
         
-#TODO: Make it such that frame elements can rotate in 3D space (including the torsion DOF)
 class TBeam(Beam):
     """Creates a Timoshenko beam finite element object.
     
@@ -3111,6 +3198,7 @@ class TBeam(Beam):
     in addition to just bending.
     
     :Attributes:
+    
     - `type (str)`:String describing the type of beam element being used.
     - `U1 (dict)`: This dictionary contains the results of an analysis set. The
         keys are the string names of the analysis and the values stored are
@@ -3165,18 +3253,20 @@ class TBeam(Beam):
     - `T (12x12 np.array[float])`:
         
     :Methods:
+    
     - `printSummary`: This method prints out characteristic attributes of the
         beam finite element.
     - `plotRigidBeam`: Plots the the shape of the rigid beam element.
     - `plotDisplBeam`: Plots the deformed shape of the beam element.
     - `printInternalForce`: Prints the internal forces of the beam element for
         a given analysis set
-    
+        
     .. Note:: The force and moments in the Fmode1 and Fmode2 could be completely
     fictitious and be left as an artifact to fascilitate plotting of warped
     cross-sections. DO NOT rely on this information being meaningful.
+    
     """
-    def __init__(self,x1,x2,xsect,EID=0,SBID=0,nid1=0,nid2=1,chordVec=np.array([1.,0.,0.])):
+    def __init__(self,EID,x1,x2,xsect,SBID=0,nid1=0,nid2=1,chordVec=np.array([1.,0.,0.])):
         """Instantiates a timoshenko beam element.
         
         This method instatiates a finite element timoshenko beam element.
@@ -3184,6 +3274,7 @@ class TBeam(Beam):
         full 3D orientation support for frames is in progress.
         
         :Args:
+        
         - `x1 (1x3 np.array[float])`: The 3D coordinates of the first beam
             element node.
         - `x2 (1x3 np.array[float])`: The 3D coordinates of the second beam
@@ -3196,7 +3287,9 @@ class TBeam(Beam):
         - `nid2 (int)`: The second node ID
             
         :Returns:
+        
         - None
+            
         """
         # Inherit from Beam class
         Beam.__init__(self,xsect,EID,SBID)
@@ -3218,7 +3311,7 @@ class TBeam(Beam):
         zVec = self.xbar
         yVec = np.cross(zVec,chordVec)/np.linalg.norm(np.cross(zVec,chordVec))
         xVec = np.cross(yVec,zVec)/np.linalg.norm(np.cross(yVec,zVec))
-        Tsubmat = np.vstack((xVec,yVec,zVec)).T
+        Tsubmat = np.vstack((xVec,yVec,zVec))
         self.T[0:3,0:3] = Tsubmat
         self.T[3:6,3:6] = Tsubmat
         self.T[6:9,6:9] = Tsubmat
@@ -3287,11 +3380,14 @@ class TBeam(Beam):
         can apply distributed forces.
         
         :Args:
+        
         - `fx (1x6 np.array[float])`: The constant distributed load applied
             over the length of the beam.
-        
+            
         :Returns:
+        
         - None
+            
         """
         h = self.h
         self.Fe = np.reshape(np.array([h*fx[0]/2,h*fx[1]/2,\
@@ -3306,6 +3402,7 @@ class TBeam(Beam):
         even a WingSection object.
         
         :Args:
+        
         - `environment (str)`: Determines what environment is to be used to
             plot the beam in 3D space. Currently only mayavi is supported.
         - `figName (str)`: The name of the figure in which the beam will apear.
@@ -3313,7 +3410,9 @@ class TBeam(Beam):
             from 0 to 1 in order to generate a color mayavi can plot.
                 
         :Returns:
+        
         - `(fig)`: The mayavi figure of the beam.
+        
         """
         # Select the plotting environment you'd like to choose
         environment = kwargs.pop('environment','mayavi')
@@ -3345,6 +3444,7 @@ class TBeam(Beam):
         displacements.
         
         :Args:
+        
         - `U1 (MxN np.array[float])`: If N=1, this are the displacements and
             rotations of an analysis at the first node. Otherwise, this
             corresponds to the eigenvector displacements and rotations
@@ -3357,7 +3457,9 @@ class TBeam(Beam):
             the displacement and rotation solution vector.
                 
         :Returns:
+        
         - None
+        
         """
         # Initialize the analysis name for the analysis set
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
@@ -3392,6 +3494,7 @@ class TBeam(Beam):
         or even a WingSection object.
         
         :Args:
+        
         - `environment (str)`: Determines what environment is to be used to
             plot the beam in 3D space. Currently only mayavi is supported.
         - `figName (str)`: The name of the figure in which the beam will apear.
@@ -3403,7 +3506,9 @@ class TBeam(Beam):
             implying a non-eigenvalue solution should be plotted.
                 
         :Returns:
+        
         - `(fig)`: The mayavi figure of the beam.
+        
         """
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         # Select the plotting environment you'd like to choose
@@ -3416,6 +3521,7 @@ class TBeam(Beam):
         displScale = kwargs.pop('displScale',1)
         # Determine what mode to plot:
         mode=kwargs.pop('mode',0)
+        plots = kwargs.pop('plots',[])
         x1r = self.n1.x
         x2r = self.n2.x
         # Determine the tube radius:
@@ -3438,7 +3544,8 @@ class TBeam(Beam):
             y = np.array([x1r[1]+x1disp[1],x2r[1]+x2disp[1]])
             z = np.array([x1r[2]+x1disp[2],x2r[2]+x2disp[2]])
             if environment=='mayavi':
-                mlab.plot3d(x,y,z,color=clr,tube_radius=tube_radius)
+                line = mlab.plot3d(x,y,z,color=clr,tube_radius=tube_radius)
+                plots += [line]
     def printInternalForce(self,**kwargs):
         """Prints the internal forces and moments in the beam.
         
@@ -3446,12 +3553,15 @@ class TBeam(Beam):
         moment resultants at both nodes of the beam.
         
         :Args:
+        
         - `analysis_name (str)`: The analysis name for which the forces are
             being surveyed.
             
         :Returns:
+        
         - `(str)`: This is a print out of the internal forces and moments
             within the beam element.
+            
         """
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         F1 = self.F1[analysis_name]
@@ -3474,9 +3584,15 @@ class TBeam(Beam):
         stresses.
         
         :Args:
+        
         - `x (float)`: The non-dimensional loation within the beam.
         - `figName (str)`: The string name of the figure
-        - `contour (str)`: The contour to be plotted on the cross-section
+        - `contour (str)`: The contour to be plotted on the cross-section.  By
+            default the Von Mises stress is returned. Currently supported
+            options include: Von Mises ('VonMis'), maximum principle stress
+            ('MaxPrin'), the minimum principle stress ('MinPrin'), and the
+            local cross-section stress states 'sig_xx' where the subindeces can
+            go from 1-3. The keyword 'none' is also an option.
         - `contLim (1x2 array[float])`: The lower and upper limits of the
             contour scale.
         - `warpScale (float)`: The scaling factor applied to all warping
@@ -3489,11 +3605,13 @@ class TBeam(Beam):
             implying a non-eigenvalue solution should be plotted.
             
         :Returns:
+        
         - None
+        
         """
         x = kwargs.pop('x',0.)
         if x>1. or x<0.:
-            raise ValueError('The non-dimensional position "x" within the'\
+            raise ValueError('The non-dimensional position "x" within the '\
                 'element must be between 0. and 1.')
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Show a contour
@@ -3508,6 +3626,7 @@ class TBeam(Beam):
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         # Determine what mode to plot
         mode = kwargs.pop('mode',0)
+        plots = kwargs.pop('plots',[])
         # If 'analysis_untitled' is not a results key plot rigid xsect
         if not (analysis_name in self.F1.keys() or self.Fmode1.keys()):
             x_global = self.n1.x*(1.-x)+self.n2.x*(x)
@@ -3530,10 +3649,10 @@ class TBeam(Beam):
             force = np.reshape(np.dot(self.T[0:6,0:6].T,force),(6,1))
             disp = np.reshape(disp,(6,1))
             x_global = self.n1.x*(1.-x)+self.n2.x*(x)
-            self.xsect.calcWarpEffects(force=force)
+            self.xsect.calcWarpEffects(force=np.dot(self.T[0:6,0:6].T,force))
             self.xsect.plotWarped(x=x_global,U=disp,RotMat=self.T[0:3,0:3],\
                 figName=figName,contour=contour,contLim=contLim,\
-                displScale=displScale,warpScale=warpScale)
+                displScale=displScale,warpScale=warpScale,plots=plots)
 class SuperBeam:
     """Create a superbeam object.
     
@@ -3541,6 +3660,7 @@ class SuperBeam:
     beam objects along  the same line.
     
     :Attributes:
+    
     - `type (str)`: The object type, a 'SuperBeam'.
     - `btype (str)`: The beam element type of the elements in the superbeam.
     - `SBID (int)`: The integer identifier for the superbeam.
@@ -3563,6 +3683,7 @@ class SuperBeam:
         superbeam.
         
     :Methods:
+    
     - `getBeamCoord`: Returns the 3D coordinate of a point along the superbeam.
     - `printInternalForce`: Prints all internal forces and moments at every
         node in the superbeam.
@@ -3575,7 +3696,7 @@ class SuperBeam:
         as well as the coordinates of those nodes.
         
     """
-    def __init__(self,x1,x2,xsect,noe,SBID,btype='Tbeam',sNID=1,sEID=1,**kwargs):
+    def __init__(self,SBID,x1,x2,xsect,noe,btype='Tbeam',sNID=1,sEID=1,**kwargs):
         """Creates a superelement object.
         
         This method instantiates a superelement. What it effectively does is
@@ -3584,6 +3705,7 @@ class SuperBeam:
         are supported.
         
         :Args:
+        
         - `x1 (1x3 np.array[float])`: The starting coordinate of the beam.
         - `x2 (1x3 np.array[float])`: The ending coordinate of the beam.
         - `xsect (obj)`: The cross-section used throught the superbeam.
@@ -3595,6 +3717,7 @@ class SuperBeam:
         - `sEID (int)`: The starting EID for the superbeam.
             
         :Returns:
+        
         - None
         
         """
@@ -3640,8 +3763,8 @@ class SuperBeam:
                 x0 = self.getBeamCoord(t[i])
                 xi = self.getBeamCoord(t[i+1])
                 # Store the element in the superbeam elem dictionary
-                elems[i+sEID] = TBeam(x0,xi,xsect,i+sEID,SBID,nid1=tmpsnidb,\
-                    nid2=tmpsnide,chordVec=chordVec)
+                elems[i+sEID] = TBeam(i+sEID,x0,xi,xsect,SBID=SBID,\
+                    nid1=tmpsnidb,nid2=tmpsnide,chordVec=chordVec)
                 self.NIDs2EIDs[tmpsnidb] += [i+sEID]
                 self.NIDs2EIDs[tmpsnide] += [i+sEID]
                 tmpsnidb = tmpsnide
@@ -3674,10 +3797,12 @@ class SuperBeam:
         returns the global coordinate at that point.
         
         :Args:
+        
         - `x_nd (float)`: The non-dimensional coordinate along the beam. Note
             that x_nd must be between zero and one.
             
         :Returns:
+        
         - `(1x3 np.array[float])`: The global coordinate corresponding to x_nd
         """
         # Check that x_nd is between 0 and 1
@@ -3692,11 +3817,14 @@ class SuperBeam:
         internal forces and moments at those nodes.
         
         :Args:
+        
         - `analysis_name (str)`: The name of the analysis for which the forces
             and moments are being surveyed.
         
         :Returns:
+        
         - `(str)`: Printed output expressing all forces and moments.
+        
         """
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         for EID, elem in self.elems.iteritems():
@@ -3708,14 +3836,17 @@ class SuperBeam:
         the displacements and rotations and then write them to a file.
         
         :Args:
+        
         - `fileName (str)`: The name of the file where the data will be written.
         - `analysis_name (str)`: The name of the analysis for which the
             displacements and rotations are being surveyed.
         
         :Returns:
+        
         - `fileName (file)`: This method doesn't actually return a file, rather
             it writes the data to a file named "fileName" and saves it to the
             working directory.
+            
         """
         # Load default value for file name
         fileName = kwargs.pop('fileName','displacements.csv')
@@ -3751,14 +3882,17 @@ class SuperBeam:
         the forces and moments and then write them to a file.
         
         :Args:
+        
         - `fileName (str)`: The name of the file where the data will be written.
         - `analysis_name (str)`: The name of the analysis for which the
             forces and moments are being surveyed.
         
         :Returns:
+        
         - `fileName (file)`: This method doesn't actually return a file, rather
             it writes the data to a file named "fileName" and saves it to the
             working directory.
+            
         """
         fileName = kwargs.pop('fileName','forcesMoments.csv')
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
@@ -3794,24 +3928,34 @@ class SuperBeam:
         dimensional coordinate within the specific beam element.
         
         :Args:
+        
         - `x (float)`: The non-dimensional coordinate within the super-beam
         
         :Returns:
+        
         - `EID (int)`: The EID of the element containing the non-dimensional
             coordinate provided.
         - `local_x_nd (float)`: The non-dimensional coordinate within the beam
             element associated with the provided non-dimensional coordinate
             within the beam.
+            
         """
-        n = len(self.elems)
+        '''n = len(self.elems)
         local_x_nd = 1.
         EID = max(self.elems.keys())
         for i in range(0,n):
-                if x<(float(i)/float(n)):
-                    EID = self.sEID+i
-                    local_x_nd = 1-i+n*x
-                    break
-                
+            if x<=(float(i)/float(n)):
+                EID = self.sEID+i
+                local_x_nd = 1+i-n*x
+                break'''
+        totalLen = np.linalg.norm(self.x2-self.x1)
+        xDim = x*totalLen
+        for locEID, elem in self.elems.iteritems():
+            localElemDim = np.linalg.norm(np.array(np.array(elem.n2.x)-self.x1))
+            if xDim<=localElemDim:
+                EID = locEID
+                local_x_nd = (xDim-(localElemDim-elem.h))/elem.h
+                break
         return EID, local_x_nd
     def printSummary(self,decimals=8,**kwargs):
         """Prints out characteristic information about the super beam.
@@ -3822,6 +3966,7 @@ class SuperBeam:
         distributed force vector.
         
         :Args:
+        
         - `nodeCoord (bool)`: A boolean to determine if the node coordinate
             information should also be printed.
         - `Ke (bool)`: A boolean to determine if the element stiffness matrix
@@ -3834,6 +3979,7 @@ class SuperBeam:
             and moment vector should be printed.
             
         :Returns:
+        
         - `(str)`: Printed summary of the requested attributes.
         
         """
@@ -3873,6 +4019,7 @@ class WingSection:
     that make up the wing-section design.
     
     :Attributes:
+    
     - `Airfoils (Array[obj])`: This array contains all of the airfoils used
         over the wing section. This attribute exists primarily to fascilitate
         the meshing process and is subject to change.
@@ -3892,6 +4039,7 @@ class WingSection:
     - `XIDs (Array[int])`: This array containts the integer cross-section IDs
     
     :Methods:
+    
     - `plotRigid`: This method plots the rigid wing section in 3D space.
     - `plotDispl`: Provided an analysis name, this method will deformed state
         of the wing section. It is also capable of plotting cross-section
@@ -3918,6 +4066,7 @@ class WingSection:
         the laminate objects held within the cross-section.
         
         :Args:
+        
         - `x1 (1x3 np.array[float])`: The starting coordinate of the wing
             section.
         - `x2 (1x3 np.array[float])`: The ending coordinate of the wing
@@ -3956,6 +4105,7 @@ class WingSection:
         
         .. Note:: The chord function could take the shape of: 
             chord = lambda y: (ctip-croot)*y/b_s+croot
+            
         """
         self.Airfoils = []
         self.XSects = []
@@ -3987,8 +4137,8 @@ class WingSection:
             self.XIDs += [tmpXsect.XID]
             sbeam_len = np.linalg.norm(xs[i+1]-xs[i])
             noe = int(noe*sbeam_len)
-            self.SuperBeams += [SuperBeam(xs[i],xs[i+1],self.XSects[i],noe,\
-                SSBID+i,sNID=tmpsnid1,sEID=tmpsEID,chordVec=chordVec)]
+            self.SuperBeams += [SuperBeam(SSBID+i,xs[i],xs[i+1],self.XSects[i]\
+                ,noe,sNID=tmpsnid1,sEID=tmpsEID,chordVec=chordVec)]
             tmpsnid1 = max(self.SuperBeams[i].nodes.keys())
             tmpsEID = max(self.SuperBeams[i].elems.keys())+1
     def plotRigid(self,**kwargs):
@@ -3998,6 +4148,7 @@ class WingSection:
         debugging it.
         
         :Args:
+        
         - `figName (str)`: The name of the plot to be generated. If one is not
             provided a semi-random name will be generated.
         - `environment (str)`: The name of the environment to be used when
@@ -4006,14 +4157,16 @@ class WingSection:
             beam reference axis will be colored with.
         - `numXSects (int)`: This is the number of cross-sections that will be
             plotted and evenly distributed throughout the beam.
-            
+        
         :Returns:
+        
         - `(figure)`: This method returns a 3D plot of the rigid wing section.
-            
+        
         .. Warning:: In order to limit the size of data stored in memory, the
             local cross-sectional data is not stored. As a result, for every
             additional cross-section that is plotted, the time required to plot
             will increase substantially.
+        
         """
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Select the plotting environment you'd like to choose
@@ -4046,6 +4199,7 @@ class WingSection:
         stress, strain, or failure criteria within the sampled cross-sections.
         
         :Args:
+        
         - `figName (str)`: The name of the plot to be generated. If one is not
             provided a semi-random name will be generated.
         - `environment (str)`: The name of the environment to be used when
@@ -4068,12 +4222,14 @@ class WingSection:
             which is desired to be plotted.
             
         :Returns:
+        
         - `(figure)`: This method returns a 3D plot of the rigid wing section.
             
         .. Warning:: In order to limit the size of data stored in memory, the
             local cross-sectional data is not stored. As a result, for every
             additional cross-section that is plotted, the time required to plot
             will increase substantially.
+            
         """
         figName = kwargs.pop('figName','Figure'+str(int(np.random.rand()*100)))
         # Select the plotting environment you'd like to choose
@@ -4095,13 +4251,15 @@ class WingSection:
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         # Determine what to plot
         mode = kwargs.pop('mode',0)
+        plots = kwargs.pop('plots',[])
         if environment=='mayavi':
             mlab.figure(figure=figName)
             # Plot the rigid Beam Axes:
             for sbeam in self.SuperBeams:
                 for EID, elem in sbeam.elems.iteritems():
                     elem.plotDisplBeam(environment=environment,clr=clr,figName=figName,\
-                        displScale=displScale,analysis_name=analysis_name,mode=mode)
+                        displScale=displScale,analysis_name=analysis_name,mode=mode,\
+                        plots=plots)
                 x_nd = np.linspace(0,1,numXSects)
                 # For numXSects nodes evenly spaced in the beam
                 for i in range(0,numXSects):
@@ -4109,5 +4267,5 @@ class WingSection:
                     tmpElem = sbeam.elems[tmpEID]
                     tmpElem.plotWarpedXSect(x=tmpx,figName=figName,contLim=contLim,\
                         contour=contour,warpScale=warpScale,displScale=displScale,\
-                        analysis_name=analysis_name,mode=mode)
+                        analysis_name=analysis_name,mode=mode,plots=plots)
                         # Test

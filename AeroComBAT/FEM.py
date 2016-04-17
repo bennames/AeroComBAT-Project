@@ -7,6 +7,7 @@ The primary purpose of this library is to fascilitate the creation of a FEM
 within the AeroComBAT package.
 
 :SUMARRY OF THE CLASSES:
+
 - `Model`: The Model class has two main purposes. The first is that it is meant
     to serve as an organizational class. Once an aircraft part has been loaded
     into the model by using the addAircraftPart() method, the aircraft part
@@ -16,6 +17,12 @@ within the AeroComBAT package.
     and make sure it accurately represents their problem. If the model appears
     as it should, the user can elect to run a static, buckling, normal mode,
     static aeroelastic, or dynamic flutter analysis.
+- `LoadSet`: This class is used to fascilitate the created of many loads that
+    cal be individually applied to a finite element model. Typically this class
+    is not explicitly used. Instead the are created by the applyLoads method of
+    the Model class.
+- `FlutterPoint`: Primarily as a way to fascilitate the interpolation of
+    flutter results generated from the flutterAnalysis method of Model.
     
 .. Note:: Currently the only avaliable part in the AeroComBAT package are wing
     parts, however this is likely to change as parts such as masses, fuselages
@@ -30,7 +37,6 @@ import numpy as np
 import scipy as sci
 from tabulate import tabulate
 import mayavi.mlab as mlab
-from Aerodynamics import K
 from Aerodynamics import calcAIC as jAIC
 
 # =============================================================================
@@ -48,6 +54,7 @@ class Model:
     interface used to manipulate the generated model.
     
     :Attributes:
+    
     - `Kg (DOFxDOF np.array[float])`: This is the global stiffness matrix.
     - `Kgr ((DOF-CON)x(DOF-CON) np.array[float])`: This is the global reduced
         stiffness matrix. In other words, the global stiffness matrix with the
@@ -72,11 +79,25 @@ class Model:
     - `const (dict[NID,Array[DOF])`: This dictionary is a mapping of the node
         IDs constrained and the corresponding degrees of freedom that are
         constrained.
-    - `parts (Array[int])`: This array contains all of the part IDs
-        corresponding to the parts that have been added to the model.
+    - `parts (dict[PID, part])`: This dictionary is a mapping of part ID's
+        (PID) and the aircraft part objects that are added to the model.
+        Currently the only suported parts are wings.
+    - `loads (dict[LID,int])`: This dictionary is a mapping of the load ID
+        (LID) and the load set objects.
+    - `aeroBox (dict[PANID,panel])`: This dictionary is a mapping of the
+        aerodynamic panel ID's (PANID) and the aerodynamic panel objects used
+        in the flutter analysis.
+    - `SuperBeams (array[obj])`: This array contains all of the superbeam's
+        added to the model through addElements. In otherwords, this superbeam
+        object is without an associated part.
+    - `u (dict[str,1xDOF np.array[float]])`: This dictionary maps analysis
+        names to displacement results for a static analysis.
+    - `freqs (1x(DOF-CON) np.array[float])`: This is a 1D array which holds the
+        frequencies of a normal modes analysis.
     
     
     :Methods:
+    
     - `addElements`: A method to add individual elements to the model.
     - `addAircraftParts`: A method to add an Aircraft part to the model. This
         is a much more effective method than addElements as when a part is
@@ -94,13 +115,12 @@ class Model:
     - `staticAnalysis`: A method which conducts a linear static analysis.
     - `normalModesAnalysis`: A method which conducts a normal modes analysis on
         the model.
+    - `flutterAnalysis`: A method which conducts a linearized flutter pk-method
+        analysis on the model.
     - `plotRigidModel`: A method to plot and visualize the model.
     - `plotDeformedModel`: A method to plot and visualize the results from an
         analysis on the model.
-    
-    .. Note:: When constraining nodes, only 0 displacement and rotation
-        constraints are currently supported.
-    
+
     """
     def __init__(self):
         """Instantiates the Model object.
@@ -109,6 +129,7 @@ class Model:
         just a means to initialize attributes to be used later.
         
         :Args:
+        
         - None
         
         
@@ -138,7 +159,7 @@ class Model:
         # Dictionary Mapping Node ID's to restricted degrees of Freedom
         self.const = {}
         # Array of Displacements
-        self.u = None
+        self.u = {}
         # Analysis ID
         self.AID=0
         #TODO: Link AID's to analysis_names
@@ -146,6 +167,7 @@ class Model:
         self.parts = {}
         self.Loads = {}
         self.aeroBox = {}
+        self.SuperBeams = []
     def addElements(self, elemarray):
         """A method to add elements to the model.
         
@@ -155,10 +177,12 @@ class Model:
         for the elements added to the model in this way.
         
         :Args:
+        
         - `elemarray (Array[obj])`: Adds all of the elements in the array to
             the model.
         
         :Returns:
+        
         - None
         
         .. Note:: Currently supported elements include: SuperBeam, Tbeam.
@@ -170,6 +194,7 @@ class Model:
             if elemarray[i].type=='SuperBeam':
                 # Get all of the elements in the superbeam
                 SBeam = elemarray[i]
+                self.SuperBeams += [SBeam]
                 for EID, elem in SBeam.elems.iteritems():
                     if EID in self.EIDs:
                         print('Element %d not added to the model as the EID'\
@@ -205,15 +230,19 @@ class Model:
     def addAircraftParts(self,parts):
         """A method to add an array of aircraft parts to the model.
         
-        This method is a robust version of addElements. provided an array of
-        part objects, this method will add the parts to the model. This
+        This method is a more robust version of addElements. Provided an array
+        of part objects, this method will add the parts to the model. This
         includes adding all of the elements and nodes to the model, as well as
-        a few other pieces of information.
+        a few other pieces of information. In addition, if a wing has
+        aerodynamic panels associated with it, these will also be added to the
+        model.
         
         :Args:
+        
         - `parts (Array[obj])`: An array of part objects.
         
         :Returns:
+        
         - None
         """
         for part in parts:
@@ -261,9 +290,11 @@ class Model:
         analysis.
         
         :Args:
+        
         - None
         
         :Returns:
+        
         - None
         
         """
@@ -277,9 +308,11 @@ class Model:
         different analysis.
         
         :Args:
+        
         - None
         
         :Returns:
+        
         - None
         
         """
@@ -291,16 +324,29 @@ class Model:
     def assembleGlobalModel(self,analysisType,LID=-1,static4BuckName = 'analysis_untitled'):
         """Assembles the global model.
         
-        This method adds all of the element matricies (mass, stiffness, etc.)
-        to the global matrices, as well as generates the reduced matricies by
-        applying constraints.
+        Primarily intended as a private method, this method assembles the
+        necessary matricies for the finite element model. For example, if the
+        user is executing a linear static analysis, the model will generate the
+        global and reduced stiffness matricies as well as the global and
+        reduced force vector.
+        
+        The three currently suported assemblies are for (which correspond to
+        the analysis type) are linear static (1) and normal mode analysis (3).
         
         :Args:
+        
+        - `analysisType (int)`: The analysis type to be executed by the model.
+        - `LID (int)`: If a linear static analysis is executed, this LID
+            corresponds to which load set should be applied to the model.
         - `static4BuckName (str)`: The analysis name of the static analysis
             should a corresponding linear buckling analysis be run.
             
         :Returns:
+        
         - None
+        
+        .. Note:: When a flutter analysis is executed, the normal mode assebly
+        is executed.
         """
         # For a Linear Static Analysis
         if analysisType==1:
@@ -481,6 +527,7 @@ class Model:
         distributed loads to elements within the model.
         
         :Args:
+        
         - `f (func)`: A function which, provided the provided a length 3 numpy
             array representing a point in space, calculates the distributed
             load value at that point. See an example below:
@@ -494,6 +541,7 @@ class Model:
             corresponding to all of the elements which should be loaded.
         
         :Returns:
+        
         - None
         
         Distributed load function example:
@@ -591,6 +639,7 @@ class Model:
         model.
         
         :Args:
+        
         - `NID (int)`: The node ID of the node to be constrained.
         - `const (str, np.array[int])`: const can either take the form of a
             string in order to take advantage of the two most common
@@ -599,7 +648,12 @@ class Model:
             (integers 1-6) to be constrained.
         
         :Returns:
+        
         - None
+        
+        .. Note:: When constraining nodes, only 0 displacement and rotation
+        constraints are currently supported.
+        
         """
         # INPUTS:
         # nid - The node you want to constrain
@@ -626,10 +680,14 @@ class Model:
         beam elements.
         
         :Args:
+        
+        - `LID (int)`: The ID corresponding to the load set to be applied to
+            the model.
         - `analysis_name (str)`: The string name to be associated with this
             analysis. By default, this is chosen to be 'analysis_untitled'.
         
         :Returns:
+        
         - None
         """
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
@@ -649,7 +707,7 @@ class Model:
             for j in range(0,len(tmpconst)):
                 #Insert a zero for the "displacement"
                 u = np.insert(u,self.nodeDict[ckeys[i]]*6+(tmpconst[j]-1),0,axis=0)
-        self.u = u
+        self.u[analysis_name] = u
         #Solve for the reaction forces in the elements
         # For all of the beam elements in the model
         for elem in self.elems:
@@ -714,10 +772,12 @@ class Model:
         
         
         :Args:
+        
         - `analysis_name (str)`: The string name to be associated with this
             analysis. By default, this is chosen to be 'analysis_untitled'.
         
         :Returns:
+        
         - None
         
         .. Note:: There are internal loads that are calculated and stored
@@ -730,7 +790,7 @@ class Model:
         self.assembleGlobalModel(3)
         eigs,umode = sci.linalg.eig(self.Kgr,self.Mgr)
         idx = eigs.argsort()
-        self.freqs = np.sqrt(np.array(eigs[idx],dtype=float))/(2*np.pi)
+        self.freqs = np.sqrt(np.array(eigs[idx].real,dtype=float))/(2*np.pi)
         umode = np.array(umode[:,idx],dtype=float)
         self.umoder = umode
         #Generate list of constraint keys
@@ -757,115 +817,40 @@ class Model:
         This method calculates the flutter modes and damping provided
         velocities, reduced frequencies, Mach numbers, and the reference
         semi-chord.
-        """
-        analysis_name = kwargs.pop('analysis_name','analysis_untitled')
-        rho_rat = kwargs.pop('rho_rat',np.ones(len(U_vec)))
-        g = kwargs.pop('g',0.)
-        symxz = kwargs.pop('symxz',False)
-        #Generate list of constraint keys
-        ckeys = sorted(list(self.const.keys()))
-        # Assemble Kgr and Mgr matricies
-        #self.assembleGlobalModel(3)
-        self.normalModesAnalysis()
-        normalModes = self.umode
-        # Number of DOF for the global system
-        DOF = np.size(self.Kg,axis=0)
-        # Create flutter point objects
-        self.flutterPoints = {}
-        for i in range(0,nModes):
-            self.flutterPoints[i] = FlutterPoint(i,U_vec,nModes)
-        # Determine the modally reduced stiffness matrix:
-        #for k in range(0,len(ckeys)):
-        #    # Establish temporary node constrined
-        #    tmpconst = self.const[ckeys[k]]
-        #    # For each DOF contrained on the temporary node
-        #    for l in range(0,len(tmpconst)):
-        #        # Insert a zero for the constrained degrees of Freedom
-        #        modes = np.insert(modes,self.nodeDict[ckeys[k]]*6+\
-        #            (tmpconst[l]-1),np.zeros((1,len(eigs))),axis=0)
-        nrmModes = self.umoder[:,0:nModes]
-        Kgrm = np.dot(nrmModes.T,np.dot(self.Kgr,nrmModes))
-        Mgrm = np.dot(nrmModes.T,np.dot(self.Mgr,nrmModes))
         
-        self.TestEig = []
-        self.TestMAC = []
-        self.TestMode = []
-        # For all reduced frequencies
-        for kr, M in zip(kr_vec, M_vec):
-            print(kr)
-            #tmpModes = np.copy(normalModes)
-            tmpModes = np.eye(nModes)
-            self.calcAIC(M,kr,b,symxz=symxz)
-            for U, rhoRat in zip(U_vec, rho_rat):
-                # Calculate the Qaic multiplied by dynamic pressure
-                #Qaicr = self.Qaicr*0.5*rhoRat*rho_0*U**2
-                Qaicrm = np.dot(nrmModes.T,np.dot(self.Qaicr*0.5*rhoRat*rho_0*U**2,nrmModes))
-                #eigs, modes = sci.linalg.eig(-np.dot(np.linalg.inv(self.Mgr),(1+1j*g)*self.Kgr-Qaicr))
-                eigs, modes = sci.linalg.eig(-np.dot(np.linalg.inv(Mgrm),(1+1j*g)*Kgrm-Qaicrm))
-                eigs = np.sqrt(eigs)
-                        #eigs[k]=np.conj(eigs[k])
-                #self.testEigs = eigs
-                #raise ValueError('Test')
-                #eigs, modes = sci.linalg.eig(A,B)
-                # For each node constrained
-                
-                for k in range(0,len(eigs)):
-                    if np.imag(eigs[k])<0:
-                        eigs[k]=-eigs[k]
-                # MAC
-                #MAC = np.divide(np.dot(modes.T,np.conj(tmpModes))**2,\
-                #    np.multiply(np.dot(modes.T,np.conj(modes)),np.dot(tmpModes.T,np.conj(tmpModes))))
-                MAC = np.zeros((np.size(modes,axis=1),np.size(modes,axis=1)))
-                for i in range(0,np.size(modes,axis=1)):
-                    for j in range(0,np.size(modes,axis=1)):
-                        #v0 = tmpModes[:,j]
-                        #v1 = modes[:,i]
-                        #eig0 = 1/eigs[j]
-                        #eig1 = 1/eigs[i]
-                        #num = (abs(np.dot(np.conj(v0),v1))/abs(np.conj(eig0)+eig1)+\
-                        #    abs(np.dot(v0,v1))/abs(eig0+eig1))**2
-                        #den = (np.dot(np.conj(v0),v0)/(2*abs(np.real(eig0)))+\
-                        #    abs(np.dot(v0,v0))/(2*abs(eig0)))*\
-                        #    (np.dot(np.conj(v1),v1)/(2*abs(np.real(eig1)))+\
-                        #    abs(np.dot(v1,v1))/(2*abs(eig1)))
-                        MAC[i,j] = abs(np.dot(np.conj(tmpModes[:,j]),modes[:,i])**2/\
-                            (np.dot(tmpModes[:,j],np.conj(tmpModes[:,j]))\
-                            *np.dot(modes[:,i],np.conj(modes[:,i]))))
-                        #MAC[i,j] = num/den
-                #MAC = np.dot(tmpModes.T,np.conj(modes))**2
-                self.MAC = MAC
-                idx = []
-                for i in range(0,np.size(MAC,axis=1)):
-                    idx += [np.argmax(MAC[:,i])]
-                self.eigs = eigs
-                #idx = np.imag(eigs).argsort()
-                p = eigs[idx]
-                self.p = p
-                modes = modes[:,idx]
-                self.idx = idx
-                self.tmpModes = tmpModes
-                tmpModes = modes
-                self.modes = modes
-                #p = np.sqrt(eigs[0:nModes])
-                omega_root = np.imag(p)
-                gamma_root = np.real(p)/omega_root
-                omega_aero = kr*U/b
-                #raise ValueError('Test')
-                #if U==U_vec[13] and kr==kr_vec[1]:
-                #    raise ValueError('test')
-                for i in range(0,nModes):
-                    #print(omega_root[i])
-                    self.flutterPoints[i].saveSol(U,omega_aero,\
-                        omega_root[i],gamma_root[i],np.real(modes[:,i]))
-        for FPID, flutterPoint in self.flutterPoints.iteritems():
-            flutterPoint.interpOmegaRoot()
-            
-    def jitflutterAnalysis(self,U_vec,kr_vec,M_vec,b,rho_0,nModes,**kwargs):
-        """Conducts a flutter analysis.
+        :Args:
         
-        This method calculates the flutter modes and damping provided
-        velocities, reduced frequencies, Mach numbers, and the reference
-        semi-chord.
+        - `U_vec (1xN np.array[float])`: A vector of trial velocities where the
+            damping and frequency of all of the respective mode shapes will be
+            calculated.
+        - `kr_vec (1xM np.array[float])`: A vector of reduced frequencies for
+            which the AIC's will be calculated. The minimum possible value can
+            be 0.
+        - `M_vec (1xM np.array[float])`: A vector of mach numbers at which the
+            AIC's will be calculated. Currently interpolating results by Mach
+            number aren't possible. As such, select mach numbers to be close to
+            the suspected instability.
+        - `b (float)`: The reference semi-chord.
+        - `rho_0 (float)`: The reference density at sea level.
+        - `nmodes (int)`: The number of modes to be considered for the flutter
+            analysis. For a composite cantilevered wing, 6 modes should usually
+            be sufficient.
+        - `g (float)`: A proportional structural damping term. Acceptable
+            ranges of g can be approximated between 0. and 0.05.
+        - `symxz (bool)`: A boolean value indicating whether the aerodynamics
+            should be mirrored over the xz-plane.
+        - `rho_rat (1xN np.array[float])`: An array of density ratios to allow
+            for flutter calculations at different altitudes.
+        - `analysis_name (str)`: The string name to be associated with this
+            analysis. By default, this is chosen to be 'analysis_untitled'.
+        
+        :Returns:
+        
+        - None
+        
+        .. Note:: Currently static aeroelastic instability (divergence) cannot
+        be captured by AeroComBAT.
+        
         """
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         rho_rat = kwargs.pop('rho_rat',np.ones(len(U_vec)))
@@ -952,6 +937,7 @@ class Model:
         This method plots the rigid model in the mayavi environement.
         
         :Args:
+        
         - `figName (str)`: The name of the figure. This is 'Rigid Model' by
             default.
         - `clr (1x3 tuple(int))`: The color tuple or RGB values to be used for
@@ -961,6 +947,7 @@ class Model:
             for all wing sections. The default is 2.
         
         :Returns:
+        
         - mayavi figure
         
         """
@@ -974,6 +961,19 @@ class Model:
         for PID, part in self.parts.iteritems():
             if part.type=='wing':
                 part.plotRigidWing(figName=figName,clr=clr,numXSects=numXSects)
+        # Plot the rigid Beam Axes:
+        for sbeam in self.SuperBeams:
+            for EID, elem in sbeam.elems.iteritems():
+                elem.plotRigidBeam(clr=clr,figName=figName)
+            #nids = sbeam.nodes.keys()
+            # For numXSects nodes evenly spaced in the beam
+            x_nd = np.linspace(0,1,numXSects)
+            RotMat = sbeam.RotMat
+            for i in range(0,numXSects):
+                # Determine the rigid location of the node with NID i
+                xtmp = sbeam.getBeamCoord(x_nd[i])
+                # The below lines are for loaded/displaced beams:
+                sbeam.xsect.plotRigid(figName=figName,RotMat=RotMat,x=xtmp)
     def plotDeformedModel(self,**kwargs):
         """Plots the deformed model.
         
@@ -981,6 +981,7 @@ class Model:
         the mayavi environement.
         
         :Args:
+        
         - `analysis_name (str)`: The string identifier of the analysis.
         - `figName (str)`: The name of the figure. This is 'Rigid Model' by
             default.
@@ -1001,6 +1002,7 @@ class Model:
             refers to which mode from that analysis should be plotted.
         
         :Returns:
+        
         - mayavi figure
         
         """
@@ -1023,185 +1025,169 @@ class Model:
         # eigenvalue solution.
         mode = kwargs.pop('mode',0)
         mlab.figure(figure=figName)
+        plots = []
         for PID, part in self.parts.iteritems():
             if part.type=='wing':
                 for sects in part.wingSects:
                     sects.plotDispl(figName=figName,clr=clr,numXSects=numXSects,\
                         contLim=contLim,warpScale=warpScale,displScale=displScale,\
-                        contour=contour,analysis_name=analysis_name,mode=mode)
+                        contour=contour,analysis_name=analysis_name,mode=mode,\
+                        plots=plots)
+        for sbeam in self.SuperBeams:
+            for EID, elem in sbeam.elems.iteritems():
+                elem.plotDisplBeam(clr=clr,figName=figName,\
+                    displScale=displScale,analysis_name=analysis_name,mode=mode,\
+                    plots=plots)
+            x_nd = np.linspace(0,1,numXSects)
+            # For numXSects nodes evenly spaced in the beam
+            for i in range(0,numXSects):
+                tmpEID,tmpx = sbeam.getEIDatx(x_nd[i])
+                tmpElem = sbeam.elems[tmpEID]
+                tmpElem.plotWarpedXSect(x=tmpx,figName=figName,contLim=contLim,\
+                    contour=contour,warpScale=warpScale,displScale=displScale,\
+                    analysis_name=analysis_name,mode=mode,plots=plots)
         mlab.colorbar()
-        
-    def calcAIC(self,M,kr,br,symxz=False):
-        # Calculate the AIC matricies
-        # Initialize an array of PANIDs
-        PANIDs = self.aeroBox.keys()
-        # Initialize the number of panels
-        numPan = len(PANIDs)
-        # Initialize the complex [D] matrix
-        D = np.zeros((numPan,numPan),dtype=complex)
-        ## Initialize the Diagonal Box Area Matrix
-        #Area = np.zeros((numPan,numPan))
-        # Initialize the [W] Matrix
-        W = np.zeros((numPan,len(self.nids)*6),dtype=complex)
-        # For all the recieving panels
-        for i in range(0,numPan):
-            recievingBox = self.aeroBox[PANIDs[i]]
-            # For all the sending panels
-            for j in range(0,numPan):
-                sendingBox = self.aeroBox[PANIDs[j]]
-                # Calculate average chord of sending box
-                #delta_x_j = abs(sendingBox.x(0,1)-sendingBox.x(0,-1))
-                delta_x_j = sendingBox.delta_x
-                # Calculate sweep of sending box
-                '''xtmp = sendingBox.x(1,1)-sendingBox.x(-1,1)
-                ytmp = sendingBox.y(1,1)-sendingBox.y(-1,1)
-                lambda_j = np.arctan(xtmp/ytmp)'''
-                lambda_j = sendingBox.sweep
-                # Calculate the length of the doublet line on sending box
-                '''xtmp = sendingBox.x(1,0.5)-sendingBox.x(-1,0.5)
-                ytmp = sendingBox.y(1,0.5)-sendingBox.y(-1,0.5)
-                ztmp = sendingBox.z(1,0.5)-sendingBox.z(-1,0.5)
-                l_j = np.linalg.norm([xtmp,ytmp,ztmp])'''
-                l_j = sendingBox.l
-                # Calculate y and z vectors for recieving box
-                '''ytmp_r = recievingBox.y(1,0.5)-recievingBox.y(-1,0.5)
-                ztmp_r = recievingBox.z(1,0.5)-recievingBox.z(-1,0.5)'''
-                # Calculate parameters invloved in aproximate I_ij
-                '''Xr = np.array([recievingBox.x(0,-.5),recievingBox.y(0,-.5),\
-                    recievingBox.z(0,-.5)])
-                Xi = np.array([sendingBox.x(-1,.5),sendingBox.y(-1,.5),\
-                    sendingBox.z(-1,.5)])
-                Xc = np.array([sendingBox.x(0,.5),sendingBox.y(0,.5),\
-                    sendingBox.z(0,.5)])
-                Xo = np.array([sendingBox.x(1,.5),sendingBox.y(1,.5),\
-                    sendingBox.z(1,.5)])'''
-                Xr = recievingBox.Xr
-                Xi = sendingBox.Xi
-                Xc = sendingBox.Xc
-                Xo = sendingBox.Xo
-                e = 0.5*l_j*np.cos(lambda_j)
-                #gamma_s = np.arctan(ztmp/ytmp)
-                gamma_s = sendingBox.dihedral
-                gamma_r = recievingBox.dihedral
-                eta_0 = (Xr[1]-Xc[1])*np.cos(gamma_s)\
-                    +(Xr[2]-Xc[2])*np.sin(gamma_s)
-                zeta_0 = -(Xr[1]-Xc[1])*np.sin(gamma_s)\
-                    +(Xr[2]-Xc[2])*np.cos(gamma_s)
-                r1 = np.linalg.norm([eta_0,zeta_0])
-                # Calculate the Kernel function at the inboard, middle, and
-                # outboard locations
-                #if multiProcess:
-                #    print('start multiprocess')
-                #    Ki,Kc,Ko = K_multi(Xr,Xi,Xc,Xo,gamma_r,gamma_s,M,br,kr,r1)
-                Ki = K(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1)
-                Kc = K(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1)
-                Ko = K(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1)
-                #print('got Ks')
-                A = (Ki-2*Kc+Ko)/(2*e**2)
-                B = (Ko-Ki)/(2*e)
-                C = Kc
-                # Determine if planar or non-planar I_ij definition should be used
-                if abs(zeta_0)<1e-6:
-                    I_ij = (eta_0**2*A+eta_0*B+C)*(1./(eta_0-e)-1./(eta_0+e))+\
-                        (B/2+eta_0*A)*np.log(((eta_0-e)/(eta_0+e))**2)
-                else:
-                    I_ij = ((eta_0**2-zeta_0**2)*A+eta_0*B+C)*zeta_0**(-1)*\
-                        np.arctan(2*e*abs(zeta_0)/(r1**2-e**2))+\
-                        (B/2+eta_0*A)*np.log((r1**2-2*eta_0*e+e**2)/\
-                        (r1**2+2*eta_0*e+e**2))+2*e*A
-                D[i,j]=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
-                
-                if symxz:
-                    # Calculate sweep of sending box
-                    lambda_j = -lambda_j
-                    # Calculate parameters invloved in aproximate I_ij
-                    Xi[1] = -Xi[1]
-                    Xc[1] = -Xc[1]
-                    Xo[1] = -Xo[1]
-                    # Sending box dihedral
-                    gamma_s = -gamma_s
-                    eta_0 = (Xr[1]-Xc[1])*np.cos(gamma_s)\
-                        +(Xr[2]-Xc[2])*np.sin(gamma_s)
-                    zeta_0 = -(Xr[1]-Xc[1])*np.sin(gamma_s)\
-                        +(Xr[2]-Xc[2])*np.cos(gamma_s)
-                    r1 = np.linalg.norm([eta_0,zeta_0])
-                    Ki = K(Xr,Xi,gamma_r,gamma_s,M,br,kr,r1)
-                    Kc = K(Xr,Xc,gamma_r,gamma_s,M,br,kr,r1)
-                    Ko = K(Xr,Xo,gamma_r,gamma_s,M,br,kr,r1)
-                    A = (Ki-2*Kc+Ko)/(2*e**2)
-                    B = (Ko-Ki)/(2*e)
-                    C = Kc
-                    # Determine if planar or non-planar I_ij definition should be used
-                    if abs(zeta_0)<1e-6:
-                        I_ij = (eta_0**2*A+eta_0*B+C)*(1./(eta_0-e)-1./(eta_0+e))+\
-                            (B/2+eta_0*A)*np.log(((eta_0-e)/(eta_0+e))**2)
-                    else:
-                        I_ij = ((eta_0**2-zeta_0**2)*A+eta_0*B+C)*zeta_0**(-1)*\
-                            np.arctan(2*e*abs(zeta_0)/(r1**2-e**2))+\
-                            (B/2+eta_0*A)*np.log((r1**2-2*eta_0*e+e**2)/\
-                            (r1**2+2*eta_0*e+e**2))+2*e*A
-                    D[i,j]+=delta_x_j*np.cos(lambda_j)/(8.*np.pi)*I_ij
-            #Area[i,i] = recievingBox.Area
-            # Assemble total derivative matrix [W]
-            for NID, factor in recievingBox.DOF.iteritems():
-                col = self.nodeDict[NID]
-                W[i,col*6+2] = -1j*kr/br*factor
-                W[i,col*6+4] = (1.+1j*kr/br*recievingBox.xarm)*factor
-            '''if not -1 in recievingBox.DOF.keys():
-                nids = recievingBox.DOF.keys()
-                col1 = self.nodeDict[nids[0]]
-                W[i,col1*6+2] = -1j*kr/br*recievingBox.DOF[nids[0]]
-                W[i,col1*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[nids[0]]
-                col2 = self.nodeDict[nids[1]]
-                W[i,col2*6+2] = -1j*kr/br*recievingBox.DOF[nids[1]]
-                W[i,col2*6+4] = 1j*kr/br*recievingBox.xarm*recievingBox.DOF[nids[1]]'''
-        # Create integration matrix [B]
-        B = br/kr*np.dot(np.imag(W.T),self.AeroArea)
-        self.D = D
-        self.W = W
-        chd = np.dot(B,np.dot(np.linalg.inv(D),W))
-        self.Qaic = chd
-        
-        # Determine the list of NIDs to be contrained
-        cnds = sorted(list(self.const.keys()))
-        # Initialize the number of equations to be removed from the system
-        deleqs = 0
-        # For the number of constrained NIDs
-        for i in range(0,len(self.const)):
-            # The row range to be removed associated with the NID
-            row = self.nodeDict[cnds[i]]
-            # Determine which DOF are to be removed
-            tmpcst = self.const[cnds[i]]
-            # For all of the degrees of freedom to be removed
-            for j in range(0,len(tmpcst)):
-                # Remove the row associated with the jth DOF for the ith NID
-                chd = np.delete(chd,row*6+(tmpcst[j]-1)-deleqs,axis=0)
-                chd = np.delete(chd,row*6+(tmpcst[j]-1)-deleqs,axis=1)
-                # Incremend the number of deleted equations
-                deleqs += 1
-        # Save the reduced global stiffness matrix
-        self.Qaicr = chd
-            
-                
+        self.plots = plots
 
 class LoadSet:
+    """Creates a Model which is used to organize and analyze FEM.
+    
+    The primary use of LoadSet is to fascilitate the application of many
+    different complex loads to a finite element model.
+    
+    :Attributes:
+    
+    - `LID (int)`: The integer identifier for the load set object.
+    - `pointLoads (dict[pointLoads[NID,F])`: A dictionary mapping applied point
+        loads to the node ID's of the node where the load is applied.
+    - `distributedLoads (dict[EID,f])`: A dictionary mapping the distributed
+        load vector to the element ID of the element where the load is applied.
+    
+    
+    :Methods:
+    
+    - `__init__`: The constructor of the class. This method initializes the
+        dictionaries used by the loads
+    - `addPointLoad`: Adds point loads to the pointLoads dictionary attribute.
+    - `addDictibutedLoad`: Adds distributed loads to the distributedLoads
+        dictionary attribute.
+
+    """
     def __init__(self,LID):
+        """Initialized the load set ibject.
+        
+        This method is a simple constructor for the load set object.
+        
+        :Args:
+        
+        - `LID (int)`: The integer ID linked with the load set object.
+        
+        :Returns:
+        
+        - None
+        
+        """
         self.LID = LID
         self.pointLoads = {}
         self.distributedLoads = {}
     def addPointLoad(self,F,NID):
+        """Initialized the load set ibject.
+        
+        This method is a simple constructor for the load set object.
+        
+        :Args:
+        
+        - `LID (int)`: The integer ID linked with the load set object.
+        
+        :Returns:
+        
+        - None
+        
+        """
         if NID in self.pointLoads.keys():
             self.pointLoads[NID]=self.pointLoads[NID]+F
         else:
             self.pointLoads[NID]=F
     def addDistributedLoad(self,f,eid):
+        """Initialized the load set ibject.
+        
+        This method is a simple constructor for the load set object.
+        
+        :Args:
+        
+        - `LID (int)`: The integer ID linked with the load set object.
+        
+        :Returns:
+        
+        - None
+        
+        """
         if eid in self.distributedLoads.keys():
             self.distributedLoads[eid]=self.distributedLoads[eid]+f
         else:
             self.distributedLoads[eid]=f
             
 class FlutterPoint:
+    """Creates a flutter point object.
+    
+    The primary purpose for the flutter point class is to allow for easier
+    post processing of the data from the flutter modes.
+    
+    :Attributes:
+    
+    - `FPID (int)`: The integer identifier associated with the flutter point
+        object.
+    - `U_vec (1xN np.array[float])`: A vector of the velocities where the
+        flutter point frequency and damping have been solved.
+    - `omegaAeroDict(dict[U,array[float])`: This dictionary maps velocities to
+        the aerodynamic frequencies used to generate the AIC matricies.
+    - `omegaRootDict(dict[U,array[float])`: This dictionary maps velocities to
+        the root frequencies of the flutter mode solution for particular
+        reduced frequencies.
+    - `gammaDict(dict[U,array[float])`: This dictionary maps velocities to
+        the root damping of the flutter mode solution for particular
+        reduced frequencies.
+    - `gammaDict(dict[U,array[float])`: This dictionary maps velocities to
+        the root mode shape of the flutter mode solution for particular
+        reduced frequencies.
+    - `omega (array[float])`: An array of floats which are the
+        flutter mode frequencies corresponding to the velocities in U_vec.
+    - `gamma (array[float])`: An array of floats which are the
+        flutter mode damping values corresponding to the velocities in U_vec.
+    - `shape (array[MxN np.array[float]])`: An MxL numpy array which
+        contain the eigenvector solutions of the flutter mode. The values in
+        the eigenvectors are the coefficient weighting factors for the normal
+        mode shapes.
+    
+    
+    :Methods:
+    
+    - `__init__`: The constructor of the class. This method initializes the
+        attributes of the model, as well as the flutter
+    - `saveSol`: Saves solutions to the flutter equation for the particular
+        mode.
+    - `interpOmegaRoot`: Interpolates the flutter mode frequency, damping and
+        mode shapes for the different velocities.
+
+    """
     def __init__(self,FPID,U_vec,nModes):
+        """Creates a flutter point object.
+        
+        This is the constructor for the flutter point object.
+        
+        :Args:
+        
+        - `FPID (int)`: The integer ID linked with the flutter point object.
+        - `U_vec (1xN np.array[float])`: An array of velocities where the
+            flutter problem will be solved.
+        - `nModes (int)`: The number of modes that are used for the flutter
+            solution.
+        
+        :Returns:
+        
+        - None
+        
+        """
         self.FPID = FPID
         self.U_vec = U_vec
         self.omegaAeroDict = {}
@@ -1217,6 +1203,27 @@ class FlutterPoint:
             self.gammaDict[U] = []
             self.shapeDict[U] = []
     def saveSol(self,U,omega_aero,omega_root,gamma_root,shape):
+        """Saves data from the flutter solutions.
+        
+        This method saves the damping, frequencies and mode shapes for the
+        different flutter velocities and reduced frequencies.
+        
+        :Args:
+        
+        - `U (float)`: The flutter velocity of the data.
+        - `omega_aero (float)`: The aerodynamic frequency corresponding to the
+            reduced frequency.
+        - `omega_root (float)`: The root frequency corresponding to the
+            flutter solution of the particular aerodynamic frequency.
+        - `gamma_root (float)`: The root damping of the flutter solution
+        - `shape (1xM np.array[float])`: The mode shape of the flutter
+            solution.
+        
+        :Returns:
+        
+        - None
+        
+        """
         if U not in self.U_vec:
             raise ValueError('A velocity is being written that wasnt provided')
         self.omegaAeroDict[U] += [omega_aero]
@@ -1224,6 +1231,21 @@ class FlutterPoint:
         self.gammaDict[U] += [gamma_root]
         self.shapeDict[U] += [shape]
     def interpOmegaRoot(self):
+        """Interpolates correct dynamic frequencies and damping.
+        
+        From the data saved using the saveSol method, this method interpolates
+        the correct dynamic frequencies and damping for the different flutter
+        velocities.
+        
+        :Args:
+        
+        - None
+        
+        :Returns:
+        
+        - None
+        
+        """
         i = 0
         for U in self.U_vec:
             omegaAeros = self.omegaAeroDict[U]
@@ -1235,30 +1257,38 @@ class FlutterPoint:
             for k in range(0,len(omegaAeros)-1):
                 if omegaDiff[k]*omegaDiff[k+1]<0:
                     ind1 = k
+                    omega_aero1 = omegaAeros[ind1]
+                    omega_aero2 = omegaAeros[ind1+1]
+                    omega_root1 = omegaRoots[ind1]
+                    omega_root2 = omegaRoots[ind1+1]
+                    gamma_root1 = gammaRoots[ind1]
+                    gamma_root2 = gammaRoots[ind1+1]
+                    shape_root1 = np.array(shapes[ind1])
+                    shape_root2 = np.array(shapes[ind1+1])
+                    true_mode_omega = -(omega_aero2*omega_root1-omega_aero1*omega_root2)\
+                        /(omega_aero1-omega_aero2-omega_root1+omega_root2)
+                    true_mode_gamma = ((gamma_root2-gamma_root1)/(omega_aero2-omega_aero1))\
+                        *(true_mode_omega-omega_aero1)+gamma_root1
+                    true_mode_shape = (shape_root2-shape_root1)/(omega_aero2-omega_aero1)\
+                        *(true_mode_omega-omega_aero1)+shape_root1
                     break
             if ind1=='none':
                 print(U)
                 print(omegaAeros)
                 print(omegaRoots)
-                raise ValueError("Omega_aero never equals omega_root"
+                print("Omega_aero never equals omega_root "
                     "for mode %d at airspeed %4.2f . Consider adding more reduces "
                     "frequency values." %(self.FPID,U))
+                if omegaAeros[0]>omegaRoots[0] or omegaAeros[0]==omegaRoots[0]:
+                    true_mode_omega = omegaAeros[0]
+                    true_mode_gamma = gammaRoots[0]
+                    true_mode_shape = np.array(shapes[0])
+                else:
+                    true_mode_omega = omegaAeros[-1]
+                    true_mode_gamma = gammaRoots[-1]
+                    true_mode_shape = np.array(shapes[-1])
             # Linearly interpolating between frquencies, determine
             # parameter t which can be used to interpolate frequencies
-            omega_aero1 = omegaAeros[ind1]
-            omega_aero2 = omegaAeros[ind1+1]
-            omega_root1 = omegaRoots[ind1]
-            omega_root2 = omegaRoots[ind1+1]
-            gamma_root1 = gammaRoots[ind1]
-            gamma_root2 = gammaRoots[ind1+1]
-            shape_root1 = np.array(shapes[ind1])
-            shape_root2 = np.array(shapes[ind1+1])
-            true_mode_omega = -(omega_aero2*omega_root1-omega_aero1*omega_root2)\
-                /(omega_aero1-omega_aero2-omega_root1+omega_root2)
-            true_mode_gamma = ((gamma_root2-gamma_root1)/(omega_aero2-omega_aero1))\
-                *(true_mode_omega-omega_aero1)+gamma_root1
-            true_mode_shape = (shape_root2-shape_root1)/(omega_aero2-omega_aero1)\
-                *(true_mode_omega-omega_aero1)+shape_root1
             '''t = (omega_aero1-omega_root1)/((omega_root2-omega_root1)-\
                 (omega_aero2-omega_aero1))
             true_mode_omega = omega_aero1+t*(omega_aero2-omega_aero1)

@@ -1,0 +1,27 @@
+Metadata-Version: 1.1
+Name: AeroComBAT
+Version: 1.0a1
+Summary: A tool for modeling composite beams and aircraft wings.
+
+ ``Aerodynamics``
+     This module provides the aerodynamics models used within AeroComBAT
+ ``AircraftParts``
+     This module provides a full-fledged wing object that can be used to
+     determine if a design is both statically adequate as well as stable.
+ ``FEM``
+     This module provides a finite element model object, intended as a
+     convenient way for a user to create and model composite structures and
+     potential flow lifting surfaces.
+ ``Structures``
+     This module provides the structural models used within AeroComBAT.
+
+Home-page: https://github.com/bennames/AeroComBAT-Project
+Author: Ben Names
+Author-email: bennames@vt.edu
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Aerospace Stress Analysts
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 2.7

@@ -1,72 +1,71 @@
-The Structures Module
---------------------- 
+Structures Module
+-----------------
 
 .. automodule:: AeroComBAT.Structures
 
-.. module:: AeroComBAT.Structures
 
 NODE
 ++++
 
-.. autoclass:: Node
+.. autoclass:: AeroComBAT.Structures.Node
    :members: __init__, printSummary
 
 MATERIAL
 ++++++++
 
-.. autoclass:: Material
+.. autoclass:: AeroComBAT.Structures.Material
    :members: __init__, printSummary
 
-CQUAD4
+CQUADX
 ++++++
 
-.. autoclass:: CQUAD4
+.. autoclass:: AeroComBAT.Structures.CQUADX
    :members: __init__, x, y, J, resetResults, getDeformed, getStressState, printSummary
 
 MATERIAL LIBRARY
 ++++++++++++++++
 
-.. autoclass:: MaterialLib
+.. autoclass:: AeroComBAT.Structures.MaterialLib
    :members: __init__, addMat, getMat, printSummary
 
 PLY
 +++
 
-.. autoclass:: Ply
+.. autoclass:: AeroComBAT.Structures.Ply
    :members: __init__, genQ, printSummary
 
 LAMINATE
 ++++++++
 
-.. autoclass:: Laminate
+.. autoclass:: AeroComBAT.Structures.Laminate
    :members: __init__, printSummary
 
 MESHER
 ++++++
 
-.. autoclass:: Mesher
-   :members: boxBeam, cylindricalTube
+.. autoclass:: AeroComBAT.Structures.Mesher
+   :members: boxBeam, laminate, rectBoxBeam
 
 CROSS-SECTION
 +++++++++++++
 
-.. autoclass:: XSect
-   :members: __init__, xSectionAnalysis resetResults, calcWarpEffects, printSummary, plotRigid, plotWarped
+.. autoclass:: AeroComBAT.Structures.XSect
+   :members: __init__, xSectionAnalysis, resetResults, calcWarpEffects, printSummary, plotRigid, plotWarped
 
 TIMOSHENKO BEAM
 +++++++++++++++
 
-.. autoclass:: TBeam
+.. autoclass:: AeroComBAT.Structures.TBeam
    :members: __init__, printSummary, plotRigidBeam, plotDisplBeam, printInternalForce
 
 SUPER-BEAM
 ++++++++++
 
-.. autoclass:: SuperBeam
+.. autoclass:: AeroComBAT.Structures.SuperBeam
    :members: __init__, getBeamCoord, printInternalForce, writeDisplacements, writeForcesMoments, getEIDatx, printSummary
 
 WING SECTION
 ++++++++++++
 
-.. autoclass:: WingSection
+.. autoclass:: AeroComBAT.Structures.WingSection
    :members: __init__, plotRigid, plotDispl

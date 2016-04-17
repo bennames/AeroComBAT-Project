@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>The FEM Interface Module &mdash; AeroComBAT 0.2.1 documentation</title>
+    <title>FEM Interface Module &mdash; AeroComBAT 1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.2.1',
+        VERSION:     '1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,9 +25,9 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/bizstyle.js"></script>
-    <link rel="top" title="AeroComBAT 0.2.1 documentation" href="index.html" />
-    <link rel="next" title="The Structures Module" href="structures.html" />
-    <link rel="prev" title="Welcome to AeroComBAT’s documentation!" href="index.html" />
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="index.html" />
+    <link rel="next" title="Aircraft Parts Module" href="AircraftParts.html" />
+    <link rel="prev" title="AeroComBAT Tutorials" href="tutorials.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <!--[if lt IE 9]>
     <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
@@ -44,30 +44,32 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="structures.html" title="The Structures Module"
+          <a href="AircraftParts.html" title="Aircraft Parts Module"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to AeroComBAT’s documentation!"
+          <a href="tutorials.html" title="AeroComBAT Tutorials"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">The FEM Interface Module</a><ul>
+<li><a class="reference internal" href="#">FEM Interface Module</a><ul>
 <li><a class="reference internal" href="#model">MODEL</a></li>
+<li><a class="reference internal" href="#load-set">LOAD SET</a></li>
+<li><a class="reference internal" href="#flutter-point">FLUTTER POINT</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to AeroComBAT&#8217;s documentation!</a></p>
+  <p class="topless"><a href="tutorials.html"
+                        title="previous chapter">AeroComBAT Tutorials</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="structures.html"
-                        title="next chapter">The Structures Module</a></p>
+  <p class="topless"><a href="AircraftParts.html"
+                        title="next chapter">Aircraft Parts Module</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -97,7 +99,7 @@
           <div class="body" role="main">
             
   <div class="section" id="module-AeroComBAT.FEM">
-<span id="the-fem-interface-module"></span><h1>The FEM Interface Module<a class="headerlink" href="#module-AeroComBAT.FEM" title="Permalink to this headline">¶</a></h1>
+<span id="fem-interface-module"></span><h1>FEM Interface Module<a class="headerlink" href="#module-AeroComBAT.FEM" title="Permalink to this headline">¶</a></h1>
 <p>This module contains a basic environment for conducting finite element analysis.</p>
 <p>The primary purpose of this library is to fascilitate the creation of a FEM
 within the AeroComBAT package.</p>
@@ -124,6 +126,20 @@ static aeroelastic, or dynamic flutter analysis.</p>
 </dd>
 </dl>
 </li>
+<li><dl class="first docutils">
+<dt><cite>LoadSet</cite>: This class is used to fascilitate the created of many loads that</dt>
+<dd><p class="first last">cal be individually applied to a finite element model. Typically this class
+is not explicitly used. Instead the are created by the applyLoads method of
+the Model class.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>FlutterPoint</cite>: Primarily as a way to fascilitate the interpolation of</dt>
+<dd><p class="first last">flutter results generated from the flutterAnalysis method of Model.</p>
+</dd>
+</dl>
+</li>
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -131,7 +147,7 @@ static aeroelastic, or dynamic flutter analysis.</p>
 parts, however this is likely to change as parts such as masses, fuselages
 and other types of aircraft parts are added.</p>
 </div>
-<span class="target" id="module-AeroComBAT.FEM"></span><div class="section" id="model">
+<div class="section" id="model">
 <h2>MODEL<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="AeroComBAT.FEM.Model">
@@ -213,8 +229,41 @@ constrained.</p>
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt><cite>parts (Array[int])</cite>: This array contains all of the part IDs</dt>
-<dd><p class="first last">corresponding to the parts that have been added to the model.</p>
+<dt><cite>parts (dict[PID, part])</cite>: This dictionary is a mapping of part ID&#8217;s</dt>
+<dd><p class="first last">(PID) and the aircraft part objects that are added to the model.
+Currently the only suported parts are wings.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>loads (dict[LID,int])</cite>: This dictionary is a mapping of the load ID</dt>
+<dd><p class="first last">(LID) and the load set objects.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>aeroBox (dict[PANID,panel])</cite>: This dictionary is a mapping of the</dt>
+<dd><p class="first last">aerodynamic panel ID&#8217;s (PANID) and the aerodynamic panel objects used
+in the flutter analysis.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>SuperBeams (array[obj])</cite>: This array contains all of the superbeam&#8217;s</dt>
+<dd><p class="first last">added to the model through addElements. In otherwords, this superbeam
+object is without an associated part.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>u (dict[str,1xDOF np.array[float]])</cite>: This dictionary maps analysis</dt>
+<dd><p class="first last">names to displacement results for a static analysis.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>freqs (1x(DOF-CON) np.array[float])</cite>: This is a 1D array which holds the</dt>
+<dd><p class="first last">frequencies of a normal modes analysis.</p>
 </dd>
 </dl>
 </li>
@@ -268,6 +317,12 @@ elements in the model.</p>
 </dd>
 </dl>
 </li>
+<li><dl class="first docutils">
+<dt><cite>flutterAnalysis</cite>: A method which conducts a linearized flutter pk-method</dt>
+<dd><p class="first last">analysis on the model.</p>
+</dd>
+</dl>
+</li>
 <li><p class="first"><cite>plotRigidModel</cite>: A method to plot and visualize the model.</p>
 </li>
 <li><dl class="first docutils">
@@ -277,19 +332,16 @@ elements in the model.</p>
 </dl>
 </li>
 </ul>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">When constraining nodes, only 0 displacement and rotation
-constraints are currently supported.</p>
-</div>
 <dl class="method">
 <dt id="AeroComBAT.FEM.Model.addAircraftParts">
 <code class="descname">addAircraftParts</code><span class="sig-paren">(</span><em>parts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.addAircraftParts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.addAircraftParts" title="Permalink to this definition">¶</a></dt>
 <dd><p>A method to add an array of aircraft parts to the model.</p>
-<p>This method is a robust version of addElements. provided an array of
-part objects, this method will add the parts to the model. This
+<p>This method is a more robust version of addElements. Provided an array
+of part objects, this method will add the parts to the model. This
 includes adding all of the elements and nodes to the model, as well as
-a few other pieces of information.</p>
+a few other pieces of information. In addition, if a wing has
+aerodynamic panels associated with it, these will also be added to the
+model.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -393,11 +445,16 @@ to be applied, const could also be a numpy array listing the DOF
 <ul class="simple">
 <li>None</li>
 </ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When constraining nodes, only 0 displacement and rotation</p>
+</div>
+<p>constraints are currently supported.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="AeroComBAT.FEM.Model.applyLoads">
-<code class="descname">applyLoads</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.applyLoads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.applyLoads" title="Permalink to this definition">¶</a></dt>
+<code class="descname">applyLoads</code><span class="sig-paren">(</span><em>LID</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.applyLoads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.applyLoads" title="Permalink to this definition">¶</a></dt>
 <dd><p>A method to apply nodal and distributed loads to the model.</p>
 <p>This method allows the user to apply nodal loads to nodes and
 distributed loads to elements within the model.</p>
@@ -458,14 +515,108 @@ load value at that point. See an example below:</p>
    <span class="n">vx</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="mf">2.1</span>
    <span class="n">vy</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
    <span class="n">pz</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">mx</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">my</span> <span class="o">=</span> <span class="mi">0</span>
    <span class="n">tz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mi">10</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
-   <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">pz</span><span class="p">,</span><span class="n">tz</span><span class="p">])</span>
+   <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">pz</span><span class="p">,</span><span class="n">mx</span><span class="p">,</span><span class="n">my</span><span class="p">,</span><span class="n">tz</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Nodal load dictionary example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">F</span><span class="p">[</span><span class="n">NID</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">Qx</span><span class="p">,</span><span class="n">Qy</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">Mx</span><span class="p">,</span><span class="n">My</span><span class="p">,</span><span class="n">T</span><span class="p">])</span>
 </pre></div>
 </div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.Model.flutterAnalysis">
+<code class="descname">flutterAnalysis</code><span class="sig-paren">(</span><em>U_vec</em>, <em>kr_vec</em>, <em>M_vec</em>, <em>b</em>, <em>rho_0</em>, <em>nModes</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.flutterAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.flutterAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conducts a flutter analysis.</p>
+<p>This method calculates the flutter modes and damping provided
+velocities, reduced frequencies, Mach numbers, and the reference
+semi-chord.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>U_vec (1xN np.array[float])</cite>: A vector of trial velocities where the</dt>
+<dd><p class="first last">damping and frequency of all of the respective mode shapes will be
+calculated.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>kr_vec (1xM np.array[float])</cite>: A vector of reduced frequencies for</dt>
+<dd><p class="first last">which the AIC&#8217;s will be calculated. The minimum possible value can
+be 0.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>M_vec (1xM np.array[float])</cite>: A vector of mach numbers at which the</dt>
+<dd><p class="first last">AIC&#8217;s will be calculated. Currently interpolating results by Mach
+number aren&#8217;t possible. As such, select mach numbers to be close to
+the suspected instability.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>b (float)</cite>: The reference semi-chord.</p>
+</li>
+<li><p class="first"><cite>rho_0 (float)</cite>: The reference density at sea level.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nmodes (int)</cite>: The number of modes to be considered for the flutter</dt>
+<dd><p class="first last">analysis. For a composite cantilevered wing, 6 modes should usually
+be sufficient.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>g (float)</cite>: A proportional structural damping term. Acceptable</dt>
+<dd><p class="first last">ranges of g can be approximated between 0. and 0.05.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>symxz (bool)</cite>: A boolean value indicating whether the aerodynamics</dt>
+<dd><p class="first last">should be mirrored over the xz-plane.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>rho_rat (1xN np.array[float])</cite>: An array of density ratios to allow</dt>
+<dd><p class="first last">for flutter calculations at different altitudes.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>analysis_name (str)</cite>: The string name to be associated with this</dt>
+<dd><p class="first last">analysis. By default, this is chosen to be &#8216;analysis_untitled&#8217;.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Currently static aeroelastic instability (divergence) cannot</p>
+</div>
+<p>be captured by AeroComBAT.</p>
 </dd></dl>
 
 <dl class="method">
@@ -702,7 +853,7 @@ different analysis.</p>
 
 <dl class="method">
 <dt id="AeroComBAT.FEM.Model.staticAnalysis">
-<code class="descname">staticAnalysis</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.staticAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.staticAnalysis" title="Permalink to this definition">¶</a></dt>
+<code class="descname">staticAnalysis</code><span class="sig-paren">(</span><em>LID</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#Model.staticAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.Model.staticAnalysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Linear static analysis.</p>
 <p>This method conducts a linear static analysis on the model. This will
 calculate all of the unknown displacements in the model, and save not
@@ -718,8 +869,363 @@ beam elements.</p>
 </table>
 <ul>
 <li><dl class="first docutils">
+<dt><cite>LID (int)</cite>: The ID corresponding to the load set to be applied to</dt>
+<dd><p class="first last">the model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
 <dt><cite>analysis_name (str)</cite>: The string name to be associated with this</dt>
 <dd><p class="first last">analysis. By default, this is chosen to be &#8216;analysis_untitled&#8217;.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="load-set">
+<h2>LOAD SET<a class="headerlink" href="#load-set" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.FEM.LoadSet">
+<em class="property">class </em><code class="descclassname">AeroComBAT.FEM.</code><code class="descname">LoadSet</code><span class="sig-paren">(</span><em>LID</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#LoadSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.LoadSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Model which is used to organize and analyze FEM.</p>
+<p>The primary use of LoadSet is to fascilitate the application of many
+different complex loads to a finite element model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>LID (int)</cite>: The integer identifier for the load set object.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>pointLoads (dict[pointLoads[NID,F])</cite>: A dictionary mapping applied point</dt>
+<dd><p class="first last">loads to the node ID&#8217;s of the node where the load is applied.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>distributedLoads (dict[EID,f])</cite>: A dictionary mapping the distributed</dt>
+<dd><p class="first last">load vector to the element ID of the element where the load is applied.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>__init__</cite>: The constructor of the class. This method initializes the</dt>
+<dd><p class="first last">dictionaries used by the loads</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>addPointLoad</cite>: Adds point loads to the pointLoads dictionary attribute.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>addDictibutedLoad</cite>: Adds distributed loads to the distributedLoads</dt>
+<dd><p class="first last">dictionary attribute.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="method">
+<dt id="AeroComBAT.FEM.LoadSet.addDistributedLoad">
+<code class="descname">addDistributedLoad</code><span class="sig-paren">(</span><em>f</em>, <em>eid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#LoadSet.addDistributedLoad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.LoadSet.addDistributedLoad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialized the load set ibject.</p>
+<p>This method is a simple constructor for the load set object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>LID (int)</cite>: The integer ID linked with the load set object.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.LoadSet.addPointLoad">
+<code class="descname">addPointLoad</code><span class="sig-paren">(</span><em>F</em>, <em>NID</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#LoadSet.addPointLoad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.LoadSet.addPointLoad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialized the load set ibject.</p>
+<p>This method is a simple constructor for the load set object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>LID (int)</cite>: The integer ID linked with the load set object.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="flutter-point">
+<h2>FLUTTER POINT<a class="headerlink" href="#flutter-point" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.FEM.FlutterPoint">
+<em class="property">class </em><code class="descclassname">AeroComBAT.FEM.</code><code class="descname">FlutterPoint</code><span class="sig-paren">(</span><em>FPID</em>, <em>U_vec</em>, <em>nModes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#FlutterPoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.FlutterPoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a flutter point object.</p>
+<p>The primary purpose for the flutter point class is to allow for easier
+post processing of the data from the flutter modes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>FPID (int)</cite>: The integer identifier associated with the flutter point</dt>
+<dd><p class="first last">object.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>U_vec (1xN np.array[float])</cite>: A vector of the velocities where the</dt>
+<dd><p class="first last">flutter point frequency and damping have been solved.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>omegaAeroDict(dict[U,array[float])</cite>: This dictionary maps velocities to</dt>
+<dd><p class="first last">the aerodynamic frequencies used to generate the AIC matricies.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>omegaRootDict(dict[U,array[float])</cite>: This dictionary maps velocities to</dt>
+<dd><p class="first last">the root frequencies of the flutter mode solution for particular
+reduced frequencies.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>gammaDict(dict[U,array[float])</cite>: This dictionary maps velocities to</dt>
+<dd><p class="first last">the root damping of the flutter mode solution for particular
+reduced frequencies.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>gammaDict(dict[U,array[float])</cite>: This dictionary maps velocities to</dt>
+<dd><p class="first last">the root mode shape of the flutter mode solution for particular
+reduced frequencies.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>omega (array[float])</cite>: An array of floats which are the</dt>
+<dd><p class="first last">flutter mode frequencies corresponding to the velocities in U_vec.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>gamma (array[float])</cite>: An array of floats which are the</dt>
+<dd><p class="first last">flutter mode damping values corresponding to the velocities in U_vec.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>shape (array[MxN np.array[float]])</cite>: An MxL numpy array which</dt>
+<dd><p class="first last">contain the eigenvector solutions of the flutter mode. The values in
+the eigenvectors are the coefficient weighting factors for the normal
+mode shapes.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>__init__</cite>: The constructor of the class. This method initializes the</dt>
+<dd><p class="first last">attributes of the model, as well as the flutter</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>saveSol</cite>: Saves solutions to the flutter equation for the particular</dt>
+<dd><p class="first last">mode.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>interpOmegaRoot</cite>: Interpolates the flutter mode frequency, damping and</dt>
+<dd><p class="first last">mode shapes for the different velocities.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="method">
+<dt id="AeroComBAT.FEM.FlutterPoint.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>FPID</em>, <em>U_vec</em>, <em>nModes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#FlutterPoint.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.FlutterPoint.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a flutter point object.</p>
+<p>This is the constructor for the flutter point object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>FPID (int)</cite>: The integer ID linked with the flutter point object.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>U_vec (1xN np.array[float])</cite>: An array of velocities where the</dt>
+<dd><p class="first last">flutter problem will be solved.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nModes (int)</cite>: The number of modes that are used for the flutter</dt>
+<dd><p class="first last">solution.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.FlutterPoint.interpOmegaRoot">
+<code class="descname">interpOmegaRoot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#FlutterPoint.interpOmegaRoot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.FlutterPoint.interpOmegaRoot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolates correct dynamic frequencies and damping.</p>
+<p>From the data saved using the saveSol method, this method interpolates
+the correct dynamic frequencies and damping for the different flutter
+velocities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.FEM.FlutterPoint.saveSol">
+<code class="descname">saveSol</code><span class="sig-paren">(</span><em>U</em>, <em>omega_aero</em>, <em>omega_root</em>, <em>gamma_root</em>, <em>shape</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/FEM.html#FlutterPoint.saveSol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.FEM.FlutterPoint.saveSol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves data from the flutter solutions.</p>
+<p>This method saves the damping, frequencies and mode shapes for the
+different flutter velocities and reduced frequencies.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>U (float)</cite>: The flutter velocity of the data.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>omega_aero (float)</cite>: The aerodynamic frequency corresponding to the</dt>
+<dd><p class="first last">reduced frequency.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>omega_root (float)</cite>: The root frequency corresponding to the</dt>
+<dd><p class="first last">flutter solution of the particular aerodynamic frequency.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>gamma_root (float)</cite>: The root damping of the flutter solution</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>shape (1xM np.array[float])</cite>: The mode shape of the flutter</dt>
+<dd><p class="first last">solution.</p>
 </dd>
 </dl>
 </li>
@@ -758,16 +1264,16 @@ beam elements.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="structures.html" title="The Structures Module"
+          <a href="AircraftParts.html" title="Aircraft Parts Module"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to AeroComBAT’s documentation!"
+          <a href="tutorials.html" title="AeroComBAT Tutorials"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2015, Ben Names.
+        &copy; Copyright 2016, Ben Names.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>

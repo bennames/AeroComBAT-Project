@@ -1,0 +1,959 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>AeroComBAT.Aerodynamics &mdash; AeroComBAT 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">AeroComBAT 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for AeroComBAT.Aerodynamics</h1><div class="highlight"><pre>
+<span class="c"># Aerodynamics.py</span>
+<span class="c"># Author: Ben Names</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains a library of classes devoted to modeling aircraft parts.</span>
+
+<span class="sd">The main purpose of this library is to model various types of aircraft parts.</span>
+<span class="sd">Currently only wing objects are suported, however in the future it is possible</span>
+<span class="sd">that fuselages as well as other parts will be added.</span>
+
+<span class="sd">:SUMARRY OF THE METHODS:</span>
+
+<span class="sd">- `K`: The kernel function used in the doublet-lattice method to relate</span>
+<span class="sd">    downwashes to panel pressures.</span>
+<span class="sd">- `calcAIC`: Provided several vectors of numbers as well as a reduced frequency</span>
+<span class="sd">    and mach number, this method calculates a matrix of AIC&#39;s using doublet-</span>
+<span class="sd">    lattice method elementary solutions. This method is used by the FEM class</span>
+<span class="sd">    flutterAnalysis method.</span>
+<span class="sd">    </span>
+<span class="sd">:SUMARRY OF THE CLASSES:</span>
+
+<span class="sd">- `Airfoil`: Primarily used for the generation of structural cross-sectional</span>
+<span class="sd">    meshes, this class represent an airfoil. This class could be expanded in</span>
+<span class="sd">    future to use simple 2D panel methods for an airfoil of arbitrary shape.</span>
+<span class="sd">- `CQUADA`: This class creates quadrilateral panels intended to be used for</span>
+<span class="sd">    potential flow panel methods. Currently it is used for the unsteady</span>
+<span class="sd">    doublet-lattice panels.</span>
+<span class="sd">- `CAERO1`: This class is used to generate a lattice of CQUADA panels.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__docformat__</span> <span class="o">=</span> <span class="s">&#39;restructuredtext&#39;</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># IMPORT ANACONDA ASSOCIATED MODULES</span>
+<span class="c"># =============================================================================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">mayavi.mlab</span> <span class="kn">as</span> <span class="nn">mlab</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">jit</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># IMPORT ADDITIONAL MODULES</span>
+<span class="c"># =============================================================================</span>
+<span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># DEFINE AeroComBAT AERODYNAMIC CLASSES</span>
+<span class="c"># =============================================================================</span>
+
+<span class="c"># Define Constants for later sumation integration</span>
+<span class="n">an</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">.</span><span class="mi">24186198</span><span class="p">,</span><span class="o">-</span><span class="mf">2.7918027</span><span class="p">,</span><span class="mf">24.991079</span><span class="p">,</span><span class="o">-</span><span class="mf">111.59196</span><span class="p">,</span><span class="mf">271.43549</span><span class="p">,</span><span class="o">-</span><span class="mf">305.75288</span><span class="p">,</span>\
+    <span class="o">-</span><span class="mf">41.18363</span><span class="p">,</span><span class="mf">545.98537</span><span class="p">,</span><span class="o">-</span><span class="mf">644.78155</span><span class="p">,</span><span class="mf">328.72755</span><span class="p">,</span><span class="o">-</span><span class="mf">64.279511</span><span class="p">])</span>
+<span class="n">c</span> <span class="o">=</span> <span class="mf">0.372</span>
+<span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="c"># Define Kernel Function Here</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<div class="viewcode-block" id="K"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.K">[docs]</a><span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xs</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Evaluates the doublet-lattice kernel function.</span>
+<span class="sd">    </span>
+<span class="sd">    Provided several geometric parameters about the sending and recieving</span>
+<span class="sd">    panels, this method evaluates the kernel function which relates the</span>
+<span class="sd">    pressure on one panel to the downwash induced at another panel.</span>
+<span class="sd">    </span>
+<span class="sd">    :Args:</span>
+<span class="sd">    </span>
+<span class="sd">    - `Xr (1x3 np.array[float])`: The location of the recieving point.</span>
+<span class="sd">    - `Xs (1x3 np.array[float])`: The location of the sending point.</span>
+<span class="sd">    - `gamma_r (1x3 np.array[float])`: The dihedral of the panel corresponding</span>
+<span class="sd">        to the recieving point.</span>
+<span class="sd">    - `gamma_s (1x3 np.array[float])`: The dihedral of the panel corresponding</span>
+<span class="sd">        to the sending point.</span>
+<span class="sd">    - `M (float)`: The mach number</span>
+<span class="sd">    - `br (float)`: The reference semi-chord</span>
+<span class="sd">    - `kr (float)`: The reduced frequency</span>
+<span class="sd">    - `r1 (float)`: The scalar distance between the sending point and the</span>
+<span class="sd">        recieving point.</span>
+<span class="sd">        </span>
+<span class="sd">    :Returns:</span>
+<span class="sd">    </span>
+<span class="sd">    - `Kbar (complex128)`: The evaluation of the unsteady kernel function which</span>
+<span class="sd">        is complex in nature.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Vector pointing from sending node to recieving node</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">Xr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">Xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">Xr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">Xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">z0</span> <span class="o">=</span> <span class="n">Xr</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">Xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    
+    <span class="c"># Check if r1 is very small</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">r1</span><span class="p">)</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/</span><span class="mf">10000.</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x0</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">x0</span><span class="o">*</span><span class="n">kr</span><span class="o">/</span><span class="n">br</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.</span>
+    <span class="c"># Prandtl-Glauert Compressability Correction Factor</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">M</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="c"># Reduced Frequency</span>
+    <span class="n">k1</span> <span class="o">=</span> <span class="n">r1</span><span class="o">*</span><span class="n">kr</span><span class="o">/</span><span class="n">br</span>
+    <span class="c"># Another distance value?</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x0</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">beta</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c"># If r1 is not very small:</span>
+    <span class="n">u1</span> <span class="o">=</span> <span class="p">(</span><span class="n">M</span><span class="o">*</span><span class="n">R</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">beta</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">r1</span><span class="p">)</span>
+    <span class="n">T1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">gamma_r</span><span class="o">-</span><span class="n">gamma_s</span><span class="p">)</span>
+    <span class="n">T2</span> <span class="o">=</span> <span class="p">(</span><span class="n">z0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">gamma_r</span><span class="p">)</span><span class="o">-</span><span class="n">y0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">gamma_r</span><span class="p">))</span>\
+        <span class="o">*</span><span class="p">(</span><span class="n">z0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">gamma_s</span><span class="p">)</span><span class="o">-</span><span class="n">y0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">gamma_s</span><span class="p">))</span><span class="o">/</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">T1</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-6</span><span class="p">:</span>
+        <span class="n">K1</span><span class="o">=</span><span class="mf">0.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">u1</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">I1_val</span> <span class="o">=</span> <span class="n">I1</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">I1_val</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">I1</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>\
+                <span class="o">-</span><span class="n">I1</span><span class="p">(</span><span class="o">-</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span><span class="o">+</span><span class="mi">1j</span><span class="o">*</span><span class="n">I1</span><span class="p">(</span><span class="o">-</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">.</span><span class="n">imag</span>
+        <span class="n">K1</span> <span class="o">=</span> <span class="n">I1_val</span><span class="o">+</span><span class="n">M</span><span class="o">*</span><span class="n">r1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">R</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">T2</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-6</span><span class="p">:</span>
+        <span class="n">K2</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">u1</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">I2_3_val</span> <span class="o">=</span> <span class="n">I2_3</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">I2_3_val</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">I2_3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>\
+                <span class="o">-</span><span class="n">I2_3</span><span class="p">(</span><span class="o">-</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span><span class="o">+</span><span class="mi">1j</span><span class="o">*</span><span class="n">I2_3</span><span class="p">(</span><span class="o">-</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">.</span><span class="n">imag</span>
+        <span class="n">K2</span> <span class="o">=</span> <span class="o">-</span><span class="n">I2_3_val</span>\
+            <span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">M</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">R</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>\
+            <span class="o">-</span><span class="n">M</span><span class="o">*</span><span class="n">r1</span><span class="o">/</span><span class="n">R</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">beta</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">R</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="mi">2</span><span class="o">+</span><span class="n">M</span><span class="o">*</span><span class="n">r1</span><span class="o">*</span><span class="n">u1</span><span class="o">/</span><span class="n">R</span><span class="p">)</span>\
+            <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">kr</span><span class="o">*</span><span class="n">x0</span><span class="o">/</span><span class="n">br</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">K1</span><span class="o">*</span><span class="n">T1</span><span class="o">+</span><span class="n">K2</span><span class="o">*</span><span class="n">T2</span><span class="p">)</span><span class="c">#-T1*(1.+x0/R)-T2*(-2-x0/R*(2+beta**2*r1**2/R**2))</span>
+<span class="c"># Definition of I0 integral</span></div>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">I0</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">):</span>
+    <span class="n">I_0</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="c">#I_0 = np.dot(an,np.exp(-n*c*u1)/(n**2*c**2+k1**2)*(n*c-1j*k1))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n</span><span class="p">)):</span>
+        <span class="n">I_0</span><span class="o">+=</span><span class="n">an</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">k1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">c</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">I_0</span>
+<span class="c"># Definition of I1 integral</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">I1</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">u1</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">I0</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">))</span>
+<span class="c"># Definition of J0 integral</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">J0</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">):</span>
+    <span class="n">J_0</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="c">#J_0 = np.dot(an,np.exp(-n*c*u1)/(n**2*c**2+k1**2)**2\</span>
+    <span class="c">#        *(n**2*c**2-k1**2+n*c*u1*(n**2*c**2+k1**2)\</span>
+    <span class="c">#        -1j*k1*(2*n*c+u1*(n**2*c**2+k1**2))))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">n</span><span class="p">)):</span>
+        <span class="n">J_0</span><span class="o">+=</span><span class="n">an</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">k1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>\
+            <span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">k1</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">u1</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">k1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>\
+            <span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">c</span><span class="o">+</span><span class="n">u1</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">k1</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">J_0</span>
+<span class="c"># Definition of 3*I2 integral</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">I2_3</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">*</span><span class="p">((</span><span class="mi">2</span><span class="o">+</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">u1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">u1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>\
+        <span class="o">-</span><span class="n">u1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">u1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span><span class="o">-</span><span class="mi">1j</span><span class="o">*</span><span class="n">k1</span><span class="o">*</span><span class="n">I0</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span><span class="o">+</span><span class="n">k1</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">J0</span><span class="p">(</span><span class="n">u1</span><span class="p">,</span><span class="n">k1</span><span class="p">))</span>
+
+<span class="c"># Functions for JIT calcAIC Method</span>
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">eta</span><span class="p">(</span><span class="n">yr</span><span class="p">,</span><span class="n">ys</span><span class="p">,</span><span class="n">zr</span><span class="p">,</span><span class="n">zs</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">yr</span><span class="o">-</span><span class="n">ys</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">gamma_s</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">zr</span><span class="o">-</span><span class="n">zs</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">gamma_s</span><span class="p">)</span>
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">zeta</span><span class="p">(</span><span class="n">yr</span><span class="p">,</span><span class="n">ys</span><span class="p">,</span><span class="n">zr</span><span class="p">,</span><span class="n">zs</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">yr</span><span class="o">-</span><span class="n">ys</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">gamma_s</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">zr</span><span class="o">-</span><span class="n">zs</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">gamma_s</span><span class="p">)</span>
+    
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">I_plan</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">eta_0</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">eta_0</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">A</span><span class="o">+</span><span class="n">eta_0</span><span class="o">*</span><span class="n">B</span><span class="o">+</span><span class="n">C</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">eta_0</span><span class="o">-</span><span class="n">e</span><span class="p">)</span><span class="o">-</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">eta_0</span><span class="o">+</span><span class="n">e</span><span class="p">))</span><span class="o">+</span>\
+                    <span class="p">(</span><span class="n">B</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="n">eta_0</span><span class="o">*</span><span class="n">A</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(((</span><span class="n">eta_0</span><span class="o">-</span><span class="n">e</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">eta_0</span><span class="o">+</span><span class="n">e</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">I_nonplan</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">eta_0</span><span class="p">,</span><span class="n">zeta_0</span><span class="p">,</span><span class="n">r1</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">eta_0</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">zeta_0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">A</span><span class="o">+</span><span class="n">eta_0</span><span class="o">*</span><span class="n">B</span><span class="o">+</span><span class="n">C</span><span class="p">)</span><span class="o">*</span><span class="n">zeta_0</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span>\
+                    <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">zeta_0</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">+</span>\
+                    <span class="p">(</span><span class="n">B</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="n">eta_0</span><span class="o">*</span><span class="n">A</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">eta_0</span><span class="o">*</span><span class="n">e</span><span class="o">+</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span>\
+                    <span class="p">(</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">eta_0</span><span class="o">*</span><span class="n">e</span><span class="o">+</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="n">A</span>
+
+<span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<div class="viewcode-block" id="calcAIC"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.calcAIC">[docs]</a><span class="k">def</span> <span class="nf">calcAIC</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">delta_x_vec</span><span class="p">,</span><span class="n">sweep_vec</span><span class="p">,</span><span class="n">l_vec</span><span class="p">,</span><span class="n">dihedral_vec</span><span class="p">,</span><span class="n">Xr_vec</span><span class="p">,</span><span class="n">Xi_vec</span><span class="p">,</span><span class="n">Xc_vec</span><span class="p">,</span>\
+    <span class="n">Xo_vec</span><span class="p">,</span><span class="n">symxz</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculate the doublet-lattice AIC&#39;s.</span>
+<span class="sd">    </span>
+<span class="sd">    Provided the geometry of all of the doublet-lattice panels, this method</span>
+<span class="sd">    calculates the AIC matrix.</span>
+<span class="sd">    </span>
+<span class="sd">    :Args:</span>
+<span class="sd">    </span>
+<span class="sd">    - `M (float)`: The mach number.</span>
+<span class="sd">    - `kr (float)`: The reduced frequency.</span>
+<span class="sd">    - `br (float)`: The reference semi-chord.</span>
+<span class="sd">    - `delta_x_vec (1xN array[float]`: An array of chord length of the panels.</span>
+<span class="sd">    - `sweep_vec (1xN array[float])`: An array of sweep angles of the panels.</span>
+<span class="sd">    - `l_vec (1xN array[float])`: An array of average doublet line lengths of</span>
+<span class="sd">        the panels.</span>
+<span class="sd">    - `dihedral_vec (1xN array[float])`: An array of dihedral angles of the</span>
+<span class="sd">        panels.</span>
+<span class="sd">    - `Xr_vec (Nx3 np.array[float])`: A matrix of recieving points, where a row</span>
+<span class="sd">        are the 3D coordinates of the point.</span>
+<span class="sd">    - `Xi_vec (Nx3 np.array[float])`: A matrix of inboard sending points, where</span>
+<span class="sd">        a row are the 3D coordinates of the point.</span>
+<span class="sd">    - `Xc_vec (Nx3 np.array[float])`: A matrix of center sending points, where</span>
+<span class="sd">        a row are the 3D coordinates of the point.</span>
+<span class="sd">    - `Xo_vec (Nx3 np.array[float])`: A matrix of outboard sending points,</span>
+<span class="sd">        where a row are the 3D coordinates of the point.</span>
+<span class="sd">    - `symxz (bool)`: A boolean operater intended to determine whether or not</span>
+<span class="sd">        a reflection of the panels should be considered over the xz-plane.</span>
+<span class="sd">        </span>
+<span class="sd">    :Returns:</span>
+<span class="sd">    </span>
+<span class="sd">    - `D (NPANxNPAN np.array[complex128])`: The matrix which relates pressures</span>
+<span class="sd">        over panels to induced velocities over those panels. In more simple</span>
+<span class="sd">        terms, this is the inverse of the desired AIC matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Initialize the number of panels</span>
+    <span class="n">numPan</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Xr_vec</span><span class="p">)</span>
+    <span class="c"># Initialize the complex [D] matrix</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">numPan</span><span class="p">,</span><span class="n">numPan</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+    <span class="c"># For all the recieving panels</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">numPan</span><span class="p">):</span>
+        <span class="c"># For all the sending panels</span>
+        <span class="n">Xr</span> <span class="o">=</span> <span class="n">Xr_vec</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+        <span class="n">gamma_r</span> <span class="o">=</span> <span class="n">dihedral_vec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">numPan</span><span class="p">):</span>
+            
+            <span class="c">#sendingBox = self.aeroBox[PANIDs[j]]</span>
+            <span class="c"># Calculate average chord of sending box</span>
+            <span class="n">delta_x_j</span> <span class="o">=</span> <span class="n">delta_x_vec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c"># Calculate sweep of sending box</span>
+            <span class="n">lambda_j</span> <span class="o">=</span> <span class="n">sweep_vec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c"># Calculate the length of the doublet line on sending box</span>
+            <span class="n">l_j</span> <span class="o">=</span> <span class="n">l_vec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">Xi</span> <span class="o">=</span> <span class="n">Xi_vec</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span>
+            <span class="n">Xc</span> <span class="o">=</span> <span class="n">Xc_vec</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span>
+            <span class="n">Xo</span> <span class="o">=</span> <span class="n">Xo_vec</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">l_j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lambda_j</span><span class="p">)</span>
+            <span class="n">gamma_s</span> <span class="o">=</span> <span class="n">dihedral_vec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">eta_0</span> <span class="o">=</span> <span class="n">eta</span><span class="p">(</span><span class="n">Xr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xr</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">gamma_s</span><span class="p">)</span>
+            <span class="n">zeta_0</span> <span class="o">=</span> <span class="n">zeta</span><span class="p">(</span><span class="n">Xr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xr</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">gamma_s</span><span class="p">)</span>
+            <span class="n">r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eta_0</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">zeta_0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="c"># Calculate the Kernel function at the inboard, middle, and</span>
+            <span class="c"># outboard locations</span>
+            <span class="n">Ki</span> <span class="o">=</span> <span class="n">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xi</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+            <span class="n">Kc</span> <span class="o">=</span> <span class="n">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xc</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+            <span class="n">Ko</span> <span class="o">=</span> <span class="n">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xo</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">Ki</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">Kc</span><span class="o">+</span><span class="n">Ko</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="p">(</span><span class="n">Ko</span><span class="o">-</span><span class="n">Ki</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="p">)</span>
+            <span class="n">C</span> <span class="o">=</span> <span class="n">Kc</span>
+            
+            <span class="c"># Determine if planar or non-planar I_ij definition should be used</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">zeta_0</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-6</span><span class="p">:</span>
+                <span class="n">I_ij</span> <span class="o">=</span> <span class="n">I_plan</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">eta_0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">I_ij</span> <span class="o">=</span> <span class="n">I_nonplan</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">eta_0</span><span class="p">,</span><span class="n">zeta_0</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+            <span class="n">D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">delta_x_j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lambda_j</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">8.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">I_ij</span>
+            
+            <span class="k">if</span> <span class="n">symxz</span><span class="p">:</span>
+                <span class="c"># Calculate sweep of sending box</span>
+                <span class="n">lambda_j</span> <span class="o">=</span> <span class="o">-</span><span class="n">lambda_j</span>
+                <span class="c"># Calculate parameters invloved in aproximate I_ij</span>
+                <span class="n">Xi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">Xi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">Xc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">Xc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">Xo</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">Xo</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="c"># Sending box dihedral</span>
+                <span class="n">gamma_s</span> <span class="o">=</span> <span class="o">-</span><span class="n">gamma_s</span>
+                <span class="n">eta_0</span> <span class="o">=</span> <span class="n">eta</span><span class="p">(</span><span class="n">Xr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xr</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">gamma_s</span><span class="p">)</span>
+                <span class="n">zeta_0</span> <span class="o">=</span> <span class="n">zeta</span><span class="p">(</span><span class="n">Xr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">Xr</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">Xc</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">gamma_s</span><span class="p">)</span>
+                <span class="n">r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eta_0</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">zeta_0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">Ki</span> <span class="o">=</span> <span class="n">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xi</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+                <span class="n">Kc</span> <span class="o">=</span> <span class="n">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xc</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+                <span class="n">Ko</span> <span class="o">=</span> <span class="n">K</span><span class="p">(</span><span class="n">Xr</span><span class="p">,</span><span class="n">Xo</span><span class="p">,</span><span class="n">gamma_r</span><span class="p">,</span><span class="n">gamma_s</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">br</span><span class="p">,</span><span class="n">kr</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+                <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">Ki</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">Kc</span><span class="o">+</span><span class="n">Ko</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">B</span> <span class="o">=</span> <span class="p">(</span><span class="n">Ko</span><span class="o">-</span><span class="n">Ki</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">C</span> <span class="o">=</span> <span class="n">Kc</span>
+                <span class="c"># Determine if planar or non-planar I_ij definition should be used</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">zeta_0</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-6</span><span class="p">:</span>
+                    <span class="n">I_ij</span> <span class="o">=</span> <span class="n">I_plan</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">eta_0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">I_ij</span> <span class="o">=</span> <span class="n">I_nonplan</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">eta_0</span><span class="p">,</span><span class="n">zeta_0</span><span class="p">,</span><span class="n">r1</span><span class="p">)</span>
+                <span class="n">D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">+=</span><span class="n">delta_x_j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lambda_j</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">8.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">I_ij</span>
+    <span class="k">return</span> <span class="n">D</span>
+</div>
+<div class="viewcode-block" id="Airfoil"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.Airfoil">[docs]</a><span class="k">class</span> <span class="nc">Airfoil</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates an airfoil object.</span>
+<span class="sd">    </span>
+<span class="sd">    This class creates an airfoil object. Currently this class is primarily</span>
+<span class="sd">    used in the generation of cross-sectional meshes. Currently only NACA 4</span>
+<span class="sd">    series arfoil and rectangular boxes are supported.</span>
+<span class="sd">    </span>
+<span class="sd">    :Attributes:</span>
+<span class="sd">    </span>
+<span class="sd">    - `c (float)`: The chord length of the airfoil.</span>
+<span class="sd">    - `t (float)`: The max percent thickness of the airfoil.</span>
+<span class="sd">    - `p (float)`: The location of the max camber of the airfoil, in 10%</span>
+<span class="sd">        increments.</span>
+<span class="sd">    - `m (float)`: The max camber of the airfoil as a percent of the chord.</span>
+<span class="sd">        </span>
+<span class="sd">    :Methods:</span>
+<span class="sd">    </span>
+<span class="sd">    - `points`: Generates the x and y upper and lower coordinates of the</span>
+<span class="sd">        airfoil.</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Airfoil.__init__"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.Airfoil.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Airfoil object constructor.</span>
+<span class="sd">        </span>
+<span class="sd">        Initializes the airfoil object.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `c (float)`: The chord length of the airfoil.</span>
+<span class="sd">        - `name (str)`: The name of the airfoil section. This can either be </span>
+<span class="sd">            a &#39;NACAXXXX&#39; airfoil or &#39;box&#39; which signifies the OML is a</span>
+<span class="sd">            rectangle.</span>
+<span class="sd">        </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="s">&#39;NACA0012&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span><span class="o">==</span><span class="s">&#39;box&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span><span class="o">/</span><span class="mi">100</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="mi">10</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">])</span><span class="o">/</span><span class="mi">100</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span></div>
+<div class="viewcode-block" id="Airfoil.points"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.Airfoil.points">[docs]</a>    <span class="k">def</span> <span class="nf">points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generates upper and lower airfoil curves.</span>
+<span class="sd">        </span>
+<span class="sd">        This method will generate the x and y coordinates for the upper and</span>
+<span class="sd">        lower airfoil surfaces provided the non-dimensional array of points x.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `x (1xN np.array[float])`: An array of floats for which the upper and</span>
+<span class="sd">            lower airfoil curves should be generated.</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `xu (1xN np.array[float])`: The upper x-coordinates of the curve.</span>
+<span class="sd">        - `yu (1xN np.array[float])`: The upper y-coordinates of the curve.</span>
+<span class="sd">        - `xl (1xN np.array[float])`: The lower x-coordinates of the curve.</span>
+<span class="sd">        - `yl (1xN np.array[float])`: The lower y-coordinates of the curve.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#Inputs:</span>
+        <span class="c">#x, a non-dimensional chord length from the leading edge</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="c"># For more detail on the NACA 4 series airfoil,</span>
+        <span class="c"># see: https://en.wikipedia.org/wiki/NACA_airfoil</span>
+        <span class="c">#TODO: Comment this method more thuroughly</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">==</span><span class="s">&#39;box&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span>
+            <span class="n">yt</span> <span class="o">=</span> <span class="mi">5</span><span class="o">*</span><span class="n">t</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="p">(</span><span class="mf">0.2969</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">c</span><span class="p">)</span><span class="o">-.</span><span class="mi">126</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">c</span><span class="p">)</span><span class="o">-.</span><span class="mi">3516</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">c</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+.</span><span class="mi">2843</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">c</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="o">-.</span><span class="mi">1015</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">c</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+            
+            <span class="n">xc0</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="o">&lt;</span><span class="n">c</span><span class="o">*</span><span class="n">p</span><span class="p">]</span>
+            <span class="n">xc1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="o">&gt;=</span><span class="n">c</span><span class="o">*</span><span class="n">p</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xc0</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">yc0</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">xc0</span><span class="o">/</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="o">-</span><span class="n">xc0</span><span class="o">/</span><span class="n">c</span><span class="p">)</span>
+                <span class="n">dyc0dx</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="o">/</span><span class="n">p</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">xc0</span><span class="o">/</span><span class="n">c</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">yc0</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">dyc0dx</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xc1</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">yc1</span> <span class="o">=</span> <span class="n">m</span><span class="o">*</span><span class="p">((</span><span class="n">c</span><span class="o">-</span><span class="n">xc1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">xc1</span><span class="o">/</span><span class="n">c</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
+                <span class="n">dyx1dx</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="n">xc1</span><span class="o">/</span><span class="n">c</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">yc1</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">dyx1dx</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">yc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">yc0</span><span class="p">,</span><span class="n">yc1</span><span class="p">)</span>
+            <span class="n">dycdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dyc0dx</span><span class="p">,</span><span class="n">dyx1dx</span><span class="p">)</span>
+            
+            <span class="n">th</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">dycdx</span><span class="p">)</span>
+            
+            <span class="n">xu</span> <span class="o">=</span> <span class="n">x</span><span class="o">-</span><span class="n">yt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">th</span><span class="p">)</span>
+            <span class="n">yu</span> <span class="o">=</span> <span class="n">yc</span><span class="o">+</span><span class="n">yt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">th</span><span class="p">)</span>
+            <span class="n">xl</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="n">yt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">th</span><span class="p">)</span>
+            <span class="n">yl</span> <span class="o">=</span> <span class="n">yc</span><span class="o">-</span><span class="n">yt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">th</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">xu</span><span class="p">,</span><span class="n">yu</span><span class="p">,</span><span class="n">xl</span><span class="p">,</span><span class="n">yl</span></div>
+<div class="viewcode-block" id="Airfoil.printSummary"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.Airfoil.printSummary">[docs]</a>    <span class="k">def</span> <span class="nf">printSummary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method for printing a summary of the airfoil object.</span>
+<span class="sd">        </span>
+<span class="sd">        Prints the airfoil chord length as well as airfoil name.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - (str): Prints the tabulated chord length and name of the airfoil</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Airfoil name: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Airfoil Chord length: </span><span class="si">%4.4f</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">))</span>
+        
+</div></div>
+<div class="viewcode-block" id="CQUADA"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA">[docs]</a><span class="k">class</span> <span class="nc">CQUADA</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents a CQUADA aerodynamic panel.</span>
+<span class="sd">    </span>
+<span class="sd">    This CQUADA panel object is used for the unsteady aerodynamic doublet-</span>
+<span class="sd">    lattice method currently, although it could likely easily be extended to</span>
+<span class="sd">    support the vortex lattice method as well. The geometry of a generic panel</span>
+<span class="sd">    can be seen in the figure below.</span>
+<span class="sd">    </span>
+<span class="sd">    .. image:: images/DoubletLatticePanel.png</span>
+<span class="sd">        :align: center</span>
+<span class="sd">    </span>
+<span class="sd">    :Attributes:</span>
+<span class="sd">    </span>
+<span class="sd">    - `type (str)`: The type of object.</span>
+<span class="sd">    - `PANID (int)`: The integer ID linked with the panel.</span>
+<span class="sd">    - `xs (1x4 np.array[float])`: The x coordinates of the panel.</span>
+<span class="sd">    - `ys (1x4 np.array[float])`: The y coordinates of the panel.</span>
+<span class="sd">    - `zs (1x4 np.array[float])`: The z coordinates of the panel.</span>
+<span class="sd">    - `DOF (dict[NID,factor])`: This dictionary is for connecting the movement</span>
+<span class="sd">        of the panel to the movement of an associated structure. Since a</span>
+<span class="sd">        panel&#39;s control point could be between two nodes (in the middle of an</span>
+<span class="sd">        element), the position of the panel can interpolated using a finite</span>
+<span class="sd">        element formulation. The NID&#39;s link the movement of the panel to the</span>
+<span class="sd">        movement of a corresponding node. The factor allows for a finite</span>
+<span class="sd">        element interpolation.</span>
+<span class="sd">    - `Area (float)`: The area of the panel.</span>
+<span class="sd">    - `sweep (float)`: The average sweep of the panel&#39;s doublet line.</span>
+<span class="sd">    - `delta_x (float)`: The average chord line of the panel.</span>
+<span class="sd">    - `l (float)`: The length of the panel&#39;s doublet line.</span>
+<span class="sd">    - `dihedral (float)`: The dihedral of the panel.</span>
+<span class="sd">    - `Xr (1x3 np.array[float])`: The coordiantes of the panel&#39;s sending point.</span>
+<span class="sd">    - `Xi (1x3 np.array[float])`: The coordinates of the panel&#39;s inboard</span>
+<span class="sd">        sending point.</span>
+<span class="sd">    - `Xc (1x3 np.array[float])`: The coordinates of the panel&#39;s center</span>
+<span class="sd">        sending point.</span>
+<span class="sd">    - `Xo (1x3 np.array[float])`: The coordinates of the panel&#39;s outboard</span>
+<span class="sd">        sending point.</span>
+<span class="sd">    </span>
+<span class="sd">    :Methods:</span>
+<span class="sd">    </span>
+<span class="sd">    - `x`: Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns corresponding the x coordinates.</span>
+<span class="sd">    - `y`: Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns corresponding the y coordinates.</span>
+<span class="sd">    - `z`: Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns corresponding the z coordinates.</span>
+<span class="sd">    - `J`:Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns the jacobian matrix at that point. This</span>
+<span class="sd">        method is primarily used to fascilitate the calculation of the panels</span>
+<span class="sd">        area.</span>
+<span class="sd">    - `printSummary`: Prints a summary of the panel.</span>
+<span class="sd">        </span>
+<span class="sd">    .. Note:: The ordering of the xs, ys, and zs arrays should be ordered in a</span>
+<span class="sd">    finite element convention. The first point refers to the root trailing edge</span>
+<span class="sd">    point, followed by the tip trailling edge, then the tip leading edge, then</span>
+<span class="sd">    root leading edge.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="CQUADA.__init__"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">PANID</span><span class="p">,</span><span class="n">xs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the panel.</span>
+<span class="sd">        </span>
+<span class="sd">        This method initializes the panel, including generating many of the</span>
+<span class="sd">        geometric properties required for the doublet lattice method such as</span>
+<span class="sd">        Xr, Xi, etc.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `PANID (int)`: The integer ID associated with the panel.</span>
+<span class="sd">        - `xs (1x4 array[1x3 np.array[float]])`: The coordinates of the four</span>
+<span class="sd">            corner points of the elements.</span>
+<span class="sd">            </span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Initialize type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s">&#39;CQUADA&#39;</span>
+        <span class="c"># Error checking on EID input</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">PANID</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PANID</span> <span class="o">=</span> <span class="n">PANID</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;The element ID given was not an integer&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;A CQUAD4 element requires 4 coordinates, </span><span class="si">%d</span><span class="s"> &#39;</span><span class="o">+</span>
+                <span class="s">&#39;were supplied in the nodes array&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xs</span><span class="p">)))</span>
+        <span class="c"># Populate the NIDs array with the IDs of the nodes used by the element</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="o">+=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ys</span><span class="o">+=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zs</span><span class="o">+=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DOF</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Area</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c"># Initialize coordinates for Guass Quadrature Integration</span>
+        <span class="n">etas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span>
+        <span class="n">xis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span>
+        <span class="c"># Evaluate/sum the cross-section matricies at the Guass points</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">xis</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">etas</span><span class="p">)):</span>
+                <span class="n">Jmat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">(</span><span class="n">etas</span><span class="p">[</span><span class="n">l</span><span class="p">],</span><span class="n">xis</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="c">#Get determinant of the Jacobian Matrix</span>
+                <span class="n">Jdet</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">Jmat</span><span class="p">))</span>
+                <span class="c"># Calculate the mass per unit length of the element</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Area</span> <span class="o">+=</span> <span class="n">Jdet</span>
+        <span class="c"># Calculate box sweep angle</span>
+        <span class="n">xtmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ytmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sweep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">xtmp</span><span class="o">/</span><span class="n">ytmp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sweep</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-3</span><span class="p">:</span>
+            <span class="n">sweep</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep</span> <span class="o">=</span> <span class="n">sweep</span>
+        <span class="c"># Calculate the average chord length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c"># Calculate the length of the doublet line</span>
+        <span class="n">xtmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">ytmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">ztmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">xtmp</span><span class="p">,</span><span class="n">ytmp</span><span class="p">,</span><span class="n">ztmp</span><span class="p">])</span>
+        <span class="c"># Calculate box dihedral</span>
+        <span class="n">dihedral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">ztmp</span><span class="o">/</span><span class="n">ytmp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dihedral</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-3</span><span class="p">:</span>
+            <span class="n">dihedral</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dihedral</span> <span class="o">=</span> <span class="n">dihedral</span>
+        <span class="c"># Calculate sending and recieving points on the box</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">),</span>\
+            <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">),</span>\
+            <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">),</span>\
+            <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">),</span>\
+            <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span><span class="o">-.</span><span class="mi">5</span><span class="p">)])</span>
+        </div>
+<div class="viewcode-block" id="CQUADA.x"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA.x">[docs]</a>    <span class="k">def</span> <span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the x-coordinate within the panel.</span>
+<span class="sd">        </span>
+<span class="sd">        Calculates the x-coordinate on the panel provided the desired master</span>
+<span class="sd">        coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `x (float)`: The x-coordinate within the element.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span>
+        <span class="k">return</span> <span class="o">.</span><span class="mi">25</span><span class="o">*</span><span class="p">(</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span>\
+                <span class="n">xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span></div>
+<div class="viewcode-block" id="CQUADA.y"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA.y">[docs]</a>    <span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the y-coordinate within the panel.</span>
+<span class="sd">        </span>
+<span class="sd">        Calculates the y-coordinate on the panel provided the desired master</span>
+<span class="sd">        coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `y (float)`: The y-coordinate within the element.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ys</span>
+        <span class="k">return</span> <span class="o">.</span><span class="mi">25</span><span class="o">*</span><span class="p">(</span><span class="n">ys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span>\
+                <span class="n">ys</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span></div>
+<div class="viewcode-block" id="CQUADA.z"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA.z">[docs]</a>    <span class="k">def</span> <span class="nf">z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the z-coordinate within the panel.</span>
+<span class="sd">        </span>
+<span class="sd">        Calculates the z-coordinate on the panel provided the desired master</span>
+<span class="sd">        coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `z (float)`: The z-coordinate within the element.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zs</span>
+        <span class="k">return</span> <span class="o">.</span><span class="mi">25</span><span class="o">*</span><span class="p">(</span><span class="n">zs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">zs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span>\
+                <span class="n">zs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">zs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span></div>
+<div class="viewcode-block" id="CQUADA.J"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA.J">[docs]</a>    <span class="k">def</span> <span class="nf">J</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculates the jacobian at a point in the element.</span>
+<span class="sd">        </span>
+<span class="sd">        This method calculates the jacobian at a local point within the panel</span>
+<span class="sd">        provided the master coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `Jmat (3x3 np.array[float])`: The stress-resutlant transformation</span>
+<span class="sd">            array.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#TODO: Add support for panels not in x-y plane</span>
+        <span class="n">xs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span>
+        <span class="n">ys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ys</span>
+        <span class="n">zs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zs</span>
+        <span class="n">J11</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">-</span><span class="n">xs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span>
+        <span class="n">J12</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">ys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">-</span><span class="n">ys</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span>
+        <span class="c">#J13 = 0.25*(-zs[0]*(1-eta)+zs[1]*(1-eta)+zs[2]*(1+eta)-zs[3]*(1+eta))</span>
+        <span class="n">J21</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">-</span><span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">xi</span><span class="p">))</span>
+        <span class="n">J22</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">ys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">-</span><span class="n">ys</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">xi</span><span class="p">))</span>
+        <span class="c">#J23 = 0.25*(-zs[0]*(1-xi)-zs[1]*(1+xi)+zs[2]*(1+xi)+zs[3]*(1-xi))</span>
+        <span class="c"># Last row of Jmat is unit normal vector of panel</span>
+        <span class="n">Jmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">J11</span><span class="p">,</span><span class="n">J12</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="n">J21</span><span class="p">,</span><span class="n">J22</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">return</span> <span class="n">Jmat</span></div>
+<div class="viewcode-block" id="CQUADA.printSummary"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CQUADA.printSummary">[docs]</a>    <span class="k">def</span> <span class="nf">printSummary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method for printing a summary of the CQUADA panel.</span>
+<span class="sd">        </span>
+<span class="sd">        Prints out a tabulated information about the panel such as it&#39;s panel</span>
+<span class="sd">        ID, and the coordinates of it&#39;s four corner points.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `summary (str)`: The summary of the CQUADA attributes.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;CQUADA Summary:&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;PANID: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PANID</span><span class="p">))</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;Coordinates&#39;</span><span class="p">,</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">)</span>
+        <span class="n">tabmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+        <span class="n">tabmat</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s">&#39;Point 1&#39;</span><span class="p">,</span><span class="s">&#39;Point 2&#39;</span><span class="p">,</span><span class="s">&#39;Point 3&#39;</span><span class="p">,</span><span class="s">&#39;Point 4&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="p">)):</span>
+            <span class="n">tabmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">ys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">zs</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">tabulate</span><span class="p">(</span><span class="n">tabmat</span><span class="p">,</span><span class="n">headers</span><span class="p">,</span><span class="n">tablefmt</span><span class="o">=</span><span class="s">&quot;fancy_grid&quot;</span><span class="p">))</span>
+</div></div>
+<div class="viewcode-block" id="CAERO1"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1">[docs]</a><span class="k">class</span> <span class="nc">CAERO1</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents an aerodynamic surface.</span>
+<span class="sd">    </span>
+<span class="sd">    This CAERO1 object represents an aerodynamic lifting surface to be modeled</span>
+<span class="sd">    using the doublet-lattice method.</span>
+<span class="sd">    </span>
+<span class="sd">    :Attributes:</span>
+<span class="sd">    </span>
+<span class="sd">    - `type (str)`: The type of object.</span>
+<span class="sd">    - `SID (int)`: The integer ID linked with the surface.</span>
+<span class="sd">    - `xs (1x4 np.array[float])`: The x coordinates of the panel.</span>
+<span class="sd">    - `ys (1x4 np.array[float])`: The y coordinates of the panel.</span>
+<span class="sd">    - `zs (1x4 np.array[float])`: The z coordinates of the panel.</span>
+<span class="sd">    - `mesh ((NPAN+1)x(NPAN+1) np.array[int])`: The panel ID&#39;s in the relative</span>
+<span class="sd">        positions of their corresponding panels.</span>
+<span class="sd">    - `xmesh ((NPAN+1)x(NPAN+1) np.array[float])`: The x-coordinates of the</span>
+<span class="sd">        lifting surface nodes.</span>
+<span class="sd">    - `ymesh ((NPAN+1)x(NPAN+1) np.array[float])`: The y-coordinates of the</span>
+<span class="sd">        lifting surface nodes.</span>
+<span class="sd">    - `zmesh ((NPAN+1)x(NPAN+1) np.array[float])`: The z-coordinates of the</span>
+<span class="sd">        lifting surface nodes.</span>
+<span class="sd">    - `CQUADAs (dict[PANID, CQUADA])`: A dictionary mapping panel ID&#39;s to</span>
+<span class="sd">        CQUADA panel objects.</span>
+<span class="sd">    </span>
+<span class="sd">    :Methods:</span>
+<span class="sd">    </span>
+<span class="sd">    - `x`: Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns corresponding the x coordinates.</span>
+<span class="sd">    - `y`: Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns corresponding the y coordinates.</span>
+<span class="sd">    - `z`: Provided the non-dimensional coordinates eta and xi which go from -1</span>
+<span class="sd">        to 1, this method returns corresponding the z coordinates.</span>
+<span class="sd">    - `plotLiftingSurface`: Plots the lifting surface in 3D space. Useful for</span>
+<span class="sd">        debugging purposes.</span>
+<span class="sd">    - `printSummary`: Prints a summary of the panel.</span>
+<span class="sd">        </span>
+<span class="sd">    .. Note:: The ordering of the xs, ys, and zs arrays should be ordered in a</span>
+<span class="sd">    finite element convention. The first point refers to the root leading edge</span>
+<span class="sd">    point, followed by the root trailling edge, then the tip trailing edge,</span>
+<span class="sd">    then tip leading edge.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="CAERO1.__init__"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">SID</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">x3</span><span class="p">,</span><span class="n">x4</span><span class="p">,</span><span class="n">nspan</span><span class="p">,</span><span class="n">nchord</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for the CAERO1 lifting surface object.</span>
+<span class="sd">        </span>
+<span class="sd">        Provided several geometric parameters, this method initializes and</span>
+<span class="sd">        discretizes a lifting surface using CQUADA panel objects.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `SID (int)`: The integer ID for the surface.</span>
+<span class="sd">        - `x1 (1x3 np.array[float])`: The coordinate of the root leading edge.</span>
+<span class="sd">        - `x2 (1x3 np.array[float])`: The coordinate of the root trailing edge.</span>
+<span class="sd">        - `x3 (1x3 np.array[float])`: The coordinate of the tip trailing edge.</span>
+<span class="sd">        - `x4 (1x3 np.array[float])`: The coordinate of the tip leading edge.</span>
+<span class="sd">        - `nspan (int)`: The number of panels to run in the spanwise direction.</span>
+<span class="sd">        - `nchord (int)`: The number of panels to run in the chordwise</span>
+<span class="sd">            direction.</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Initialize type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s">&#39;CAERO1&#39;</span>
+        <span class="c"># Error checking on SID input</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">SID</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SID</span> <span class="o">=</span> <span class="n">SID</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;The element ID given was not an integer&#39;</span><span class="p">)</span>
+        <span class="c">#TODO: Thrown in a check to make sure x1 and x2 share at least one value</span>
+        <span class="c">#TODO: Thrown in a check to make sure x4 and x3 share at least one value</span>
+        <span class="c"># Starting aero box ID</span>
+        <span class="n">SPANID</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;SPANID&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># Populate the NIDs array with the IDs of the nodes used by the element</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x3</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x4</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ys</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">x2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">x3</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">x4</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">x2</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">x3</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">x4</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+        
+        <span class="c"># Generate Grids in superelement space</span>
+        <span class="n">xis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">nchord</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">etas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">nspan</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="n">xis</span><span class="p">,</span> <span class="n">etas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">xis</span><span class="p">,</span><span class="n">etas</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="n">etas</span><span class="p">,</span><span class="n">xis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="n">etas</span><span class="p">,</span><span class="n">xis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="n">etas</span><span class="p">,</span><span class="n">xis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nchord</span><span class="p">,</span><span class="n">nspan</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">CQUADAs</span> <span class="o">=</span> <span class="p">{</span><span class="n">SPANID</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="bp">None</span><span class="p">}</span>
+        
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nspan</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nchord</span><span class="p">):</span>
+                <span class="n">newPANID</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CQUADAs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">+</span><span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">newPANID</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]]</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+                <span class="n">x3</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+                <span class="n">x4</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">CQUADAs</span><span class="p">[</span><span class="n">newPANID</span><span class="p">]</span> <span class="o">=</span> <span class="n">CQUADA</span><span class="p">(</span><span class="n">newPANID</span><span class="p">,[</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">x3</span><span class="p">,</span><span class="n">x4</span><span class="p">])</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">CQUADAs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        </div>
+<div class="viewcode-block" id="CAERO1.x"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1.x">[docs]</a>    <span class="k">def</span> <span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the x-coordinate within the lifting surface.</span>
+<span class="sd">        </span>
+<span class="sd">        Calculates the x-coordinate within the lifting surface provided the</span>
+<span class="sd">        desired master coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `x (float)`: The x-coordinate within the element.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span>
+        <span class="k">return</span> <span class="o">.</span><span class="mi">25</span><span class="o">*</span><span class="p">(</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span>\
+                <span class="n">xs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">xs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span></div>
+<div class="viewcode-block" id="CAERO1.y"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1.y">[docs]</a>    <span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the y-coordinate within the lifting surface.</span>
+<span class="sd">        </span>
+<span class="sd">        Calculates the y-coordinate within the lifting surface provided the</span>
+<span class="sd">        desired master coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `y (float)`: The y-coordinate within the element.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ys</span>
+        <span class="k">return</span> <span class="o">.</span><span class="mi">25</span><span class="o">*</span><span class="p">(</span><span class="n">ys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span>\
+                <span class="n">ys</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">ys</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span></div>
+<div class="viewcode-block" id="CAERO1.z"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1.z">[docs]</a>    <span class="k">def</span> <span class="nf">z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">eta</span><span class="p">,</span><span class="n">xi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the z-coordinate within the lifting surface.</span>
+<span class="sd">        </span>
+<span class="sd">        Calculates the z-coordinate within the lifting surface provided the</span>
+<span class="sd">        desired master coordinates eta and xi.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `eta (float)`: The eta coordinate in the master coordinate domain.*</span>
+<span class="sd">        - `xi (float)`: The xi coordinate in the master coordinate domain.*</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `z (float)`: The y-coordinate within the element.</span>
+<span class="sd">            </span>
+<span class="sd">        .. Note:: Xi and eta can both vary between -1 and 1 respectively.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zs</span>
+        <span class="k">return</span> <span class="o">.</span><span class="mi">25</span><span class="o">*</span><span class="p">(</span><span class="n">zs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">zs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span>\
+                <span class="n">zs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">)</span><span class="o">+</span><span class="n">zs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">xi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">eta</span><span class="p">))</span></div>
+<div class="viewcode-block" id="CAERO1.plotLiftingSurface"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1.plotLiftingSurface">[docs]</a>    <span class="k">def</span> <span class="nf">plotLiftingSurface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots the lifting surface using the MayaVi environment.</span>
+<span class="sd">        </span>
+<span class="sd">        This method plots the lifting surface using the MayaVi engine. It is</span>
+<span class="sd">        most useful for debugging models, allowing the user to verify that the</span>
+<span class="sd">        wing they thought they generated is actually what was generated.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - `figName (str)`: The name of the figure</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `(figure)`: MayaVi Figure of the laminate.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">figName</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;figName&#39;</span><span class="p">,</span><span class="s">&#39;Figure&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span><span class="o">*</span><span class="mi">100</span><span class="p">)))</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figure</span><span class="o">=</span><span class="n">figName</span><span class="p">)</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">mesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span><span class="p">,</span><span class="n">representation</span><span class="o">=</span><span class="s">&#39;wireframe&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">mesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmesh</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ymesh</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">zmesh</span><span class="p">)</span></div>
+<div class="viewcode-block" id="CAERO1.printSummary"><a class="viewcode-back" href="../../aerodynamics.html#AeroComBAT.Aerodynamics.CAERO1.printSummary">[docs]</a>    <span class="k">def</span> <span class="nf">printSummary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A method for printing a summary of the CAERO1 element.</span>
+<span class="sd">        </span>
+<span class="sd">        Prints out the surface ID, as well as the number of chordwise and</span>
+<span class="sd">        spanwise panels.</span>
+<span class="sd">        </span>
+<span class="sd">        :Args:</span>
+<span class="sd">        </span>
+<span class="sd">        - None</span>
+<span class="sd">            </span>
+<span class="sd">        :Returns:</span>
+<span class="sd">        </span>
+<span class="sd">        - `summary (str)`: A summary of the CAERO1 surface attributes.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;CQUADA Summary:&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;SID&#39;</span> <span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SID</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Number of chordwise panels: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Number of spanwise panels: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">AeroComBAT 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

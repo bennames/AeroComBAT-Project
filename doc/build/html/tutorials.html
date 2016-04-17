@@ -1,0 +1,993 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>AeroComBAT Tutorials &mdash; AeroComBAT 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="index.html" />
+    <link rel="next" title="FEM Interface Module" href="FEM.html" />
+    <link rel="prev" title="Welcome to AeroComBAT’s documentation!" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="FEM.html" title="FEM Interface Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to AeroComBAT’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">AeroComBAT Tutorials</a><ul>
+<li><a class="reference internal" href="#tutorial-1-material-library-and-classical-lamination-theory">Tutorial 1 - Material Library and Classical Lamination Theory</a></li>
+<li><a class="reference internal" href="#tutorial-2-cquadx-and-airfoil-classes">Tutorial 2 - CQUADX and Airfoil Classes</a></li>
+<li><a class="reference internal" href="#tutorial-3-cross-section-meshing-and-analysis">Tutorial 3 - Cross-Section Meshing and Analysis</a></li>
+<li><a class="reference internal" href="#tutorial-4-using-superbeams-to-conduct-simple-beam-analysis">Tutorial 4 - Using Superbeams to Conduct Simple Beam Analysis</a></li>
+<li><a class="reference internal" href="#tutorial-5-creating-a-wing-and-conducting-a-flutter-analysis">Tutorial 5 - Creating a Wing and Conducting a Flutter Analysis</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to AeroComBAT&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="FEM.html"
+                        title="next chapter">FEM Interface Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tutorials.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="aerocombat-tutorials">
+<h1>AeroComBAT Tutorials<a class="headerlink" href="#aerocombat-tutorials" title="Permalink to this headline">¶</a></h1>
+<p>The following are tutorials intended convey how best to use AeroComBAT.</p>
+<div class="section" id="tutorial-1-material-library-and-classical-lamination-theory">
+<h2>Tutorial 1 - Material Library and Classical Lamination Theory<a class="headerlink" href="#tutorial-1-material-library-and-classical-lamination-theory" title="Permalink to this headline">¶</a></h2>
+<p>This tutorial is intended to expose the user to the material library class as
+well as creating CLT laminates with the laminate class. Note that these
+laminate objects are integral to meshing the cross-section (XSect) objects.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># =============================================================================</span>
+<span class="c"># AEROCOMBAT TUTORIAL 1 - MATERIAL lIBRARY AND CLASSICAL LAMINATION THEORY</span>
+<span class="c"># =============================================================================</span>
+
+<span class="c"># IMPORT SYSTEM PACKAGES</span>
+<span class="c"># ======================</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="c"># Append the root to the system path</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;..&#39;</span><span class="p">))</span>
+
+<span class="c"># IMPORT AEROCOMBAT CLASSES</span>
+<span class="c"># =========================</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Structures</span> <span class="kn">import</span> <span class="n">MaterialLib</span><span class="p">,</span> <span class="n">Laminate</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Utilities</span> <span class="kn">import</span> <span class="n">RotationHelper</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<span class="c"># MATERIAL lIBRARY VALIDATION</span>
+<span class="c"># ===========================</span>
+<span class="c"># Generate Empty Material Library</span>
+<span class="n">matlib</span> <span class="o">=</span> <span class="n">MaterialLib</span><span class="p">()</span>
+<span class="c"># Add a graphite orthotropic material</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Graphite-Polymer Composite ortho&#39;</span><span class="p">,</span> <span class="s">&#39;ortho&#39;</span><span class="p">,</span> \
+                <span class="p">[</span><span class="mf">155.0e9</span><span class="p">,</span> <span class="mf">12.1e9</span><span class="p">,</span> <span class="mf">12.1e9</span><span class="p">,</span> <span class="o">.</span><span class="mi">458</span><span class="p">,</span> <span class="o">.</span><span class="mi">248</span><span class="p">,</span> <span class="o">.</span><span class="mi">248</span><span class="p">,</span> <span class="mf">3.2e9</span><span class="p">,</span> <span class="mf">4.4e9</span><span class="p">,</span>\
+                <span class="mf">4.4e9</span><span class="p">,</span> <span class="mf">1.7e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">)</span>
+<span class="c"># Add a graphite transversely isotropic material</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#39;Graphite-Polymer Composite&#39;</span><span class="p">,</span> <span class="s">&#39;trans_iso&#39;</span><span class="p">,</span> \
+                <span class="p">[</span><span class="mf">155.0e9</span><span class="p">,</span> <span class="mf">12.1e9</span><span class="p">,</span> <span class="o">.</span><span class="mi">458</span><span class="p">,</span> <span class="o">.</span><span class="mi">248</span><span class="p">,</span> <span class="mf">4.4e9</span><span class="p">,</span> <span class="mf">1.7e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">)</span>
+<span class="c"># Add a glass transversely isotropic material</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s">&#39;Glass-Polymer Composite&#39;</span><span class="p">,</span> <span class="s">&#39;trans_iso&#39;</span><span class="p">,</span> \
+                <span class="p">[</span><span class="mf">50.0e9</span><span class="p">,</span> <span class="mf">15.2e9</span><span class="p">,</span> <span class="o">.</span><span class="mi">428</span><span class="p">,</span> <span class="o">.</span><span class="mi">254</span><span class="p">,</span> <span class="mf">4.7e9</span><span class="p">,</span> <span class="mf">1.2e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">)</span>
+<span class="c"># Add a T300 transversely isotropic material</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s">&#39;T300/5208&#39;</span><span class="p">,</span> <span class="s">&#39;trans_iso&#39;</span><span class="p">,</span> \
+                <span class="p">[</span><span class="mf">181.0e9</span><span class="p">,</span> <span class="mf">10.3e9</span><span class="p">,</span> <span class="o">.</span><span class="mi">458</span><span class="p">,</span> <span class="o">.</span><span class="mi">28</span><span class="p">,</span> <span class="mf">7.17e9</span><span class="p">,</span> <span class="mf">1.8e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">)</span>
+<span class="c"># Add a aluminum isotropic material</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s">&#39;AL-2050&#39;</span><span class="p">,</span> <span class="s">&#39;iso&#39;</span><span class="p">,[</span><span class="mf">75.8</span><span class="p">,</span> <span class="mf">0.33</span><span class="p">,</span> <span class="mf">2.7e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">)</span>
+<span class="c"># Add a rotated T300 transversely isotropic material</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s">&#39;T300/5208&#39;</span><span class="p">,</span> <span class="s">&#39;trans_iso&#39;</span><span class="p">,</span> \
+                <span class="p">[</span><span class="mf">181.0e9</span><span class="p">,</span> <span class="mf">10.3e9</span><span class="p">,</span> <span class="o">.</span><span class="mi">458</span><span class="p">,</span> <span class="o">.</span><span class="mi">28</span><span class="p">,</span> <span class="mf">7.17e9</span><span class="p">,</span> <span class="mf">1.8e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">,</span><span class="n">th</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">45.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Print a summary of the mat</span>
+<span class="n">matlib</span><span class="o">.</span><span class="n">printSummary</span><span class="p">()</span>
+<span class="c"># Get the material associated with MID 1</span>
+<span class="n">mat1</span> <span class="o">=</span> <span class="n">matlib</span><span class="o">.</span><span class="n">getMat</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="c"># Get the compliance matrix of the material mat1</span>
+<span class="n">Smat1</span> <span class="o">=</span> <span class="n">mat1</span><span class="o">.</span><span class="n">Smat</span>
+<span class="c"># Get the stiffness matrix of the material mat1 and round for accuracy</span>
+<span class="n">Cmat1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">mat1</span><span class="o">.</span><span class="n">Cmat</span><span class="o">/</span><span class="mf">1e9</span><span class="p">,</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">Cmat1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">Cmat1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="c"># The following matricies are the correct compliance and stiffness matricies</span>
+<span class="n">Smat1Test</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">6.45e-12</span><span class="p">,</span><span class="o">-</span><span class="mf">1.6e-12</span><span class="p">,</span><span class="o">-</span><span class="mf">1.6e-12</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="o">-</span><span class="mf">1.6e-12</span><span class="p">,</span><span class="mf">82.6e-12</span><span class="p">,</span><span class="o">-</span><span class="mf">37.9e-12</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="o">-</span><span class="mf">1.6e-12</span><span class="p">,</span><span class="o">-</span><span class="mf">37.9e-12</span><span class="p">,</span><span class="mf">82.6e-12</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">312e-12</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">227e-12</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">227e-12</span><span class="p">]])</span>
+<span class="n">Cmat1Test</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">158e9</span><span class="p">,</span><span class="mf">5.64e9</span><span class="p">,</span><span class="mf">5.64e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">5.64e9</span><span class="p">,</span><span class="mf">15.51e9</span><span class="p">,</span><span class="mf">7.21e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">5.64e9</span><span class="p">,</span><span class="mf">7.21e9</span><span class="p">,</span><span class="mf">15.51e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">3.2e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">4.4e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+                      <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">4.4e9</span><span class="p">]])</span><span class="o">/</span><span class="mf">1e9</span>
+<span class="c"># Check to make sure the calculated values are correct</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="n">Smat1</span><span class="p">,</span><span class="n">Smat1Test</span><span class="p">,</span><span class="n">decimal</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="n">Cmat1</span><span class="p">,</span><span class="n">Cmat1Test</span><span class="p">,</span><span class="n">decimal</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+
+<span class="c"># MATERIAL PROPERTY ROTATION HELPER VALIDATION</span>
+<span class="c"># ============================================</span>
+<span class="c"># Create a rotation helper object</span>
+<span class="n">rh</span> <span class="o">=</span> <span class="n">RotationHelper</span><span class="p">()</span>
+<span class="c"># Create an array of x-y-z rotations</span>
+<span class="n">th</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">45.</span><span class="p">,</span><span class="mf">0.</span><span class="p">]</span>
+<span class="c"># Initialize a stiffness matrix</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.8403e11</span><span class="p">,</span><span class="mf">5.4101e9</span><span class="p">,</span><span class="mf">5.4101e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+              <span class="p">[</span><span class="mf">5.4101e9</span><span class="p">,</span><span class="mf">1.31931e10</span><span class="p">,</span><span class="mf">6.12866e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+              <span class="p">[</span><span class="mf">5.4101e9</span><span class="p">,</span><span class="mf">6.12866e9</span><span class="p">,</span><span class="mf">1.31931e10</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+              <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">5.21455e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+              <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">7.17e9</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span>\
+              <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">7.17e9</span><span class="p">]])</span>
+<span class="c"># Convert it into a compliance matrix</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+<span class="c"># Rotate the compliance matrix</span>
+<span class="n">Sp</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">transformCompl</span><span class="p">(</span><span class="n">S</span><span class="p">,</span><span class="n">th</span><span class="p">,</span><span class="n">xsect</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Convert it back to a stiffness matrix</span>
+<span class="n">Cp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">Sp</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;The rotated stiffness matrix:&#39;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">tabulate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">Cp</span><span class="o">-</span><span class="n">C</span><span class="p">,</span><span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span><span class="n">tablefmt</span><span class="o">=</span><span class="s">&quot;fancy_grid&quot;</span><span class="p">))</span>
+
+<span class="c"># =============================================================================</span>
+<span class="c"># CLT VALIDATION</span>
+<span class="c"># =============================================================================</span>
+<span class="c"># Initialize the number of plies per each orientation</span>
+<span class="n">n_i</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="c"># Initialize the materials to be used at each orientation</span>
+<span class="n">m_i</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>
+<span class="c"># Initialize the angle orientations for the plies</span>
+<span class="n">th</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span><span class="o">-</span><span class="mi">30</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">45</span><span class="p">]</span>
+<span class="c"># Create a laminate with default orientations (for 4 orientations, this will</span>
+<span class="c"># default to th_defalt = [0,45,90,-45])</span>
+<span class="n">lam1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i</span><span class="p">,</span><span class="n">m_i</span><span class="p">,</span><span class="n">matlib</span><span class="p">)</span>
+<span class="c"># Print a summary of laminate 1</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Laminate 1 summary:&#39;</span><span class="p">)</span>
+<span class="n">lam1</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="c"># Create a laminate with default orientations (for more or less than 4</span>
+<span class="c"># orientations, th_default = [0]*len(n_i))</span>
+<span class="n">lam2</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i</span><span class="o">+</span><span class="n">n_i</span><span class="p">,</span><span class="n">m_i</span><span class="o">+</span><span class="n">m_i</span><span class="p">,</span><span class="n">matlib</span><span class="p">)</span>
+<span class="c"># Print summary of laminate 2</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Laminate 2 summary:&#39;</span><span class="p">)</span>
+<span class="n">lam2</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="c"># Create a laminate using the above rotation orientations</span>
+<span class="n">lam3</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i</span><span class="p">,</span><span class="n">m_i</span><span class="p">,</span><span class="n">matlib</span><span class="p">,</span><span class="n">th</span><span class="o">=</span><span class="n">th</span><span class="p">)</span>
+<span class="c"># Print Summary of laminate 3</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&#39;Laminate 3 summary:&#39;</span><span class="p">)</span>
+<span class="n">lam3</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tutorial-2-cquadx-and-airfoil-classes">
+<h2>Tutorial 2 - CQUADX and Airfoil Classes<a class="headerlink" href="#tutorial-2-cquadx-and-airfoil-classes" title="Permalink to this headline">¶</a></h2>
+<p>This tutorial is intended to expose the user to the CQUADX and airfoil classes.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># =============================================================================</span>
+<span class="c"># AEROCOMBAT TUTORIAL 2 - CQUADX AND AIRFOIL</span>
+<span class="c"># =============================================================================</span>
+
+<span class="c"># IMPORT SYSTEM PACKAGES</span>
+<span class="c"># ======================</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;..&#39;</span><span class="p">))</span>
+
+<span class="c"># IMPORT AEROCOMBAT CLASSES</span>
+<span class="c"># =========================</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Structures</span> <span class="kn">import</span> <span class="n">Node</span><span class="p">,</span> <span class="n">MaterialLib</span><span class="p">,</span> <span class="n">CQUADX</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Aerodynamics</span> <span class="kn">import</span> <span class="n">Airfoil</span>
+
+<span class="c"># IMPORT NUMPY MODULES</span>
+<span class="c"># ====================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="c"># Material Info</span>
+<span class="n">mat_lib</span> <span class="o">=</span> <span class="n">MaterialLib</span><span class="p">()</span>
+<span class="c"># Add an aluminum isotropic material</span>
+<span class="n">mat_lib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;AL-2050&#39;</span><span class="p">,</span> <span class="s">&#39;iso&#39;</span><span class="p">,[</span><span class="mf">75.8</span><span class="p">,</span> <span class="mf">0.33</span><span class="p">,</span> <span class="mf">2.7e3</span><span class="p">],</span> <span class="o">.</span><span class="mf">15e-3</span><span class="p">)</span>
+                
+
+<span class="c"># CQUADX 2D ELEMENT CREATION</span>
+<span class="c"># ==========================</span>
+<span class="c"># Create a node 1 object</span>
+<span class="n">n1</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="mi">1</span><span class="p">,[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Create a node 2 object</span>
+<span class="n">n2</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="mi">2</span><span class="p">,[</span><span class="mf">2.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Create a node 3 object</span>
+<span class="n">n3</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="mi">3</span><span class="p">,[</span><span class="mf">2.</span><span class="p">,</span><span class="mf">3.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Create a node 4 object</span>
+<span class="n">n4</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="mi">4</span><span class="p">,[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">5.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Create a CQUADX element</span>
+<span class="n">elem1</span> <span class="o">=</span> <span class="n">CQUADX</span><span class="p">(</span><span class="mi">1</span><span class="p">,[</span><span class="n">n1</span><span class="p">,</span><span class="n">n2</span><span class="p">,</span><span class="n">n3</span><span class="p">,</span><span class="n">n4</span><span class="p">],</span><span class="mi">1</span><span class="p">,</span><span class="n">mat_lib</span><span class="p">)</span>
+<span class="c"># Print a summary of the element</span>
+<span class="n">elem1</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># AIRFOIL OUTER MOLD LINE VALIDATION</span>
+<span class="c"># ==================================</span>
+<span class="c"># Initialize a chord length of 1</span>
+<span class="n">c</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="c"># Create an airfoil object with a &#39;box&#39; profile</span>
+<span class="n">af1</span> <span class="o">=</span> <span class="n">Airfoil</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;box&#39;</span><span class="p">)</span>
+<span class="c"># Generate a set of non-dimensional x-coordinates</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>
+<span class="c"># Create the upper and lower box airfoil curves</span>
+<span class="n">xu</span><span class="p">,</span><span class="n">yu</span><span class="p">,</span><span class="n">xl</span><span class="p">,</span><span class="n">yl</span> <span class="o">=</span> <span class="n">af1</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c"># Create a matplotlib figure</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xu</span><span class="p">,</span><span class="n">yu</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xl</span><span class="p">,</span><span class="n">yl</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s">&#39;equal&#39;</span><span class="p">,</span> <span class="s">&#39;datalim&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;x coordinate along the airfoil&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;y coordinate along the airfoil&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Box airfoil profile&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="c"># Create a NACA2412 airfoil profile</span>
+<span class="n">af2</span> <span class="o">=</span> <span class="n">Airfoil</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;NACA2412&#39;</span><span class="p">)</span>
+<span class="c"># Generate a set of non-dimensional x-coordinates</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mi">500</span><span class="p">)</span>
+<span class="c"># Create the upper and lower airfoil curves</span>
+<span class="n">xu</span><span class="p">,</span><span class="n">yu</span><span class="p">,</span><span class="n">xl</span><span class="p">,</span><span class="n">yl</span> <span class="o">=</span> <span class="n">af2</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="c"># Create a matplotlib figure</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xu</span><span class="p">,</span><span class="n">yu</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xl</span><span class="p">,</span><span class="n">yl</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s">&#39;equal&#39;</span><span class="p">,</span> <span class="s">&#39;datalim&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tutorial-3-cross-section-meshing-and-analysis">
+<h2>Tutorial 3 - Cross-Section Meshing and Analysis<a class="headerlink" href="#tutorial-3-cross-section-meshing-and-analysis" title="Permalink to this headline">¶</a></h2>
+<p>This is the first extensive tutorial. It exposes the user to meshing several
+different cross-section types, all with varying complexities.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># =============================================================================</span>
+<span class="c"># AEROCOMBAT TUTORIAL 3 - Using XSect Objects</span>
+<span class="c"># =============================================================================</span>
+
+<span class="c"># IMPORT SYSTEM PACKAGES</span>
+<span class="c"># ======================</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;..&#39;</span><span class="p">))</span>
+
+<span class="c"># IMPORT AEROCOMBAT CLASSES</span>
+<span class="c"># =========================</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Structures</span> <span class="kn">import</span> <span class="n">MaterialLib</span><span class="p">,</span> <span class="n">Laminate</span><span class="p">,</span> <span class="n">XSect</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Aerodynamics</span> <span class="kn">import</span> <span class="n">Airfoil</span>
+
+<span class="c"># IMPORT NUMPY MODULES</span>
+<span class="c"># ====================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<span class="c"># ADD MATERIALS TO THE MATERIAL LIBRARY</span>
+<span class="c"># =====================================</span>
+<span class="c"># Create a material library object</span>
+<span class="n">matLib</span> <span class="o">=</span> <span class="n">MaterialLib</span><span class="p">()</span>
+<span class="c"># Add material property from Hodges 1999 Asymptotically correct anisotropic</span>
+<span class="c"># beam theory (Imperial)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;AS43501-6&#39;</span><span class="p">,</span><span class="s">&#39;trans_iso&#39;</span><span class="p">,[</span><span class="mf">20.6e6</span><span class="p">,</span><span class="mf">1.42e6</span><span class="p">,</span><span class="o">.</span><span class="mi">34</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="o">.</span><span class="mf">87e6</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">],</span><span class="o">.</span><span class="mo">005</span><span class="p">)</span>
+<span class="c"># Add material property from Hodges 1999 Asymptotically correct anisotropic</span>
+<span class="c"># beam theory (Imperial)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="s">&#39;AS43501-6*&#39;</span><span class="p">,</span><span class="s">&#39;trans_iso&#39;</span><span class="p">,[</span><span class="mf">20.6e6</span><span class="p">,</span><span class="mf">1.42e6</span><span class="p">,</span><span class="o">.</span><span class="mi">34</span><span class="p">,</span><span class="o">.</span><span class="mi">42</span><span class="p">,</span><span class="o">.</span><span class="mf">87e6</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">],</span><span class="o">.</span><span class="mo">005</span><span class="p">)</span>
+<span class="c"># Add an aluminum material (SI)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="s">&#39;AL&#39;</span><span class="p">,</span><span class="s">&#39;iso&#39;</span><span class="p">,[</span><span class="mf">71.7e9</span><span class="p">,</span><span class="o">.</span><span class="mi">33</span><span class="p">,</span><span class="mi">2810</span><span class="p">],</span><span class="o">.</span><span class="mo">005</span><span class="p">)</span>
+
+<span class="c"># CREATE A LAMINATE CROSS-SECTION</span>
+<span class="c"># ===============================</span>
+<span class="c"># Create a box airfoil object. Note that when creating an airfoil object, only</span>
+<span class="c"># the chord length is used. As such, it doesn&#39;t truly matter if the airfoil</span>
+<span class="c"># has an airfoil profile or a box profile. In this case we will just give it a</span>
+<span class="c"># box profile.</span>
+<span class="c"># Initialize the chord length</span>
+<span class="n">c1</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="c"># Initialize the non-dimensional starting and stopping points of the cross-</span>
+<span class="c"># section. These bounds when dimensionalized will determine the overall</span>
+<span class="c"># dimesions of the cross-section. Therefore the total width of the laminate is:</span>
+<span class="c"># xdim[1]*c1-xdim[0]*x. In this case, the total width is 2!</span>
+<span class="n">xdim1</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span><span class="mf">1.</span><span class="p">]</span>
+<span class="n">af1</span> <span class="o">=</span> <span class="n">Airfoil</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;box&#39;</span><span class="p">)</span>
+<span class="c"># Create a layup schedule for the laminate. In this case, we will select a</span>
+<span class="c"># layup schedule of [0_2/45/90/3]_s</span>
+<span class="n">th_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">45</span><span class="p">,</span><span class="mi">90</span><span class="p">]</span>
+<span class="n">n_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">m_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="c"># Notice how the orientations are stored in the &#39;th_1&#39; array, the subscripts are</span>
+<span class="c"># stored in the &#39;n_1&#39; array, and the material information is held in &#39;m_1&#39;.</span>
+<span class="c"># Create the laminate object:</span>
+<span class="n">lam1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_1</span><span class="p">,</span><span class="n">m_1</span><span class="p">,</span><span class="n">matLib</span><span class="p">,</span><span class="n">th</span><span class="o">=</span><span class="n">th_1</span><span class="p">,</span><span class="n">sym</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># In order to make a cross-section, we must add all of the laminates to be used</span>
+<span class="c"># to an array:</span>
+<span class="n">laminates1</span> <span class="o">=</span> <span class="p">[</span><span class="n">lam1</span><span class="p">]</span>
+<span class="c"># We now have all the information necessary to make a laminate beam cross-</span>
+<span class="c"># section:</span>
+<span class="n">xsect1</span> <span class="o">=</span> <span class="n">XSect</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">af1</span><span class="p">,</span><span class="n">xdim1</span><span class="p">,</span><span class="n">laminates1</span><span class="p">,</span><span class="n">matLib</span><span class="p">,</span><span class="n">typeXSect</span><span class="o">=</span><span class="s">&#39;laminate&#39;</span><span class="p">,</span><span class="n">meshSize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c"># With the cross-section object initialized, let&#39;s run the cross-sectional</span>
+<span class="c"># analysis to get cross-section stiffnesses, etc.</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">xSectionAnalysis</span><span class="p">()</span>
+<span class="c"># Let&#39;s see what our rigid cross-section looks like when plotted in 3D:</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">plotRigid</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Note that while it might look like the cross-section is made of triangular</span>
+<span class="c"># elements, it&#39;s actually made of quadrilaterals. This is an artifact of how</span>
+<span class="c"># the visualizer mayavi works. Let&#39;s get a summary of the cross-section&#39;s</span>
+<span class="c"># stiffnesses, ect.</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">stiffMat</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Notice that from the command line output, all of the important cross-</span>
+<span class="c"># sectional geometric properties are located at the origin. By observing the</span>
+<span class="c"># cross-section stiffness matrix, it can be seen by the 1,3 entry that there</span>
+<span class="c"># is shear-axial coupling. From the non-zero 4,6 entry, we can also tell that</span>
+<span class="c"># the cross-section has bending-torsion coupling.</span>
+<span class="c"># We can apply a force to the face of this cross-section at the reference axis</span>
+<span class="c"># (which in this case is at x,y = 0,0) and see what the stresses look like. In</span>
+<span class="c"># this case we&#39;ll apply [Fx,Fy,Fz,Mx,My,Mz]=[0.,0.,0.,100.,0.,0.] as if the</span>
+<span class="c"># beam belonging to this cross-section were in pure bending.</span>
+<span class="n">force1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">100.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">10.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">calcWarpEffects</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="n">force1</span><span class="p">)</span>
+<span class="c"># Having applied the force, let&#39;s see what the sigma_zz (normal stresses of the</span>
+<span class="c"># beam) look like</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Laminate Sigma_33 Stress&#39;</span><span class="p">,</span><span class="n">warpScale</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>\
+    <span class="n">contour</span><span class="o">=</span><span class="s">&#39;sig_33&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Let&#39;s look at the sigma_13 stress state now since we know there is torsion</span>
+<span class="c"># coupling:</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Laminate Sigma_13 Stress&#39;</span><span class="p">,</span><span class="n">warpScale</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>\
+    <span class="n">contour</span><span class="o">=</span><span class="s">&#39;sig_13&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Notice the increased stress in two of the plies? Recall which ones those are?</span>
+<span class="c"># Those plies are the 45 degree plies which are currently taking the shear!</span>
+
+<span class="c"># CREATE A LAMIANTE CROSS-SECTION WITH A DIFFERENT REFERENCE AXIS</span>
+<span class="c"># ===============================================================</span>
+<span class="c"># The cross-section we just made happened to have all of it&#39;s geometrical</span>
+<span class="c"># locations (mass center, shear center, tension center) at the origin, which</span>
+<span class="c"># is where we applied our force resultant. Suppose we wanted to give the cross-</span>
+<span class="c"># section a different reference axis. We can do this by executing the</span>
+<span class="c"># xSectionAnalysis method again:</span>
+<span class="n">ref_ax</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="mf">0.</span><span class="p">]</span>
+<span class="c"># This will move the reference axis (location where we apply forces and</span>
+<span class="c"># moments) to x=0.5, y=0. Carrying out the cross-sectional analysis again, we</span>
+<span class="c"># get:</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">xSectionAnalysis</span><span class="p">(</span><span class="n">ref_ax</span><span class="o">=</span><span class="n">ref_ax</span><span class="p">)</span>
+<span class="c"># Let&#39;s see how the cross-section&#39;s stiffness matrix has changed:</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">stiffMat</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># Let&#39;s not apply the same force resultant and see what the stresses look like:</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">calcWarpEffects</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="n">force1</span><span class="p">)</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Laminate Sigma_33 Stress New Reference Axis&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;sig_33&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">xsect1</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Laminate Sigma_13 Stress New Reference Axis&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;sig_13&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Notice how the stress resultants are fairly different once we moved the</span>
+<span class="c"># reference axis.</span>
+
+<span class="c"># CREATE A WRAPPED RECTANGULAR BOX-BEAM CROSS-SECTION</span>
+<span class="c"># ===================================================</span>
+<span class="c"># Layup 1 Box beam (0.5 x 0.923 in^2 box with laminate schedule [0]_6)</span>
+
+<span class="c"># Let&#39;s make a slightly more complex cross-section. Using the &#39;rectBox&#39; key</span>
+<span class="c"># word and four laminates, we can make a cross-section box-beam. In the next</span>
+<span class="c"># case, we are going to make a cross-section from Hodges 1999 Asymptotically</span>
+<span class="c"># correct anisotropic beam theory paper. We will do the most simple box-beam</span>
+<span class="c"># in this case, which is the &quot;Layup 1&quot; case:</span>
+<span class="c"># Establish the chord length</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="mf">0.53</span>
+<span class="c"># Establish the non-dimensional starting and stopping points of the cross-</span>
+<span class="c"># section.</span>
+<span class="n">xdim2</span> <span class="o">=</span> <span class="p">[</span><span class="o">-.</span><span class="mi">953</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="mi">2</span><span class="p">),</span><span class="o">.</span><span class="mi">953</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="mi">2</span><span class="p">)]</span>
+<span class="c"># This can be confirmed by plotting, but it should be noted that for the</span>
+<span class="c"># &#39;rectBox&#39; routine, the mesh y-coordinates will go from -c2/2 -&gt; c2/2, and the</span>
+<span class="c"># x-coordinates will go from xdim2[0]*c -&gt; xdim2[1]*c. Therefore the box&#39;s</span>
+<span class="c"># overall dimesions should be from 0.53 in x 0.953 in. Next we will generate</span>
+<span class="c"># the airfoil box:</span>
+<span class="n">af2</span> <span class="o">=</span> <span class="n">Airfoil</span><span class="p">(</span><span class="n">c2</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;box&#39;</span><span class="p">)</span>
+<span class="c"># Now let&#39;s make all of the laminate objects we will need for the box beam. In</span>
+<span class="c"># this case it&#39;s 4:</span>
+<span class="n">n_i_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+<span class="n">m_i_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">th_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">]</span>
+<span class="n">lam1_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="n">lam2_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="n">lam3_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="n">lam4_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="c"># Assemble the laminates into an array. Refer back to the documentation to</span>
+<span class="c"># remind yourself of stacking sequence direction, etc. It should be noted that</span>
+<span class="c"># the first laminate is at the top of the box cross-section. The next is the</span>
+<span class="c"># left laminate, and so on in a counter-clockwise direction.</span>
+<span class="n">laminates_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="n">lam1_Lay1</span><span class="p">,</span><span class="n">lam2_Lay1</span><span class="p">,</span><span class="n">lam3_Lay1</span><span class="p">,</span><span class="n">lam4_Lay1</span><span class="p">]</span>
+<span class="c"># Create the cross-section vector:</span>
+<span class="n">xsect_Lay1</span> <span class="o">=</span> <span class="n">XSect</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">af2</span><span class="p">,</span><span class="n">xdim2</span><span class="p">,</span><span class="n">laminates_Lay1</span><span class="p">,</span><span class="n">matLib</span><span class="p">,</span><span class="n">typeXSect</span><span class="o">=</span><span class="s">&#39;rectBox&#39;</span><span class="p">,</span>\
+    <span class="n">meshSize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c"># Create the cross-section object. Note that since we aren&#39;t specifying the</span>
+<span class="c"># reference axis, it will automatically be set at the shear center. Since this</span>
+<span class="c"># cross-section is simple, this will still be at the origin.</span>
+<span class="n">xsect_Lay1</span><span class="o">.</span><span class="n">xSectionAnalysis</span><span class="p">()</span>
+<span class="c"># Let&#39;s look at the stiffness matrix:</span>
+<span class="n">xsect_Lay1</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">stiffMat</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Since this cross-section is simple, we can analytically calculate some of the</span>
+<span class="c"># simpler parameters. For example, the 3,3 entry is just E1*A. Similarly, the</span>
+<span class="c"># bending stiffnesses of the cross-section are just E1*I_xx and E1*I_yy. Try</span>
+<span class="c"># calculating them on your own to verify this! Note that this will only work</span>
+<span class="c"># since all of the fibers have a 0 degree orientation. Let&#39;s apply a load and</span>
+<span class="c"># see how it behaves!</span>
+<span class="c"># Force Resultant Vector:</span>
+<span class="n">force2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">100.</span><span class="p">])</span>
+<span class="c"># Calculate the effects of the force resultant</span>
+<span class="n">xsect_Lay1</span><span class="o">.</span><span class="n">calcWarpEffects</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="n">force2</span><span class="p">)</span>
+<span class="c"># Plot the normal stress</span>
+<span class="n">xsect_Lay1</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Layup 1 Box Beam Sigma_33 Stress&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;sig_33&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Now the shear 13 stress!</span>
+<span class="n">xsect_Lay1</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Layup 1 Box Beam Sigma_13 Stress&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;sig_13&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># Look at the differences in magnitudes of the stress between the two plots.</span>
+<span class="c"># Notice anything? There is virtually no normal stress, but A LOT of shear</span>
+<span class="c"># stress. This makes sense though since we only applied a torque to the cross-</span>
+<span class="c"># section. Note that this warping profile is vero common for any box type cross</span>
+<span class="c"># section. Let&#39;s try one more slightly more complex shape:</span>
+
+<span class="c"># NACA 2412 BOX BEAM</span>
+<span class="c"># ==================</span>
+
+<span class="c"># Now let&#39;s mesh a NACA2412 box beam. We will use the last of the supported</span>
+<span class="c"># meshing routines for this. This is the less restrictive than the &#39;rectBox&#39;</span>
+<span class="c"># routine, and has different laminate mesh interfaces. This time we will also</span>
+<span class="c"># make a slightly more interesting mesh using unbalanced and unsymetric</span>
+<span class="c"># laminates. First let&#39;s initialize the airfoil shape:</span>
+<span class="c"># Initialize a chord length of four inches</span>
+<span class="n">c3</span> <span class="o">=</span> <span class="mf">4.</span>
+<span class="c"># Initialize the non-dimesional locations for the airfoil points to be</span>
+<span class="c"># generated:</span>
+<span class="n">xdim3</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="mi">15</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">]</span>
+<span class="c"># Create the airfoil object:</span>
+<span class="n">af3</span> <span class="o">=</span> <span class="n">Airfoil</span><span class="p">(</span><span class="n">c3</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;NACA2412&#39;</span><span class="p">)</span>
+<span class="c"># Create the laminates to make up the cross-section</span>
+<span class="n">n_i_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">m_i_1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">th_1</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">]</span>
+<span class="n">lam1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_1</span><span class="p">,</span> <span class="n">m_i_1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_1</span><span class="p">)</span>
+<span class="n">n_i_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">m_i_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">th_2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">]</span>
+<span class="n">lam2</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_2</span><span class="p">,</span> <span class="n">m_i_2</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_2</span><span class="p">)</span>
+<span class="n">n_i_3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">m_i_3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">th_3</span> <span class="o">=</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">]</span>
+<span class="n">lam3</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_3</span><span class="p">,</span> <span class="n">m_i_3</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_3</span><span class="p">)</span>
+<span class="n">n_i_4</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">m_i_4</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">th_4</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">]</span>
+<span class="n">lam4</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_4</span><span class="p">,</span> <span class="n">m_i_4</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_4</span><span class="p">)</span>
+<span class="c"># Organize the laminates into an array</span>
+<span class="n">laminates_Lay3</span> <span class="o">=</span> <span class="p">[</span><span class="n">lam1</span><span class="p">,</span><span class="n">lam2</span><span class="p">,</span><span class="n">lam3</span><span class="p">,</span><span class="n">lam4</span><span class="p">]</span>
+<span class="c"># Create the cross-section object and mesh it</span>
+<span class="n">xsect_Lay3</span> <span class="o">=</span> <span class="n">XSect</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="n">af3</span><span class="p">,</span><span class="n">xdim3</span><span class="p">,</span><span class="n">laminates_Lay3</span><span class="p">,</span><span class="n">matLib</span><span class="p">,</span><span class="n">typeXSect</span><span class="o">=</span><span class="s">&#39;box&#39;</span><span class="p">,</span><span class="n">meshSize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c"># Run the cross-sectional analysis. Since this is an airfoil and for this,</span>
+<span class="c"># symmetric airfoils the AC is at the 1/c chord, we will put the reference axis</span>
+<span class="c"># here</span>
+<span class="n">xsect_Lay3</span><span class="o">.</span><span class="n">xSectionAnalysis</span><span class="p">(</span><span class="n">ref_ax</span><span class="o">=</span><span class="p">[</span><span class="mf">0.25</span><span class="o">*</span><span class="n">c3</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Let&#39;s see what the rigid cross-section looks like:</span>
+<span class="n">xsect_Lay3</span><span class="o">.</span><span class="n">plotRigid</span><span class="p">()</span>
+<span class="c"># Print the stiffness matrix</span>
+<span class="n">xsect_Lay3</span><span class="o">.</span><span class="n">printSummary</span><span class="p">(</span><span class="n">stiffMat</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Create an applied force vector. For a wing shape such as this, let&#39;s apply a</span>
+<span class="c"># semi-realistic set of loads:</span>
+<span class="n">force3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">10.</span><span class="p">,</span><span class="mf">100.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">10.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Calculate the force resultant effects</span>
+<span class="n">xsect_Lay3</span><span class="o">.</span><span class="n">calcWarpEffects</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="n">force3</span><span class="p">)</span>
+<span class="c"># This time let&#39;s plot the max principle stress:</span>
+<span class="n">xsect_Lay3</span><span class="o">.</span><span class="n">plotWarped</span><span class="p">(</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;NACA2412 Box Beam Max Principle Stress&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;MaxPrin&#39;</span><span class="p">,</span><span class="n">colorbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tutorial-4-using-superbeams-to-conduct-simple-beam-analysis">
+<h2>Tutorial 4 - Using Superbeams to Conduct Simple Beam Analysis<a class="headerlink" href="#tutorial-4-using-superbeams-to-conduct-simple-beam-analysis" title="Permalink to this headline">¶</a></h2>
+<p>This tutorial exposes users to conducting beam analysis using the SuperBeam
+class. It also exposes users to the Model class for the first time.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># =============================================================================</span>
+<span class="c"># AEROCOMBAT TUTORIAL 4 - Using Super Beams to Conduct Analysis</span>
+<span class="c"># =============================================================================</span>
+
+<span class="c"># IMPORT SYSTEM PACKAGES</span>
+<span class="c"># ======================</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;..&#39;</span><span class="p">))</span>
+
+<span class="c"># IMPORT AEROCOMBAT CLASSES</span>
+<span class="c"># =========================</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Structures</span> <span class="kn">import</span> <span class="n">MaterialLib</span><span class="p">,</span> <span class="n">Laminate</span><span class="p">,</span> <span class="n">XSect</span><span class="p">,</span> <span class="n">SuperBeam</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Aerodynamics</span> <span class="kn">import</span> <span class="n">Airfoil</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.FEM</span> <span class="kn">import</span> <span class="n">Model</span>
+
+<span class="c"># IMPORT NUMPY MODULES</span>
+<span class="c"># ====================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">mayavi.mlab</span> <span class="kn">as</span> <span class="nn">mlab</span>
+
+<span class="c"># ADD MATERIALS TO THE MATERIAL LIBRARY</span>
+<span class="c"># =====================================</span>
+<span class="c"># Create a material library object</span>
+<span class="n">matLib</span> <span class="o">=</span> <span class="n">MaterialLib</span><span class="p">()</span>
+<span class="c"># Add material property from Hodges 1999 Asymptotically correct anisotropic</span>
+<span class="c"># beam theory (Imperial)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;AS43501-6&#39;</span><span class="p">,</span><span class="s">&#39;trans_iso&#39;</span><span class="p">,[</span><span class="mf">20.6e6</span><span class="p">,</span><span class="mf">1.42e6</span><span class="p">,</span><span class="o">.</span><span class="mi">34</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="o">.</span><span class="mf">87e6</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">],</span><span class="o">.</span><span class="mo">005</span><span class="p">)</span>
+<span class="c"># Add material property from Hodges 1999 Asymptotically correct anisotropic</span>
+<span class="c"># beam theory (Imperial)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="s">&#39;AS43501-6*&#39;</span><span class="p">,</span><span class="s">&#39;trans_iso&#39;</span><span class="p">,[</span><span class="mf">20.6e6</span><span class="p">,</span><span class="mf">1.42e6</span><span class="p">,</span><span class="o">.</span><span class="mi">34</span><span class="p">,</span><span class="o">.</span><span class="mi">42</span><span class="p">,</span><span class="o">.</span><span class="mf">87e6</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">],</span><span class="o">.</span><span class="mo">005</span><span class="p">)</span>
+<span class="c"># Add an aluminum material (SI)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="s">&#39;AL&#39;</span><span class="p">,</span><span class="s">&#39;iso&#39;</span><span class="p">,[</span><span class="mf">71.7e9</span><span class="p">,</span><span class="o">.</span><span class="mi">33</span><span class="p">,</span><span class="mi">2810</span><span class="p">],</span><span class="o">.</span><span class="mo">005</span><span class="p">)</span>
+
+<span class="c"># CREATE A WRAPPED RECTANGULAR BOX-BEAM CROSS-SECTION</span>
+<span class="c"># ===================================================</span>
+<span class="c"># Layup 1 Box beam (0.5 x 0.923 in^2 box with laminate schedule [0]_6)</span>
+
+<span class="c"># Before we make a beam, we must first make the cross-section of that beam. We</span>
+<span class="c"># are going to start with a cross-section we used in the third tutorial.</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="mf">0.53</span>
+<span class="c"># Establish the non-dimensional starting and stopping points of the cross-</span>
+<span class="c"># section.</span>
+<span class="n">xdim2</span> <span class="o">=</span> <span class="p">[</span><span class="o">-.</span><span class="mi">953</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="mi">2</span><span class="p">),</span><span class="o">.</span><span class="mi">953</span><span class="o">/</span><span class="p">(</span><span class="n">c2</span><span class="o">*</span><span class="mi">2</span><span class="p">)]</span>
+<span class="c"># Generate the airfoil box:</span>
+<span class="n">af2</span> <span class="o">=</span> <span class="n">Airfoil</span><span class="p">(</span><span class="n">c2</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;box&#39;</span><span class="p">)</span>
+<span class="c"># Now let&#39;s make all of the laminate objects we will need for the box beam. In</span>
+<span class="c"># this case it&#39;s 4:</span>
+<span class="n">n_i_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+<span class="n">m_i_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">th_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">]</span>
+<span class="n">lam1_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="n">lam2_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="n">lam3_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="n">lam4_Lay1</span> <span class="o">=</span> <span class="n">Laminate</span><span class="p">(</span><span class="n">n_i_Lay1</span><span class="p">,</span> <span class="n">m_i_Lay1</span><span class="p">,</span> <span class="n">matLib</span><span class="p">,</span> <span class="n">th</span><span class="o">=</span><span class="n">th_Lay1</span><span class="p">)</span>
+<span class="c"># Assemble the laminates into an array.</span>
+<span class="n">laminates_Lay1</span> <span class="o">=</span> <span class="p">[</span><span class="n">lam1_Lay1</span><span class="p">,</span><span class="n">lam2_Lay1</span><span class="p">,</span><span class="n">lam3_Lay1</span><span class="p">,</span><span class="n">lam4_Lay1</span><span class="p">]</span>
+<span class="c"># Create the cross-section vector:</span>
+<span class="n">xsect_Lay1</span> <span class="o">=</span> <span class="n">XSect</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">af2</span><span class="p">,</span><span class="n">xdim2</span><span class="p">,</span><span class="n">laminates_Lay1</span><span class="p">,</span><span class="n">matLib</span><span class="p">,</span><span class="n">typeXSect</span><span class="o">=</span><span class="s">&#39;rectBox&#39;</span><span class="p">,</span>\
+    <span class="n">meshSize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c"># Create the cross-section object.</span>
+<span class="n">xsect_Lay1</span><span class="o">.</span><span class="n">xSectionAnalysis</span><span class="p">()</span>
+<span class="c"># Having created the cross-section, we can now generate a superbeam. A</span>
+<span class="c"># superbeam is just a collection of beam elements. In other words, a superbeam</span>
+<span class="c"># is just there to fascilitate beam meshing and other pre/post processing</span>
+<span class="c"># benefits. In order to make a superbeam, we need to initialize a few things.</span>
+<span class="c"># First, let&#39;s initialize the starting and stopping location of the beam:</span>
+<span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+<span class="c"># Initialize a superbeam ID</span>
+<span class="n">SBID</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="c"># Next we need to initialize the number of elements the superbeam should mesh:</span>
+<span class="n">noe</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="c"># Now let&#39;s make the superbeam</span>
+<span class="n">sbeam1</span> <span class="o">=</span> <span class="n">SuperBeam</span><span class="p">(</span><span class="n">SBID</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">xsect_Lay1</span><span class="p">,</span><span class="n">noe</span><span class="p">)</span>
+<span class="c"># In order to analyze this beam, we&#39;ll need to add it to a finite element</span>
+<span class="c"># model. First let&#39;s make a finite element model!</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="c"># Easy right? Now let&#39;s add the superbeam to the model.</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addElements</span><span class="p">([</span><span class="n">sbeam1</span><span class="p">])</span>
+<span class="c"># Now that our beam is loaded into the FEM, let&#39;s visualize it!</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotRigidModel</span><span class="p">(</span><span class="n">numXSects</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="c"># First let&#39;s constrain the beam at it&#39;s root. Since we only added one</span>
+<span class="c"># superbeam and we never specified a starting node ID, we know that the first</span>
+<span class="c"># node ID is actually 1! So when we constrain the model, we can just select:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">applyConstraints</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;fix&#39;</span><span class="p">)</span>
+<span class="c"># There are two supported keywords for constraints, either &#39;fix&#39; or &#39;pinned&#39;.</span>
+<span class="c"># If the user wanted to apply a different constraint, they can just enter the</span>
+<span class="c"># degrees of freedom to constrain on the model. This can be done by supplying</span>
+<span class="c"># an array such as: [1,2,3,5]. Now let&#39;s apply a load. We will make two load</span>
+<span class="c"># cases. In the first case, we are going to apply a simple tip load:</span>
+<span class="n">load1</span> <span class="o">=</span> <span class="p">{</span><span class="mi">21</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">100.</span><span class="p">,</span><span class="mf">100.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">100.</span><span class="p">])}</span>
+<span class="c"># We can also create a function for a distributed load:</span>
+<span class="k">def</span> <span class="nf">load2</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+   <span class="n">vx</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="mf">2.1</span>
+   <span class="n">vy</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+   <span class="n">pz</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">mx</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">my</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">tz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">7</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mi">10</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+   <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">pz</span><span class="p">,</span><span class="n">mx</span><span class="p">,</span><span class="n">my</span><span class="p">,</span><span class="n">tz</span><span class="p">])</span>
+<span class="c"># Ok now let&#39;s add these loads to the model:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">applyLoads</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">F</span><span class="o">=</span><span class="n">load1</span><span class="p">)</span>
+<span class="c"># Notice that when I applied a tip load, I did it using the argument &#39;F&#39;. When</span>
+<span class="c"># we apply a distributed load function, we use the argument &#39;f&#39; instead.</span>
+<span class="n">model</span><span class="o">.</span><span class="n">applyLoads</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">f</span><span class="o">=</span><span class="n">load2</span><span class="p">,</span><span class="n">allElems</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># Now with constraints and loads, we can run a static analysis! Let&#39;s run the</span>
+<span class="c"># first load case.</span>
+<span class="n">model</span><span class="o">.</span><span class="n">staticAnalysis</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;tip load&#39;</span><span class="p">)</span>
+<span class="c"># Let&#39;s see what results we get:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotDeformedModel</span><span class="p">(</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;tip load&#39;</span><span class="p">,</span><span class="n">figName</span><span class="o">=</span><span class="s">&#39;Tip Load Analysis&#39;</span><span class="p">,</span>\
+    <span class="n">numXSects</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;VonMis&#39;</span><span class="p">,</span><span class="n">contLim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1e5</span><span class="p">],</span><span class="n">warpScale</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="n">displScale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="c"># Now let&#39;s try analyzing the distributed load:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">staticAnalysis</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;distributed load&#39;</span><span class="p">)</span>
+<span class="c"># Let&#39;s see what results we get for the distributed load:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotDeformedModel</span><span class="p">(</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;distributed load&#39;</span><span class="p">,</span>\
+    <span class="n">figName</span><span class="o">=</span><span class="s">&#39;Distributed Load Analysis&#39;</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;VonMis&#39;</span><span class="p">,</span>\
+    <span class="n">contLim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1e5</span><span class="p">],</span><span class="n">warpScale</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="n">displScale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="c"># Really quickly, let&#39;s discuss some of the keywords used in the analysis and</span>
+<span class="c"># plotting. The analysis_name designates the name where the results should be</span>
+<span class="c"># stored for the beam. Therefore if you want to keep multiple results stored</span>
+<span class="c"># at once you can give it a name. Otherwise this will always result to the</span>
+<span class="c"># default name. figName is just the name of the MayaVi figure, and numXSects</span>
+<span class="c"># designates how many cross-sections should be plotted. Note that the more</span>
+<span class="c"># cross-sections are plotted, the slower the plotting process will be. Both</span>
+<span class="c"># contour, contLim and warpScale were discussed in Tutorial 3. displScale is</span>
+<span class="c"># the scalling factor applied to the beam displacements and rotations.</span>
+<span class="c"># We can also run a normal modes analysis on the beam as well: having already</span>
+<span class="c"># applied the constraints, we can run:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">normalModesAnalysis</span><span class="p">(</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;normal modes&#39;</span><span class="p">)</span>
+<span class="c"># For now, the frequencies can be accessed via the model attribute &#39;freqs&#39;</span>
+<span class="n">Frequencies</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">freqs</span>
+<span class="c"># Let&#39;s plot the first mode:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotDeformedModel</span><span class="p">(</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;normal modes&#39;</span><span class="p">,</span>\
+    <span class="n">figName</span><span class="o">=</span><span class="s">&#39;Normal Modes 1&#39;</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;none&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">displScale</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c"># How about the second?</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotDeformedModel</span><span class="p">(</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;normal modes&#39;</span><span class="p">,</span>\
+    <span class="n">figName</span><span class="o">=</span><span class="s">&#39;Normal Modes 2&#39;</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;none&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">displScale</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c"># How about the third? It happens to be the torsional mode.</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotDeformedModel</span><span class="p">(</span><span class="n">analysis_name</span><span class="o">=</span><span class="s">&#39;normal modes&#39;</span><span class="p">,</span>\
+    <span class="n">figName</span><span class="o">=</span><span class="s">&#39;Normal Modes 3&#39;</span><span class="p">,</span><span class="n">numXSects</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">contour</span><span class="o">=</span><span class="s">&#39;none&#39;</span><span class="p">,</span>\
+    <span class="n">warpScale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">displScale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tutorial-5-creating-a-wing-and-conducting-a-flutter-analysis">
+<h2>Tutorial 5 - Creating a Wing and Conducting a Flutter Analysis<a class="headerlink" href="#tutorial-5-creating-a-wing-and-conducting-a-flutter-analysis" title="Permalink to this headline">¶</a></h2>
+<p>This tutorial exposes users to creating a wing and conducting flutter analysis
+on it. Note that every analysis a superbeam can conduct can also be conducted
+on a wing.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># =============================================================================</span>
+<span class="c"># AEROCOMBAT TUTORIAL 4 - Using Super Beams to Conduct Analysis</span>
+<span class="c"># =============================================================================</span>
+
+<span class="c"># IMPORT SYSTEM PACKAGES</span>
+<span class="c"># ======================</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;..&#39;</span><span class="p">))</span>
+
+<span class="c"># IMPORT NUMPY PACKAGES</span>
+<span class="c"># =====================</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="c"># IMPORT AEROCOMBAT CLASSES</span>
+<span class="c"># =========================</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.Structures</span> <span class="kn">import</span> <span class="n">MaterialLib</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.AircraftParts</span> <span class="kn">import</span> <span class="n">Wing</span>
+<span class="kn">from</span> <span class="nn">AeroComBAT.FEM</span> <span class="kn">import</span> <span class="n">Model</span>
+
+<span class="c"># ADD MATERIALS TO THE MATERIAL LIBRARY</span>
+<span class="c"># =====================================</span>
+<span class="c"># Create a material library object</span>
+<span class="n">matLib</span> <span class="o">=</span> <span class="n">MaterialLib</span><span class="p">()</span>
+<span class="c"># Add an aluminum material (SI)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;AL&#39;</span><span class="p">,</span><span class="s">&#39;iso&#39;</span><span class="p">,[</span><span class="mf">68.9e9</span><span class="p">,</span><span class="o">.</span><span class="mi">33</span><span class="p">,</span><span class="mi">2700</span><span class="o">*</span><span class="mi">2</span><span class="p">],</span><span class="o">.</span><span class="mo">00025</span><span class="p">)</span>
+<span class="c"># Add an soft material material (SI)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="s">&#39;Weak_mat&#39;</span><span class="p">,</span><span class="s">&#39;iso&#39;</span><span class="p">,[</span><span class="mi">100</span><span class="p">,</span><span class="o">.</span><span class="mi">33</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span><span class="o">.</span><span class="mo">00025</span><span class="p">)</span>
+<span class="c"># Add material property from Hodges 1999 Asymptotically correct anisotropic</span>
+<span class="c"># beam theory (SI)</span>
+<span class="n">matLib</span><span class="o">.</span><span class="n">addMat</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="s">&#39;AS43501-6*&#39;</span><span class="p">,</span><span class="s">&#39;trans_iso&#39;</span><span class="p">,[</span><span class="mf">142e9</span><span class="p">,</span><span class="mf">9.8e9</span><span class="p">,</span><span class="o">.</span><span class="mi">34</span><span class="p">,</span><span class="o">.</span><span class="mi">42</span><span class="p">,</span><span class="mf">6e9</span><span class="p">,</span><span class="mi">20000</span><span class="p">],</span><span class="mf">0.0005</span><span class="p">)</span>
+
+<span class="c"># CREATE THE WING</span>
+<span class="c"># ===============</span>
+<span class="c"># Define the chord length of the model</span>
+<span class="n">c</span> <span class="o">=</span> <span class="o">.</span><span class="mo">076</span>
+<span class="c"># Define the chord length (this will be the hight of the box beam)</span>
+<span class="n">ctip</span> <span class="o">=</span> <span class="mf">0.0076</span><span class="o">+.</span><span class="mo">001</span>
+<span class="c"># Since the wing isn&#39;t tapered</span>
+<span class="n">croot</span> <span class="o">=</span> <span class="mf">0.0076</span><span class="o">+.</span><span class="mo">001</span>
+<span class="c"># Define the non-dimensional starting point of the cross-section</span>
+<span class="n">x1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.039</span><span class="o">/</span><span class="n">croot</span><span class="o">/</span><span class="mi">2</span>
+<span class="c"># Define the non-dimensional ending point of the cross-section</span>
+<span class="n">x2</span> <span class="o">=</span> <span class="mf">0.039</span><span class="o">/</span><span class="n">croot</span><span class="o">/</span><span class="mi">2</span>
+<span class="c"># Define the span of the beam</span>
+<span class="n">span</span> <span class="o">=</span> <span class="mf">0.76</span>
+<span class="c"># Define the starting and stopping point of the wing structure</span>
+<span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">span</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Define the non-dimesional locations of the ribs in the wing.</span>
+<span class="n">Y_rib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># Initilize the layup schedule for the cross-section.</span>
+<span class="n">n_ply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>
+<span class="c"># Initilize the material ID corresponding to an orientation in the</span>
+<span class="c"># cross-section</span>
+<span class="n">m_ply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="c"># Initilize the orientations used in the box beam.</span>
+<span class="n">th_ply</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># Define the number of orientations used in each laminate. In this case, we&#39;ll</span>
+<span class="c"># just use one.</span>
+<span class="n">n_orients</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="c"># Define the number of laminates per cross-section. In this case since we are</span>
+<span class="c"># using a box beam, it will be 4.</span>
+<span class="n">n_lams</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="c"># Define the type of cross-section. In this case it&#39;ll be the &#39;rectBox&#39; mesh</span>
+<span class="n">typeXSect</span> <span class="o">=</span> <span class="s">&#39;rectBox&#39;</span>
+<span class="c"># Define the number of elements per unit length are to be used. The structure</span>
+<span class="c"># will have then 120*span beam elements.</span>
+<span class="n">noe_dens</span> <span class="o">=</span> <span class="mi">120</span>
+<span class="c"># Define the aditional vector required to define the orientation of the beam.</span>
+<span class="c"># In this case, we&#39;ll have it pointing down the length of the wing.</span>
+<span class="n">chordVec</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Create the wing object. For more information about some of the input</span>
+<span class="c"># parameters see the AeroComBAT documentation</span>
+<span class="n">wing1</span> <span class="o">=</span> <span class="n">Wing</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">p1</span><span class="p">,</span><span class="n">p2</span><span class="p">,</span><span class="n">croot</span><span class="p">,</span><span class="n">ctip</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">Y_rib</span><span class="p">,</span><span class="n">n_ply</span><span class="p">,</span><span class="n">m_ply</span><span class="p">,</span><span class="n">matLib</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;box&#39;</span><span class="p">,</span>\
+    <span class="n">noe</span><span class="o">=</span><span class="n">noe_dens</span><span class="p">,</span><span class="n">chordVec</span><span class="o">=</span><span class="n">chordVec</span><span class="p">,</span><span class="n">ref_ax</span><span class="o">=</span><span class="s">&#39;shearCntr&#39;</span><span class="p">,</span><span class="n">n_orients</span><span class="o">=</span><span class="n">n_orients</span><span class="p">,</span>\
+    <span class="n">n_lams</span><span class="o">=</span><span class="n">n_lams</span><span class="p">,</span><span class="n">typeXSect</span><span class="o">=</span><span class="n">typeXSect</span><span class="p">,</span><span class="n">meshSize</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">th_ply</span><span class="o">=</span><span class="n">th_ply</span><span class="p">)</span>
+<span class="c"># This is an optional step for ease of programming. Since only one wing section</span>
+<span class="c"># was created and the wing isn&#39;t tapered, there is only one superbeam which</span>
+<span class="c"># contains all of the beam elements in the wing.</span>
+<span class="n">sbeam1</span> <span class="o">=</span> <span class="n">wing1</span><span class="o">.</span><span class="n">wingSects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">SuperBeams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># ADD A LIFTING SURFCE TO THE WING</span>
+<span class="c"># ================================</span>
+<span class="c"># Define the root leading edge location</span>
+<span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Define the root trailing edge location</span>
+<span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Define the tip trailing edge location</span>
+<span class="n">x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="p">,</span><span class="n">span</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Define the tip leading edge location</span>
+<span class="n">x4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="n">span</span><span class="p">,</span><span class="mf">0.</span><span class="p">])</span>
+<span class="c"># Determine the number of boxes to be used in the spanwise direction</span>
+<span class="n">nspan</span> <span class="o">=</span> <span class="mi">36</span><span class="o">*</span><span class="mi">2</span>
+<span class="c"># Determine the number of boxes to be used in the chordwise direction</span>
+<span class="n">nchord</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="c"># Add the lifting surface to the wing.</span>
+<span class="n">wing1</span><span class="o">.</span><span class="n">addLiftingSurface</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">x3</span><span class="p">,</span><span class="n">x4</span><span class="p">,</span><span class="n">nspan</span><span class="p">,</span><span class="n">nchord</span><span class="p">)</span>
+
+<span class="c"># MAKE THE FINITE ELEMENT MODEL (FEM)</span>
+<span class="c"># ===================================</span>
+<span class="n">model</span>  <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="c"># Add the aircraft wing to the model</span>
+<span class="n">model</span><span class="o">.</span><span class="n">addAircraftParts</span><span class="p">([</span><span class="n">wing1</span><span class="p">])</span>
+<span class="c"># Apply the constraint for the model</span>
+<span class="n">model</span><span class="o">.</span><span class="n">applyConstraints</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;fix&#39;</span><span class="p">)</span>
+<span class="c"># Plot the rigid wing in the finite elment model</span>
+<span class="n">model</span><span class="o">.</span><span class="n">plotRigidModel</span><span class="p">(</span><span class="n">numXSects</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="c"># Conduct a normal modes analysis. Since the normal mode shapes are used in the</span>
+<span class="c"># flutter analysis it is good to run this ahead of time to make sure you are</span>
+<span class="c"># selecting enough mode shapes to include any relevant torsional and bending</span>
+<span class="c"># mode shapes.</span>
+<span class="n">model</span><span class="o">.</span><span class="n">normalModesAnalysis</span><span class="p">()</span>
+<span class="c"># Save the frequencies of the modal analysis</span>
+<span class="n">freqs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">freqs</span>
+
+<span class="c"># IMPORT NASTRAN RESULTS</span>
+<span class="c"># ======================</span>
+<span class="c"># The same analysis was conducted on a plate model in NX NASTRAN to verify the</span>
+<span class="c"># results produced by AeroComBAT</span>
+<span class="n">NASTRAN</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="s">&#39;NASTRANFlutterResults.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+<span class="n">UNAST</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">Damp1</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">Freq1</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">Damp2</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">Freq2</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">Damp3</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">Freq3</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">6</span><span class="p">]</span>
+<span class="n">Damp4</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">7</span><span class="p">]</span>
+<span class="n">Freq4</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">8</span><span class="p">]</span>
+<span class="n">Damp5</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">9</span><span class="p">]</span>
+<span class="n">Freq5</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">10</span><span class="p">]</span>
+<span class="n">Damp6</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">11</span><span class="p">]</span>
+<span class="n">Freq6</span> <span class="o">=</span> <span class="n">NASTRAN</span><span class="p">[:,</span><span class="mi">12</span><span class="p">]</span>
+
+<span class="c"># CONDUCT FLUTTER ANALYSIS</span>
+<span class="c"># ========================</span>
+<span class="c"># Whenever a flutter analysis is conducted, several quantities need to be</span>
+<span class="c"># defined. The first is an array of free-stream airspeeds:</span>
+<span class="n">U_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">342</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+<span class="c"># In addition, a vector of trial reduced frequencies must be initialized. Keep</span>
+<span class="c"># in mind that the because the non-looping pk method is used, a wide range of</span>
+<span class="c"># reduced frequencies may need to be used.</span>
+<span class="n">kr_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1e-06</span><span class="p">,</span><span class="mf">1e-04</span><span class="p">,</span><span class="o">.</span><span class="mo">001</span><span class="p">,</span><span class="o">.</span><span class="mo">01</span><span class="p">,</span><span class="o">.</span><span class="mo">05</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">5.</span><span class="p">,</span><span class="mf">10.</span><span class="p">,</span><span class="mi">50</span><span class="p">])</span><span class="o">*</span><span class="mi">10</span>
+<span class="c"># A vector of mach numbers must also be used. These should be kept close to</span>
+<span class="c"># The suspected flutter mach number. If mach numbers greater than 0.7 are used,</span>
+<span class="c"># is is likely doublet lattice method is no-longer valid.</span>
+<span class="n">M_vec</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">kr_vec</span><span class="p">)</span>
+<span class="c"># Initialize the sea level density</span>
+<span class="n">rho_0</span> <span class="o">=</span> <span class="mf">1.225</span>
+<span class="c"># Determine the number of modes to be used</span>
+<span class="n">nmodes</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="c"># Run the flutter analysis. Depending on how many reduced frequencies and</span>
+<span class="c"># velocities sampled, this could take anywhere from a 30 seconds to 2 minutes.</span>
+<span class="n">model</span><span class="o">.</span><span class="n">flutterAnalysis</span><span class="p">(</span><span class="n">U_vec</span><span class="p">,</span><span class="n">kr_vec</span><span class="p">,</span><span class="n">M_vec</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">rho_0</span><span class="p">,</span><span class="n">nmodes</span><span class="p">,</span><span class="n">symxz</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">g</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+<span class="c"># POST-PROCESS THE FLUTTER RESULTS</span>
+<span class="c"># ================================</span>
+<span class="c"># Note that in these figures, the dashed lines are the NASTRAN results, whereas</span>
+<span class="c"># the solid lines are the AeroComBAT results.</span>
+<span class="n">cvec</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">,</span><span class="s">&#39;g&#39;</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">,</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="s">&#39;m&#39;</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">PID</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">flutterPoints</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">U_vec</span><span class="p">,</span><span class="n">point</span><span class="o">.</span><span class="n">gamma</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">cvec</span><span class="p">[</span><span class="n">PID</span><span class="p">],</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;Mode &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">PID</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Damp1</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 1&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Damp2</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Damp3</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 3&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Damp4</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 4&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Damp5</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 5&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Damp6</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 6&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Damping of the Wing Modes&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Free-stream airspeed, m/s&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Damping, g&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">PID</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">flutterPoints</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">U_vec</span><span class="p">,</span><span class="n">point</span><span class="o">.</span><span class="n">omega</span><span class="p">,</span><span class="n">color</span> <span class="o">=</span> <span class="n">cvec</span><span class="p">[</span><span class="n">PID</span><span class="p">],</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;Mode &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">PID</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Freq1</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 1&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Freq2</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Freq3</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 3&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Freq4</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 4&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Freq5</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 5&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">UNAST</span><span class="p">,</span><span class="n">Freq6</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;NASTRAN Mode 6&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Frequency of the Wing Modes&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Free-stream airspeed, m/s&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Mode Frequency, Hz&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="c"># The following figures demonstrate how the damping and frequencies are</span>
+<span class="c"># interpolated.</span>
+<span class="n">Uind</span> <span class="o">=</span> <span class="mi">80</span>
+<span class="n">point1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">flutterPoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">point2</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">flutterPoints</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">point3</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">flutterPoints</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">point4</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">flutterPoints</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">omegaAeros</span> <span class="o">=</span> <span class="n">point1</span><span class="o">.</span><span class="n">omegaAeroDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">omegaRoots1</span> <span class="o">=</span> <span class="n">point1</span><span class="o">.</span><span class="n">omegaRootDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">omegaRoots2</span> <span class="o">=</span> <span class="n">point2</span><span class="o">.</span><span class="n">omegaRootDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">omegaRoots3</span> <span class="o">=</span> <span class="n">point3</span><span class="o">.</span><span class="n">omegaRootDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">omegaRoots4</span> <span class="o">=</span> <span class="n">point4</span><span class="o">.</span><span class="n">omegaRootDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">gammas1</span> <span class="o">=</span> <span class="n">point1</span><span class="o">.</span><span class="n">gammaDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">gammas2</span> <span class="o">=</span> <span class="n">point2</span><span class="o">.</span><span class="n">gammaDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">gammas3</span> <span class="o">=</span> <span class="n">point3</span><span class="o">.</span><span class="n">gammaDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+<span class="n">gammas4</span> <span class="o">=</span> <span class="n">point4</span><span class="o">.</span><span class="n">gammaDict</span><span class="p">[</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]]</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">omegaAeros</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;omega_aero&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">omegaRoots1</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;omega_root_1&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">omegaRoots2</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;omega_root_2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">omegaRoots3</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;omega_root_3&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">omegaRoots4</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;omega_root_4&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">20000</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">25000</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Aerodynamic frequency, rad&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Root frequency, rad&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Interpolation of Root Requencies at V=</span><span class="si">%4.2f</span><span class="s"> m/s&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">gammas1</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;gamma_root_1&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">gammas2</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;gamma_root_2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">gammas3</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;gamma_root_3&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">omegaAeros</span><span class="p">,</span><span class="n">gammas4</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">cvec</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;gamma_root_4&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">25000</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Aerodynamic frequency, rad&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Damping (g)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;Interpolation of Root Damping at V=</span><span class="si">%4.2f</span><span class="s"> m/s&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">U_vec</span><span class="p">[</span><span class="n">Uind</span><span class="p">]))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hold</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="FEM.html" title="FEM Interface Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to AeroComBAT’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

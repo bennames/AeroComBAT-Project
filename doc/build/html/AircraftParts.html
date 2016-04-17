@@ -1,0 +1,440 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Aircraft Parts Module &mdash; AeroComBAT 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="index.html" />
+    <link rel="next" title="Structures Module" href="structures.html" />
+    <link rel="prev" title="FEM Interface Module" href="FEM.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="structures.html" title="Structures Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="FEM.html" title="FEM Interface Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Aircraft Parts Module</a><ul>
+<li><a class="reference internal" href="#wing">Wing</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="FEM.html"
+                        title="previous chapter">FEM Interface Module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="structures.html"
+                        title="next chapter">Structures Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/AircraftParts.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-AeroComBAT.AircraftParts">
+<span id="aircraft-parts-module"></span><h1>Aircraft Parts Module<a class="headerlink" href="#module-AeroComBAT.AircraftParts" title="Permalink to this headline">¶</a></h1>
+<p>This module contains a library of classes devoted to modeling aircraft parts.</p>
+<p>The main purpose of this library is to model various types of aircraft parts.
+Currently only wing objects are suported, however in the future it is possible
+that fuselages as well as other parts will be added.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">SUMARRY OF THE CLASSES:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>Wing</cite>: Creates a wing aircraft. This wing is capable of modeling the</dt>
+<dd><p class="first last">structures of the aircraft wing as well as the aerodynamics. The structures
+are modeled with a combination of beam models currently, however it is
+likely that Ritz method laminates will also incorporated for buckling
+prediction purposes. The aerodynamics are currently modeled with potential
+flow doublet panels.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="section" id="wing">
+<h2>Wing<a class="headerlink" href="#wing" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.AircraftParts.Wing">
+<em class="property">class </em><code class="descclassname">AeroComBAT.AircraftParts.</code><code class="descname">Wing</code><span class="sig-paren">(</span><em>PID</em>, <em>p1</em>, <em>p2</em>, <em>croot</em>, <em>ctip</em>, <em>x0_spar</em>, <em>xf_spar</em>, <em>Y_rib</em>, <em>n_ply</em>, <em>m_ply</em>, <em>mat_lib</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/AircraftParts.html#Wing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.AircraftParts.Wing" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="AeroComBAT.AircraftParts.Wing.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>PID</em>, <em>p1</em>, <em>p2</em>, <em>croot</em>, <em>ctip</em>, <em>x0_spar</em>, <em>xf_spar</em>, <em>Y_rib</em>, <em>n_ply</em>, <em>m_ply</em>, <em>mat_lib</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/AircraftParts.html#Wing.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.AircraftParts.Wing.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a wing object.</p>
+<p>This object represents a wing and contains both structural and
+aerodynamic models.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>PID (int)</cite>: The integer ID linked to this part.</p>
+</li>
+<li><p class="first"><cite>p1 (1x3 np.array[float])</cite>: The initial x,y,z coordinates of the wing.</p>
+</li>
+<li><p class="first"><cite>p2 (1x3 np.array[float]</cite>: The final x,y,z coordinates of the wing.</p>
+</li>
+<li><p class="first"><cite>croot (float)</cite>: The root chord length.</p>
+</li>
+<li><p class="first"><cite>ctip (float)</cite>: The tip chord length.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x0_spar (float)</cite>: The non-dimensional starting location of the cross</dt>
+<dd><p class="first last">section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>xf_spar (float)</cite>: The non-dimensional ending location of the cross</dt>
+<dd><p class="first last">section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Y_rib (1xN Array[float])</cite>: The non-dimensional rib locations within</dt>
+<dd><p class="first last">the wing. This dimension is primarily used to create wing-sections
+which primarily define the buckling span&#8217;s for laminate objects.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>n_ply (1xM Array[int])</cite>: An array of integers specifying the number</dt>
+<dd><p class="first last">plies to be used in the model. Each integer refers to the number of
+plies to be used for at a given orientation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>m_ply (1xM Array[int])</cite>: An array of integers specifying the</dt>
+<dd><p class="first last">material ID to be used for the corresponding number of plies in
+n_ply at a given orientation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>th_ply (1xM Array[int])</cite>: An array of floats specifying the</dt>
+<dd><p class="first last">degree orientations of the plies used by the lamiantes in the
+model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>mat_lib (obj)</cite>: A material library containing all of the material</dt>
+<dd><p class="first last">objets to be used in the model.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>name (str)</cite>: The name of the airfoil section to be used for cross</dt>
+<dd><p class="first last">section generation.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>wing_SNID (int)</cite>: The first node ID associated with the wing.</p>
+</li>
+<li><p class="first"><cite>wing_SEID (int)</cite>: The first beam element ID associated with the wing.</p>
+</li>
+<li><p class="first"><cite>wing_SSBID (int)</cite>: The first superbeam ID associated with the wing.</p>
+</li>
+<li><p class="first"><cite>SXID (int)</cite>: The starting cross-section ID used by the wing.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>noe (float)</cite>: The number of beam elements to be used in the wing per</dt>
+<dd><p class="first last">unit length.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>n_orients (int)</cite>: The number of fiber orientations to be used in</dt>
+<dd><p class="first last">each laminate.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>n_lams (int)</cite>: The number of laminates required to mesh the desired</dt>
+<dd><p class="first last">cross-section.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>meshSize (float)</cite>: The maximum aspect ratio a 2D element may have in</dt>
+<dd><p class="first last">the cross-section.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>ref_ax (str)</cite>: The reference axis to be loaded in the wing.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>chordVec (1x3 np.array[float])</cite>: This numpy array is used to orient</dt>
+<dd><p class="first last">the cross-section in 3D space. It corresponds to the local unit x-
+vector in the cross-section, expressed in the global frame.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>typeXSect (str)</cite>: The type of cross-section to be used by the wing</dt>
+<dd><p class="first last">structure. Currently the suported typed are &#8216;boxbeam&#8217;, &#8216;laminate&#8217;,
+and &#8216;rectBoxBeam&#8217;. See the meshing class in the structures module
+for more details.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.AircraftParts.Wing.addLiftingSurface">
+<code class="descname">addLiftingSurface</code><span class="sig-paren">(</span><em>SID</em>, <em>x1</em>, <em>x2</em>, <em>x3</em>, <em>x4</em>, <em>nspan</em>, <em>nchord</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/AircraftParts.html#Wing.addLiftingSurface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.AircraftParts.Wing.addLiftingSurface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a potential flow lifting surface to the model.</p>
+<p>This method adds a potential flow panel aerodynamic model to the wing
+part. The x1,x2,x3, and x4 points correspond to the root leading edge,
+root trailing edge, tip trailing edge, and tip leading edge of the wing
+respectively. Currently the only suported types of panels are doublet-
+lattice panels to be used for unsteady aerodynamic models.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>SID (int)</cite>: The lifting surface integer identifier corresponding to</dt>
+<dd><p class="first last">the lifting surface.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x1 (1x3 numpy array)</cite>: The point in 3D space corresponding to the</dt>
+<dd><p class="first last">root leading edge point of the lifting surface.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x2 (1x3 numpy array)</cite>: The point in 3D space corresponding to the</dt>
+<dd><p class="first last">root trailing edge point of the lifting surface.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x3 (1x3 numpy array)</cite>: The point in 3D space corresponding to the</dt>
+<dd><p class="first last">tip trailing edge point of the lifting surface.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>x4 (1x3 numpy array)</cite>: The point in 3D space corresponding to the</dt>
+<dd><p class="first last">tip leading edge point of the lifting surface.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nspan (int)</cite>: The number of boxes to be used in the spanwise</dt>
+<dd><p class="first last">direction.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nchord (int)</cite>: The number of boxes to be used in the chordwise</dt>
+<dd><p class="first last">direction.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Mutliple surfaces could be added to the wing part.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">In order to use the doublet lattice method, the chord
+lines of the lifting surface must run in the x-direction, and there
+can be no geometric angles of attack present. The geometry of a
+general wing can be seen in the figure below:</p>
+</div>
+<img alt="_images/DoubletLatticeWing.png" class="align-center" src="_images/DoubletLatticeWing.png" />
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.AircraftParts.Wing.plotRigidWing">
+<code class="descname">plotRigidWing</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/AircraftParts.html#Wing.plotRigidWing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.AircraftParts.Wing.plotRigidWing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the rigid wing.</p>
+<p>This method plots the rigid model of the wing. This includes the
+reference axis of the beams, the cross-sections of the beams, and the
+lifting surfaces that make up the wing. This is an excellent check to
+perform before adding the part to a FEM model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>figName (str)</cite>: The name of the MayaVi figure. &#8216;Rigid Wing&#8217; by</dt>
+<dd><p class="first last">default.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>numXSects (int)</cite>: The number of cross-sections that each wing</dt>
+<dd><p class="first last">section will display. By default it is 2.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>color (1x3 tuple(int))</cite>: This is a length 3 tuple to be used as the</dt>
+<dd><p class="first last">color of the beam reference axes. Black by default.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="structures.html" title="Structures Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="FEM.html" title="FEM Interface Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

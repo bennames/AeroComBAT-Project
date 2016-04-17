@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to AeroComBAT’s documentation! &mdash; AeroComBAT 0.2.1 documentation</title>
+    <title>Welcome to AeroComBAT’s documentation! &mdash; AeroComBAT 1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.2.1',
+        VERSION:     '1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,8 +25,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/bizstyle.js"></script>
-    <link rel="top" title="AeroComBAT 0.2.1 documentation" href="#" />
-    <link rel="next" title="The FEM Interface Module" href="FEM.html" />
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="#" />
+    <link rel="next" title="AeroComBAT Tutorials" href="tutorials.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <!--[if lt IE 9]>
     <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
@@ -43,22 +43,29 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="FEM.html" title="The FEM Interface Module"
+          <a href="tutorials.html" title="AeroComBAT Tutorials"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="#">AeroComBAT 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to AeroComBAT&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#">Welcome to AeroComBAT&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#aerocombat-introduction">AeroComBAT Introduction</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#version-1-0">Version 1.0</a></li>
+<li><a class="reference internal" href="#installation-instructions">Installation Instructions</a></li>
+<li><a class="reference internal" href="#tutorials">Tutorials</a></li>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents:</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
   <h4>Next topic</h4>
-  <p class="topless"><a href="FEM.html"
-                        title="next chapter">The FEM Interface Module</a></p>
+  <p class="topless"><a href="tutorials.html"
+                        title="next chapter">AeroComBAT Tutorials</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -89,17 +96,89 @@
             
   <div class="section" id="welcome-to-aerocombat-s-documentation">
 <h1>Welcome to AeroComBAT&#8217;s documentation!<a class="headerlink" href="#welcome-to-aerocombat-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
+<p>AeroComBAT is a python API for composite, aeroelastic structures. The physics
+of this package have been heavily verified against codes such as NABSA, VABS,
+BECAS, and NX NASTRAN.</p>
+<div class="section" id="aerocombat-introduction">
+<h2>AeroComBAT Introduction<a class="headerlink" href="#aerocombat-introduction" title="Permalink to this headline">¶</a></h2>
+<p>AeroComBAT (Aeroelastic Composite Beam Analysis Tool) is a python API intended
+to allow users to efficiently models composite beam structures.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Authors:</th><td class="field-body">Ben Names</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Version:</th><td class="field-body">1.0 of 2016/04/16</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="version-1-0">
+<h1>Version 1.0<a class="headerlink" href="#version-1-0" title="Permalink to this headline">¶</a></h1>
+<p><strong>Capabilities</strong></p>
+<ul>
+<li><p class="first">Simple classical lamination theory analysis</p>
+</li>
+<li><p class="first">Cross-sectional analysis of composite beams</p>
+</li>
+<li><dl class="first docutils">
+<dt>3D Composite Timoshenko (shear deformable) beam analysis</dt>
+<dd><ul class="first last simple">
+<li>Linear static analysis</li>
+<li>Normal mode analysis</li>
+<li>Dynamic Aeroelastic Stability (Flutter) Analysis</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="installation-instructions">
+<h1>Installation Instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
+<p>First of all it is strongly recomended that the user first install the Anaconda
+python distribution from Continuum analytics <a class="reference external" href="https://www.continuum.io/">here</a>.</p>
+<p>Ensure that once this is installed, numpy and numba are installed. Finally,
+in the command prompt or terminal, run:</p>
+<p>Distributed load function example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">conda</span> <span class="n">install</span> <span class="n">mayavi</span>
+</pre></div>
+</div>
+<p>Mayavi is the 3D visualization engine currently used by AeroComBAT. Note that
+in some cases installing mayavi has been found to downgrade numpy. This is not
+necessary, so try to update you numpy installation.</p>
+</div>
+<div class="section" id="tutorials">
+<h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
+<p>For for AeroComBAT Tutorials, see <a class="reference external" href="tutorials.html">AeroComBAT Tutorials</a>.</p>
+</div>
+<div class="section" id="table-of-contents">
+<h1>Table of Contents:<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="FEM.html">The FEM Interface Module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="FEM.html#model">MODEL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">AeroComBAT Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#tutorial-1-material-library-and-classical-lamination-theory">Tutorial 1 - Material Library and Classical Lamination Theory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#tutorial-2-cquadx-and-airfoil-classes">Tutorial 2 - CQUADX and Airfoil Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#tutorial-3-cross-section-meshing-and-analysis">Tutorial 3 - Cross-Section Meshing and Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#tutorial-4-using-superbeams-to-conduct-simple-beam-analysis">Tutorial 4 - Using Superbeams to Conduct Simple Beam Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#tutorial-5-creating-a-wing-and-conducting-a-flutter-analysis">Tutorial 5 - Creating a Wing and Conducting a Flutter Analysis</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="structures.html">The Structures Module</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="FEM.html">FEM Interface Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="FEM.html#model">MODEL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FEM.html#load-set">LOAD SET</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FEM.html#flutter-point">FLUTTER POINT</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="AircraftParts.html">Aircraft Parts Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="AircraftParts.html#wing">Wing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="structures.html">Structures Module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#node">NODE</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#material">MATERIAL</a></li>
-<li class="toctree-l2"><a class="reference internal" href="structures.html#cquad4">CQUAD4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="structures.html#cquadx">CQUADX</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#material-library">MATERIAL LIBRARY</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#ply">PLY</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#laminate">LAMINATE</a></li>
@@ -108,6 +187,14 @@
 <li class="toctree-l2"><a class="reference internal" href="structures.html#timoshenko-beam">TIMOSHENKO BEAM</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#super-beam">SUPER-BEAM</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structures.html#wing-section">WING SECTION</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="aerodynamics.html">Aerodynamics Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="aerodynamics.html#doublet-lattice-kernel-function">DOUBLET-LATTICE KERNEL FUNCTION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aerodynamics.html#doublet-lattice-aic-method">DOUBLET-LATTICE AIC METHOD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aerodynamics.html#airfoil">AIRFOIL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aerodynamics.html#cquada">CQUADA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aerodynamics.html#caero1">CAERO1</a></li>
 </ul>
 </li>
 </ul>
@@ -138,13 +225,13 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="FEM.html" title="The FEM Interface Module"
+          <a href="tutorials.html" title="AeroComBAT Tutorials"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">AeroComBAT 0.2.1 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="#">AeroComBAT 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2015, Ben Names.
+        &copy; Copyright 2016, Ben Names.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>

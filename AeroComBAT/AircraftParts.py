@@ -1,16 +1,37 @@
+# AircraftParts.py
+# Author: Ben Names
+"""
+This module contains a library of classes devoted to modeling aircraft parts.
+
+The main purpose of this library is to model various types of aircraft parts.
+Currently only wing objects are suported, however in the future it is possible
+that fuselages as well as other parts will be added.
+
+:SUMARRY OF THE CLASSES:
+
+- `Wing`: Creates a wing aircraft. This wing is capable of modeling the
+    structures of the aircraft wing as well as the aerodynamics. The structures
+    are modeled with a combination of beam models currently, however it is
+    likely that Ritz method laminates will also incorporated for buckling
+    prediction purposes. The aerodynamics are currently modeled with potential
+    flow doublet panels.
+
+"""
+__docformat__ = 'restructuredtext'
 # =============================================================================
-# HEPHAESTUS PYTHON MODULES
+# AeroComBAT MODULES
 # =============================================================================
 from Structures import WingSection, Laminate
 from Aerodynamics import CAERO1
 # =============================================================================
-# IMPORT SCIPY MODULES
+# IMPORT ANACONDA ASSOCIATED MODULES
 # =============================================================================
 import numpy as np
 import mayavi.mlab as mlab
 # =============================================================================
-# WING OPTIMIZATION CLASS
+# DEFINE AeroComBAT AIRCRAFT PART CLASSES
 # =============================================================================
+
 class Wing:
     def __init__(self,PID,p1,p2,croot,ctip,x0_spar,xf_spar,Y_rib,n_ply,m_ply,mat_lib,**kwargs):
         """Creates a wing object.
@@ -19,6 +40,8 @@ class Wing:
         aerodynamic models.
         
         :Args:
+        
+        - `PID (int)`: The integer ID linked to this part.
         - `p1 (1x3 np.array[float])`: The initial x,y,z coordinates of the wing.
         - `p2 (1x3 np.array[float]`: The final x,y,z coordinates of the wing.
         - `croot (float)`: The root chord length.
@@ -30,15 +53,17 @@ class Wing:
         - `Y_rib (1xN Array[float])`: The non-dimensional rib locations within
             the wing. This dimension is primarily used to create wing-sections
             which primarily define the buckling span's for laminate objects.
-        - `n_ply (1xM Array[int])`: An array of integer's specifying the number
+        - `n_ply (1xM Array[int])`: An array of integers specifying the number
             plies to be used in the model. Each integer refers to the number of
             plies to be used for at a given orientation.
-        - `m_ply (1xM Array[int])`: An array of integer's specifying the
+        - `m_ply (1xM Array[int])`: An array of integers specifying the
             material ID to be used for the corresponding number of plies in
             n_ply at a given orientation.
+        - `th_ply (1xM Array[int])`: An array of floats specifying the
+            degree orientations of the plies used by the lamiantes in the
+            model.
         - `mat_lib (obj)`: A material library containing all of the material
             objets to be used in the model.
-        - `PID (int)`: The integer ID for the wing part object.
         - `name (str)`: The name of the airfoil section to be used for cross
             section generation.
         - `wing_SNID (int)`: The first node ID associated with the wing.
@@ -54,6 +79,18 @@ class Wing:
         - `meshSize (float)`: The maximum aspect ratio a 2D element may have in
             the cross-section.
         - `ref_ax (str)`: The reference axis to be loaded in the wing.
+        - `chordVec (1x3 np.array[float])`: This numpy array is used to orient
+            the cross-section in 3D space. It corresponds to the local unit x-
+            vector in the cross-section, expressed in the global frame.
+        - `typeXSect (str)`: The type of cross-section to be used by the wing
+            structure. Currently the suported typed are 'boxbeam', 'laminate',
+            and 'rectBoxBeam'. See the meshing class in the structures module
+            for more details.
+        
+        :Returns:
+        
+        - None
+        
         """
         #The type of the object
         self.type='wing'
@@ -123,6 +160,45 @@ class Wing:
             SXID = max(self.wingSects[i].XIDs)+1
             #self.model.addElements(tmpWingSect.SuperBeams)
     def addLiftingSurface(self,SID,x1,x2,x3,x4,nspan,nchord):
+        """Adds a potential flow lifting surface to the model.
+        
+        This method adds a potential flow panel aerodynamic model to the wing
+        part. The x1,x2,x3, and x4 points correspond to the root leading edge,
+        root trailing edge, tip trailing edge, and tip leading edge of the wing
+        respectively. Currently the only suported types of panels are doublet-
+        lattice panels to be used for unsteady aerodynamic models.
+        
+        :Args:
+        
+        - `SID (int)`: The lifting surface integer identifier corresponding to
+            the lifting surface.
+        - `x1 (1x3 numpy array)`: The point in 3D space corresponding to the
+            root leading edge point of the lifting surface.
+        - `x2 (1x3 numpy array)`: The point in 3D space corresponding to the
+            root trailing edge point of the lifting surface.
+        - `x3 (1x3 numpy array)`: The point in 3D space corresponding to the
+            tip trailing edge point of the lifting surface.
+        - `x4 (1x3 numpy array)`: The point in 3D space corresponding to the
+            tip leading edge point of the lifting surface.
+        - `nspan (int)`: The number of boxes to be used in the spanwise
+            direction.
+        - `nchord (int)`: The number of boxes to be used in the chordwise
+            direction.
+        
+        :Returns:
+        
+        - None
+        
+        .. Note:: Mutliple surfaces could be added to the wing part.
+        
+        .. Warning:: In order to use the doublet lattice method, the chord
+            lines of the lifting surface must run in the x-direction, and there
+            can be no geometric angles of attack present. The geometry of a
+            general wing can be seen in the figure below:
+            
+        .. image:: images/DoubletLatticeWing.png
+            :align: center
+        """
         # Create the lifting surface
         tmpLiftSurf = CAERO1(SID,x1,x2,x3,x4,nspan,nchord)
         # Create a temporary dictionary of CQUADA's to iterate through later
@@ -187,6 +263,26 @@ class Wing:
             #panel.DOF[-1] = None
             print('CQUADA %d' %(PANID))
     def plotRigidWing(self,**kwargs):
+        """Plots the rigid wing.
+        
+        This method plots the rigid model of the wing. This includes the
+        reference axis of the beams, the cross-sections of the beams, and the
+        lifting surfaces that make up the wing. This is an excellent check to
+        perform before adding the part to a FEM model.
+        
+        :Args:
+        
+        - `figName (str)`: The name of the MayaVi figure. 'Rigid Wing' by
+            default.
+        - `numXSects (int)`: The number of cross-sections that each wing
+            section will display. By default it is 2.
+        - `color (1x3 tuple(int))`: This is a length 3 tuple to be used as the
+            color of the beam reference axes. Black by default.
+        
+        :Returns:
+        
+        - None
+        """
         figName = kwargs.pop('figName','Rigid Wing')
         # Chose the color of the beam, defaults to black, accepts tuple
         clr = kwargs.pop('color',(0,0,0))
@@ -199,98 +295,3 @@ class Wing:
         if len(self.liftingSurfaces)>0:
             for SID, surface in self.liftingSurfaces.iteritems():
                 surface.plotLiftingSurface(figName=figName)
-    '''def addConstraint(self,NID,const):
-        #INPUTS:
-        #nid - The node you want to constrain
-        #const - a numpy array containing integers from 1-6 or a string description.
-        #For example, to pin a beam in all three directions, the const array would look like:
-        # const = np.array([1,2,3],dtype=int) = 'pin'
-        #A fully fixed node constraint would look like:
-        # const = np.array([1,2,3,4,5,6],dtype=int) = 'fix'
-        self.model.applyConstraints(NID,const)
-    def applyLoads(self,**kwargs):
-        #INPUTS
-        #f - a function taking the form of:
-        #def f(x):
-        #   vx = (1/10)*10*x[2]**2-7*x[2]-2.1
-        #   vy = 10*x[2]**2-7*x[2]
-        #   pz = 0
-        #   tz = (10*x[2]**2-7*x[2])/10+3*x[0]**2
-        #   return np.array([vx,vy,pz,tz])
-        #This is in other words a function describing the distributed loads in
-        #beam as a function of GLOBAL position.
-        #
-        #eid - The element id that the distributed loads are to be applied to.
-        #
-        #F - a dictionary taking the form of:
-        #F[node id] = np.array([Qx,Qy,P,Mx,My,T])
-        #TODO: Make it so that local CSYS can be used for load applications. This
-        #Should allow for translation and rotations.
-        # Get the distributed load function
-        f = kwargs.pop('f',None)
-        F = kwargs.pop('F',None)
-        eid = kwargs.pop('eid',[])
-        allElems = kwargs.pop('allElems',False)
-        if f==None:
-            self.model.applyLoads(eid=eid,F=F,allElems=allElems)
-        else:
-            self.model.applyLoads(eid=eid,f=f,F=F,allElems=allElems)
-        
-    def resetPointLoads(self):
-        self.model.resetPointLoads()
-    def staticAnalysis(self,resetPointLoads=False,analysis_name='analysis_untitled'):
-        # Reset any results data contained within the cross-section objects
-        # such as curvatures at nodes and stresses/strains within planer
-        # xsection elements
-        for wingSect in self.wingSects:
-            for sbeam in wingSect.SuperBeams:
-                sbeam.xsect.resetResults()
-        # Reset the point loads in the model
-        if resetPointLoads:
-            self.model.resetPointLoads()
-        # Run the FEM static analysis
-        self.model.staticAnalysis(analysis_name=analysis_name)
-    def normalModesAnalysis(self,analysis_name='analysis_untitled'):
-        # Run normal modes analysis
-        self.model.normalModesAnalysis(analysis_name=analysis_name)
-    def plotRigidWing(self,**kwargs):
-        figName = kwargs.pop('figName','Rigid Wing')
-        # Select the plotting environment you'd like to choose
-        environment = kwargs.pop('environment','mayavi')
-        # Chose the color of the beam, defaults to black, accepts tuple
-        clr = kwargs.pop('color',(0,0,0))
-        # Chose the number of cross-sections to be plotted. By default this is 2
-        # One at the beggining and one at the end of the super beam
-        numXSects = kwargs.pop('numXSects',2)
-        if environment=='mayavi':
-            mlab.figure(figure=figName)
-            for sects in self.wingSects:
-                sects.plotRigid(figName=figName,clr=clr,numXSects=numXSects)
-    def plotDeformedWing(self,**kwargs):
-        analysis_name = kwargs.pop('analysis_name','analysis_untitled')
-        figName = kwargs.pop('figName','Deformed Wing')
-        # Select the plotting environment you'd like to choose
-        environment = kwargs.pop('environment','mayavi')
-        # Chose the color of the beam, defaults to black, accepts tuple
-        clr = kwargs.pop('color',(0,0,0))
-        # Chose the number of cross-sections to be plotted. By default this is 2
-        # One at the beggining and one at the end of the super beam
-        numXSects = kwargs.pop('numXSects',2)
-        # Show a contour
-        contour = kwargs.pop('contour','VonMis')
-        # Stress Limits
-        contLim = kwargs.pop('contLim',[0.,1.])
-        # Establish the warping scaling factor
-        warpScale = kwargs.pop('warpScale',1)
-        # Establish Beam displacement scaling
-        displScale = kwargs.pop('displScale',1)
-        # Which mode to plot. Note by default mode=0 implies not plotting an
-        # eigenvalue solution.
-        mode = kwargs.pop('mode',0)
-        if environment=='mayavi':
-            mlab.figure(figure=figName)
-            for sects in self.wingSects:
-                sects.plotDispl(figName=figName,clr=clr,numXSects=numXSects,\
-                    contLim=contLim,warpScale=warpScale,displScale=displScale,\
-                    contour=contour,analysis_name=analysis_name,mode=mode)
-        mlab.colorbar()'''

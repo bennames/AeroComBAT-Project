@@ -5,14 +5,24 @@
 
 Welcome to AeroComBAT's documentation!
 ======================================
+AeroComBAT is a python API for composite, aeroelastic structures. The physics
+of this package have been heavily verified against codes such as NABSA, VABS,
+BECAS, and NX NASTRAN.
 
-Contents:
+.. include:: ../../README.rst
+
+Table of Contents:
+=======================
 
 .. toctree::
    :maxdepth: 3
 
+   tutorials
    FEM
+   AircraftParts
    structures
+   aerodynamics
+
 
 Indices and tables
 ==================

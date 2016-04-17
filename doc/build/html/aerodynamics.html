@@ -1,0 +1,1142 @@
+
+
+<!doctype html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Aerodynamics Module &mdash; AeroComBAT 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="top" title="AeroComBAT 1.0 documentation" href="index.html" />
+    <link rel="prev" title="Structures Module" href="structures.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="structures.html" title="Structures Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Aerodynamics Module</a><ul>
+<li><a class="reference internal" href="#doublet-lattice-kernel-function">DOUBLET-LATTICE KERNEL FUNCTION</a></li>
+<li><a class="reference internal" href="#doublet-lattice-aic-method">DOUBLET-LATTICE AIC METHOD</a></li>
+<li><a class="reference internal" href="#airfoil">AIRFOIL</a></li>
+<li><a class="reference internal" href="#cquada">CQUADA</a></li>
+<li><a class="reference internal" href="#caero1">CAERO1</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="structures.html"
+                        title="previous chapter">Structures Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/aerodynamics.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-AeroComBAT.Aerodynamics">
+<span id="aerodynamics-module"></span><h1>Aerodynamics Module<a class="headerlink" href="#module-AeroComBAT.Aerodynamics" title="Permalink to this headline">¶</a></h1>
+<p>This module contains a library of classes devoted to modeling aircraft parts.</p>
+<p>The main purpose of this library is to model various types of aircraft parts.
+Currently only wing objects are suported, however in the future it is possible
+that fuselages as well as other parts will be added.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">SUMARRY OF THE METHODS:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>K</cite>: The kernel function used in the doublet-lattice method to relate</dt>
+<dd><p class="first last">downwashes to panel pressures.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>calcAIC</cite>: Provided several vectors of numbers as well as a reduced frequency</dt>
+<dd><p class="first last">and mach number, this method calculates a matrix of AIC&#8217;s using doublet-
+lattice method elementary solutions. This method is used by the FEM class
+flutterAnalysis method.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">SUMARRY OF THE CLASSES:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>Airfoil</cite>: Primarily used for the generation of structural cross-sectional</dt>
+<dd><p class="first last">meshes, this class represent an airfoil. This class could be expanded in
+future to use simple 2D panel methods for an airfoil of arbitrary shape.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>CQUADA</cite>: This class creates quadrilateral panels intended to be used for</dt>
+<dd><p class="first last">potential flow panel methods. Currently it is used for the unsteady
+doublet-lattice panels.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>CAERO1</cite>: This class is used to generate a lattice of CQUADA panels.</p>
+</li>
+</ul>
+<div class="section" id="doublet-lattice-kernel-function">
+<h2>DOUBLET-LATTICE KERNEL FUNCTION<a class="headerlink" href="#doublet-lattice-kernel-function" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="AeroComBAT.Aerodynamics.K">
+<code class="descclassname">AeroComBAT.Aerodynamics.</code><code class="descname">K</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates the doublet-lattice kernel function.</p>
+<p>Provided several geometric parameters about the sending and recieving
+panels, this method evaluates the kernel function which relates the
+pressure on one panel to the downwash induced at another panel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>Xr (1x3 np.array[float])</cite>: The location of the recieving point.</p>
+</li>
+<li><p class="first"><cite>Xs (1x3 np.array[float])</cite>: The location of the sending point.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>gamma_r (1x3 np.array[float])</cite>: The dihedral of the panel corresponding</dt>
+<dd><p class="first last">to the recieving point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>gamma_s (1x3 np.array[float])</cite>: The dihedral of the panel corresponding</dt>
+<dd><p class="first last">to the sending point.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>M (float)</cite>: The mach number</p>
+</li>
+<li><p class="first"><cite>br (float)</cite>: The reference semi-chord</p>
+</li>
+<li><p class="first"><cite>kr (float)</cite>: The reduced frequency</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>r1 (float)</cite>: The scalar distance between the sending point and the</dt>
+<dd><p class="first last">recieving point.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>Kbar (complex128)</cite>: The evaluation of the unsteady kernel function which</dt>
+<dd><p class="first last">is complex in nature.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+<div class="section" id="doublet-lattice-aic-method">
+<h2>DOUBLET-LATTICE AIC METHOD<a class="headerlink" href="#doublet-lattice-aic-method" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="AeroComBAT.Aerodynamics.calcAIC">
+<code class="descclassname">AeroComBAT.Aerodynamics.</code><code class="descname">calcAIC</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#calcAIC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.calcAIC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the doublet-lattice AIC&#8217;s.</p>
+<p>Provided the geometry of all of the doublet-lattice panels, this method
+calculates the AIC matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>M (float)</cite>: The mach number.</p>
+</li>
+<li><p class="first"><cite>kr (float)</cite>: The reduced frequency.</p>
+</li>
+<li><p class="first"><cite>br (float)</cite>: The reference semi-chord.</p>
+</li>
+<li><p class="first"><cite>delta_x_vec (1xN array[float]</cite>: An array of chord length of the panels.</p>
+</li>
+<li><p class="first"><cite>sweep_vec (1xN array[float])</cite>: An array of sweep angles of the panels.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>l_vec (1xN array[float])</cite>: An array of average doublet line lengths of</dt>
+<dd><p class="first last">the panels.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>dihedral_vec (1xN array[float])</cite>: An array of dihedral angles of the</dt>
+<dd><p class="first last">panels.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xr_vec (Nx3 np.array[float])</cite>: A matrix of recieving points, where a row</dt>
+<dd><p class="first last">are the 3D coordinates of the point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xi_vec (Nx3 np.array[float])</cite>: A matrix of inboard sending points, where</dt>
+<dd><p class="first last">a row are the 3D coordinates of the point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xc_vec (Nx3 np.array[float])</cite>: A matrix of center sending points, where</dt>
+<dd><p class="first last">a row are the 3D coordinates of the point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xo_vec (Nx3 np.array[float])</cite>: A matrix of outboard sending points,</dt>
+<dd><p class="first last">where a row are the 3D coordinates of the point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>symxz (bool)</cite>: A boolean operater intended to determine whether or not</dt>
+<dd><p class="first last">a reflection of the panels should be considered over the xz-plane.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>D (NPANxNPAN np.array[complex128])</cite>: The matrix which relates pressures</dt>
+<dd><p class="first last">over panels to induced velocities over those panels. In more simple
+terms, this is the inverse of the desired AIC matrix.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+<div class="section" id="airfoil">
+<h2>AIRFOIL<a class="headerlink" href="#airfoil" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.Aerodynamics.Airfoil">
+<em class="property">class </em><code class="descclassname">AeroComBAT.Aerodynamics.</code><code class="descname">Airfoil</code><span class="sig-paren">(</span><em>c</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#Airfoil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.Airfoil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an airfoil object.</p>
+<p>This class creates an airfoil object. Currently this class is primarily
+used in the generation of cross-sectional meshes. Currently only NACA 4
+series arfoil and rectangular boxes are supported.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>c (float)</cite>: The chord length of the airfoil.</p>
+</li>
+<li><p class="first"><cite>t (float)</cite>: The max percent thickness of the airfoil.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>p (float)</cite>: The location of the max camber of the airfoil, in 10%</dt>
+<dd><p class="first last">increments.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>m (float)</cite>: The max camber of the airfoil as a percent of the chord.</p>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>points</cite>: Generates the x and y upper and lower coordinates of the</dt>
+<dd><p class="first last">airfoil.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.Airfoil.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>c</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#Airfoil.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.Airfoil.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Airfoil object constructor.</p>
+<p>Initializes the airfoil object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>c (float)</cite>: The chord length of the airfoil.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>name (str)</cite>: The name of the airfoil section. This can either be </dt>
+<dd><p class="first last">a &#8216;NACAXXXX&#8217; airfoil or &#8216;box&#8217; which signifies the OML is a
+rectangle.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.Airfoil.points">
+<code class="descname">points</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#Airfoil.points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.Airfoil.points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates upper and lower airfoil curves.</p>
+<p>This method will generate the x and y coordinates for the upper and
+lower airfoil surfaces provided the non-dimensional array of points x.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>x (1xN np.array[float])</cite>: An array of floats for which the upper and</dt>
+<dd><p class="first last">lower airfoil curves should be generated.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>xu (1xN np.array[float])</cite>: The upper x-coordinates of the curve.</li>
+<li><cite>yu (1xN np.array[float])</cite>: The upper y-coordinates of the curve.</li>
+<li><cite>xl (1xN np.array[float])</cite>: The lower x-coordinates of the curve.</li>
+<li><cite>yl (1xN np.array[float])</cite>: The lower y-coordinates of the curve.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.Airfoil.printSummary">
+<code class="descname">printSummary</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#Airfoil.printSummary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.Airfoil.printSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method for printing a summary of the airfoil object.</p>
+<p>Prints the airfoil chord length as well as airfoil name.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>(str): Prints the tabulated chord length and name of the airfoil</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="cquada">
+<h2>CQUADA<a class="headerlink" href="#cquada" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.Aerodynamics.CQUADA">
+<em class="property">class </em><code class="descclassname">AeroComBAT.Aerodynamics.</code><code class="descname">CQUADA</code><span class="sig-paren">(</span><em>PANID</em>, <em>xs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a CQUADA aerodynamic panel.</p>
+<p>This CQUADA panel object is used for the unsteady aerodynamic doublet-
+lattice method currently, although it could likely easily be extended to
+support the vortex lattice method as well. The geometry of a generic panel
+can be seen in the figure below.</p>
+<img alt="_images/DoubletLatticePanel.png" class="align-center" src="_images/DoubletLatticePanel.png" />
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>type (str)</cite>: The type of object.</p>
+</li>
+<li><p class="first"><cite>PANID (int)</cite>: The integer ID linked with the panel.</p>
+</li>
+<li><p class="first"><cite>xs (1x4 np.array[float])</cite>: The x coordinates of the panel.</p>
+</li>
+<li><p class="first"><cite>ys (1x4 np.array[float])</cite>: The y coordinates of the panel.</p>
+</li>
+<li><p class="first"><cite>zs (1x4 np.array[float])</cite>: The z coordinates of the panel.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>DOF (dict[NID,factor])</cite>: This dictionary is for connecting the movement</dt>
+<dd><p class="first last">of the panel to the movement of an associated structure. Since a
+panel&#8217;s control point could be between two nodes (in the middle of an
+element), the position of the panel can interpolated using a finite
+element formulation. The NID&#8217;s link the movement of the panel to the
+movement of a corresponding node. The factor allows for a finite
+element interpolation.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>Area (float)</cite>: The area of the panel.</p>
+</li>
+<li><p class="first"><cite>sweep (float)</cite>: The average sweep of the panel&#8217;s doublet line.</p>
+</li>
+<li><p class="first"><cite>delta_x (float)</cite>: The average chord line of the panel.</p>
+</li>
+<li><p class="first"><cite>l (float)</cite>: The length of the panel&#8217;s doublet line.</p>
+</li>
+<li><p class="first"><cite>dihedral (float)</cite>: The dihedral of the panel.</p>
+</li>
+<li><p class="first"><cite>Xr (1x3 np.array[float])</cite>: The coordiantes of the panel&#8217;s sending point.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xi (1x3 np.array[float])</cite>: The coordinates of the panel&#8217;s inboard</dt>
+<dd><p class="first last">sending point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xc (1x3 np.array[float])</cite>: The coordinates of the panel&#8217;s center</dt>
+<dd><p class="first last">sending point.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>Xo (1x3 np.array[float])</cite>: The coordinates of the panel&#8217;s outboard</dt>
+<dd><p class="first last">sending point.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>x</cite>: Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns corresponding the x coordinates.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>y</cite>: Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns corresponding the y coordinates.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>z</cite>: Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns corresponding the z coordinates.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>J</cite>:Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns the jacobian matrix at that point. This
+method is primarily used to fascilitate the calculation of the panels
+area.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>printSummary</cite>: Prints a summary of the panel.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The ordering of the xs, ys, and zs arrays should be ordered in a</p>
+</div>
+<p>finite element convention. The first point refers to the root trailing edge
+point, followed by the tip trailling edge, then the tip leading edge, then
+root leading edge.</p>
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CQUADA.J">
+<code class="descname">J</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA.J"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA.J" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the jacobian at a point in the element.</p>
+<p>This method calculates the jacobian at a local point within the panel
+provided the master coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>Jmat (3x3 np.array[float])</cite>: The stress-resutlant transformation</dt>
+<dd><p class="first last">array.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CQUADA.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>PANID</em>, <em>xs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the panel.</p>
+<p>This method initializes the panel, including generating many of the
+geometric properties required for the doublet lattice method such as
+Xr, Xi, etc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>PANID (int)</cite>: The integer ID associated with the panel.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>xs (1x4 array[1x3 np.array[float]])</cite>: The coordinates of the four</dt>
+<dd><p class="first last">corner points of the elements.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CQUADA.printSummary">
+<code class="descname">printSummary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA.printSummary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA.printSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method for printing a summary of the CQUADA panel.</p>
+<p>Prints out a tabulated information about the panel such as it&#8217;s panel
+ID, and the coordinates of it&#8217;s four corner points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>summary (str)</cite>: The summary of the CQUADA attributes.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CQUADA.x">
+<code class="descname">x</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA.x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA.x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the x-coordinate within the panel.</p>
+<p>Calculates the x-coordinate on the panel provided the desired master
+coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>x (float)</cite>: The x-coordinate within the element.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CQUADA.y">
+<code class="descname">y</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA.y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA.y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the y-coordinate within the panel.</p>
+<p>Calculates the y-coordinate on the panel provided the desired master
+coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>y (float)</cite>: The y-coordinate within the element.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CQUADA.z">
+<code class="descname">z</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CQUADA.z"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CQUADA.z" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the z-coordinate within the panel.</p>
+<p>Calculates the z-coordinate on the panel provided the desired master
+coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>z (float)</cite>: The z-coordinate within the element.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="caero1">
+<h2>CAERO1<a class="headerlink" href="#caero1" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="AeroComBAT.Aerodynamics.CAERO1">
+<em class="property">class </em><code class="descclassname">AeroComBAT.Aerodynamics.</code><code class="descname">CAERO1</code><span class="sig-paren">(</span><em>SID</em>, <em>x1</em>, <em>x2</em>, <em>x3</em>, <em>x4</em>, <em>nspan</em>, <em>nchord</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents an aerodynamic surface.</p>
+<p>This CAERO1 object represents an aerodynamic lifting surface to be modeled
+using the doublet-lattice method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>type (str)</cite>: The type of object.</p>
+</li>
+<li><p class="first"><cite>SID (int)</cite>: The integer ID linked with the surface.</p>
+</li>
+<li><p class="first"><cite>xs (1x4 np.array[float])</cite>: The x coordinates of the panel.</p>
+</li>
+<li><p class="first"><cite>ys (1x4 np.array[float])</cite>: The y coordinates of the panel.</p>
+</li>
+<li><p class="first"><cite>zs (1x4 np.array[float])</cite>: The z coordinates of the panel.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>mesh ((NPAN+1)x(NPAN+1) np.array[int])</cite>: The panel ID&#8217;s in the relative</dt>
+<dd><p class="first last">positions of their corresponding panels.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>xmesh ((NPAN+1)x(NPAN+1) np.array[float])</cite>: The x-coordinates of the</dt>
+<dd><p class="first last">lifting surface nodes.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>ymesh ((NPAN+1)x(NPAN+1) np.array[float])</cite>: The y-coordinates of the</dt>
+<dd><p class="first last">lifting surface nodes.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>zmesh ((NPAN+1)x(NPAN+1) np.array[float])</cite>: The z-coordinates of the</dt>
+<dd><p class="first last">lifting surface nodes.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>CQUADAs (dict[PANID, CQUADA])</cite>: A dictionary mapping panel ID&#8217;s to</dt>
+<dd><p class="first last">CQUADA panel objects.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Methods:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><dl class="first docutils">
+<dt><cite>x</cite>: Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns corresponding the x coordinates.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>y</cite>: Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns corresponding the y coordinates.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>z</cite>: Provided the non-dimensional coordinates eta and xi which go from -1</dt>
+<dd><p class="first last">to 1, this method returns corresponding the z coordinates.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><cite>plotLiftingSurface</cite>: Plots the lifting surface in 3D space. Useful for</dt>
+<dd><p class="first last">debugging purposes.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><cite>printSummary</cite>: Prints a summary of the panel.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The ordering of the xs, ys, and zs arrays should be ordered in a</p>
+</div>
+<p>finite element convention. The first point refers to the root leading edge
+point, followed by the root trailling edge, then the tip trailing edge,
+then tip leading edge.</p>
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CAERO1.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>SID</em>, <em>x1</em>, <em>x2</em>, <em>x3</em>, <em>x4</em>, <em>nspan</em>, <em>nchord</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for the CAERO1 lifting surface object.</p>
+<p>Provided several geometric parameters, this method initializes and
+discretizes a lifting surface using CQUADA panel objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p class="first"><cite>SID (int)</cite>: The integer ID for the surface.</p>
+</li>
+<li><p class="first"><cite>x1 (1x3 np.array[float])</cite>: The coordinate of the root leading edge.</p>
+</li>
+<li><p class="first"><cite>x2 (1x3 np.array[float])</cite>: The coordinate of the root trailing edge.</p>
+</li>
+<li><p class="first"><cite>x3 (1x3 np.array[float])</cite>: The coordinate of the tip trailing edge.</p>
+</li>
+<li><p class="first"><cite>x4 (1x3 np.array[float])</cite>: The coordinate of the tip leading edge.</p>
+</li>
+<li><p class="first"><cite>nspan (int)</cite>: The number of panels to run in the spanwise direction.</p>
+</li>
+<li><dl class="first docutils">
+<dt><cite>nchord (int)</cite>: The number of panels to run in the chordwise</dt>
+<dd><p class="first last">direction.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CAERO1.plotLiftingSurface">
+<code class="descname">plotLiftingSurface</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1.plotLiftingSurface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1.plotLiftingSurface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the lifting surface using the MayaVi environment.</p>
+<p>This method plots the lifting surface using the MayaVi engine. It is
+most useful for debugging models, allowing the user to verify that the
+wing they thought they generated is actually what was generated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>figName (str)</cite>: The name of the figure</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>(figure)</cite>: MayaVi Figure of the laminate.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CAERO1.printSummary">
+<code class="descname">printSummary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1.printSummary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1.printSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method for printing a summary of the CAERO1 element.</p>
+<p>Prints out the surface ID, as well as the number of chordwise and
+spanwise panels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>None</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>summary (str)</cite>: A summary of the CAERO1 surface attributes.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CAERO1.x">
+<code class="descname">x</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1.x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1.x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the x-coordinate within the lifting surface.</p>
+<p>Calculates the x-coordinate within the lifting surface provided the
+desired master coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>x (float)</cite>: The x-coordinate within the element.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CAERO1.y">
+<code class="descname">y</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1.y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1.y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the y-coordinate within the lifting surface.</p>
+<p>Calculates the y-coordinate within the lifting surface provided the
+desired master coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>y (float)</cite>: The y-coordinate within the element.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="AeroComBAT.Aerodynamics.CAERO1.z">
+<code class="descname">z</code><span class="sig-paren">(</span><em>eta</em>, <em>xi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/AeroComBAT/Aerodynamics.html#CAERO1.z"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#AeroComBAT.Aerodynamics.CAERO1.z" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the z-coordinate within the lifting surface.</p>
+<p>Calculates the z-coordinate within the lifting surface provided the
+desired master coordinates eta and xi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>eta (float)</cite>: The eta coordinate in the master coordinate domain.*</li>
+<li><cite>xi (float)</cite>: The xi coordinate in the master coordinate domain.*</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><cite>z (float)</cite>: The y-coordinate within the element.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Xi and eta can both vary between -1 and 1 respectively.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="structures.html" title="Structures Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">AeroComBAT 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Ben Names.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
