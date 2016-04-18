@@ -28,10 +28,10 @@ Installation Instructions
 First of all it is strongly recomended that the user first install the Anaconda
 python distribution from Continuum analytics `here <https://www.continuum.io/>`_.
 
-Ensure that once this is installed, numpy and numba are installed. Finally,
-in the command prompt or terminal, run:
-
-Distributed load function example:
+By installing Anaconda, you will automatically get 3 of the AeroComBAT
+dependencies, Numpy, Scipy, and Numba. The last dependency is the visualizer
+MayaVi. The easiest way to install this is with Anaconda's package management
+'conda'. To install this, simply run:
 
 .. code-block:: python
 
@@ -39,7 +39,11 @@ Distributed load function example:
 
 Mayavi is the 3D visualization engine currently used by AeroComBAT. Note that
 in some cases installing mayavi has been found to downgrade numpy. This is not
-necessary, so try to update you numpy installation.
+necessary, so try to update numpy after installing MayaVi by executing:
+
+.. code-block:: python
+
+   conda update numpy
 
 Documentation and tutorials
 ===========================
