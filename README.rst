@@ -49,4 +49,4 @@ Documentation and tutorials
 ===========================
 
 For for the AeroComBAT documentation and Tutorials,
-see the `AeroComBAT Documentation <http://aerocombat-project.readthedocs.org/>`_.
+see the `AeroComBAT Documentation <tutorials.html>`_.
