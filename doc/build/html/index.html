@@ -58,7 +58,7 @@
 </li>
 <li><a class="reference internal" href="#version-1-0">Version 1.0</a></li>
 <li><a class="reference internal" href="#installation-instructions">Installation Instructions</a></li>
-<li><a class="reference internal" href="#tutorials">Tutorials</a></li>
+<li><a class="reference internal" href="#documentation-and-tutorials">Documentation and tutorials</a></li>
 <li><a class="reference internal" href="#table-of-contents">Table of Contents:</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -139,19 +139,24 @@ to allow users to efficiently models composite beam structures.</p>
 <h1>Installation Instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
 <p>First of all it is strongly recomended that the user first install the Anaconda
 python distribution from Continuum analytics <a class="reference external" href="https://www.continuum.io/">here</a>.</p>
-<p>Ensure that once this is installed, numpy and numba are installed. Finally,
-in the command prompt or terminal, run:</p>
-<p>Distributed load function example:</p>
+<p>By installing Anaconda, you will automatically get 3 of the AeroComBAT
+dependencies, Numpy, Scipy, and Numba. The last dependency is the visualizer
+MayaVi. The easiest way to install this is with Anaconda&#8217;s package management
+&#8216;conda&#8217;. To install this, simply run:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">conda</span> <span class="n">install</span> <span class="n">mayavi</span>
 </pre></div>
 </div>
 <p>Mayavi is the 3D visualization engine currently used by AeroComBAT. Note that
 in some cases installing mayavi has been found to downgrade numpy. This is not
-necessary, so try to update you numpy installation.</p>
+necessary, so try to update numpy after installing MayaVi by executing:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">conda</span> <span class="n">update</span> <span class="n">numpy</span>
+</pre></div>
 </div>
-<div class="section" id="tutorials">
-<h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
-<p>For for AeroComBAT Tutorials, see <a class="reference external" href="tutorials.html">AeroComBAT Tutorials</a>.</p>
+</div>
+<div class="section" id="documentation-and-tutorials">
+<h1>Documentation and tutorials<a class="headerlink" href="#documentation-and-tutorials" title="Permalink to this headline">¶</a></h1>
+<p>For for the AeroComBAT documentation and Tutorials,
+see the <a class="reference external" href="http://aerocombat-project.readthedocs.org/">AeroComBAT Documentation</a>.</p>
 </div>
 <div class="section" id="table-of-contents">
 <h1>Table of Contents:<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h1>

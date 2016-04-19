@@ -67,17 +67,20 @@ to allow users to efficiently models composite beam structures.</paragraph>
         <title>Installation Instructions</title>
         <paragraph>First of all it is strongly recomended that the user first install the Anaconda
 python distribution from Continuum analytics <reference name="here" refuri="https://www.continuum.io/">here</reference><target ids="here" names="here" refuri="https://www.continuum.io/"></target>.</paragraph>
-        <paragraph>Ensure that once this is installed, numpy and numba are installed. Finally,
-in the command prompt or terminal, run:</paragraph>
-        <paragraph>Distributed load function example:</paragraph>
+        <paragraph>By installing Anaconda, you will automatically get 3 of the AeroComBAT
+dependencies, Numpy, Scipy, and Numba. The last dependency is the visualizer
+MayaVi. The easiest way to install this is with Anaconda's package management
+'conda'. To install this, simply run:</paragraph>
         <literal_block highlight_args="{}" language="python" linenos="False" xml:space="preserve">conda install mayavi</literal_block>
         <paragraph>Mayavi is the 3D visualization engine currently used by AeroComBAT. Note that
 in some cases installing mayavi has been found to downgrade numpy. This is not
-necessary, so try to update you numpy installation.</paragraph>
+necessary, so try to update numpy after installing MayaVi by executing:</paragraph>
+        <literal_block highlight_args="{}" language="python" linenos="False" xml:space="preserve">conda update numpy</literal_block>
     </section>
-    <section ids="tutorials" names="tutorials">
-        <title>Tutorials</title>
-        <paragraph>For for AeroComBAT Tutorials, see <reference name="AeroComBAT Tutorials" refuri="tutorials.html">AeroComBAT Tutorials</reference><target ids="aerocombat-tutorials" names="aerocombat\ tutorials" refuri="tutorials.html"></target>.</paragraph>
+    <section ids="documentation-and-tutorials" names="documentation\ and\ tutorials">
+        <title>Documentation and tutorials</title>
+        <paragraph>For for the AeroComBAT documentation and Tutorials,
+see the <reference name="AeroComBAT Documentation" refuri="http://aerocombat-project.readthedocs.org/">AeroComBAT Documentation</reference><target ids="aerocombat-documentation" names="aerocombat\ documentation" refuri="http://aerocombat-project.readthedocs.org/"></target>.</paragraph>
     </section>
     <section ids="table-of-contents" names="table\ of\ contents:">
         <title>Table of Contents:</title>
