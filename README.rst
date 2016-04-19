@@ -49,4 +49,4 @@ Documentation and tutorials
 ===========================
 
 For for the AeroComBAT documentation and Tutorials,
-see the `AeroComBAT Documentation <tutorials.html>`_.
+see the `AeroComBAT Documentation <http://bennames.github.io/>`_.

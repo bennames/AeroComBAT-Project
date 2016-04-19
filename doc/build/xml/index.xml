@@ -80,7 +80,7 @@ necessary, so try to update numpy after installing MayaVi by executing:</paragra
     <section ids="documentation-and-tutorials" names="documentation\ and\ tutorials">
         <title>Documentation and tutorials</title>
         <paragraph>For for the AeroComBAT documentation and Tutorials,
-see the <reference name="AeroComBAT Documentation" refuri="http://aerocombat-project.readthedocs.org/">AeroComBAT Documentation</reference><target ids="aerocombat-documentation" names="aerocombat\ documentation" refuri="http://aerocombat-project.readthedocs.org/"></target>.</paragraph>
+see the <reference name="AeroComBAT Documentation" refuri="http://bennames.github.io/">AeroComBAT Documentation</reference><target ids="aerocombat-documentation" names="aerocombat\ documentation" refuri="http://bennames.github.io/"></target>.</paragraph>
     </section>
     <section ids="table-of-contents" names="table\ of\ contents:">
         <title>Table of Contents:</title>
