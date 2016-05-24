@@ -37,6 +37,7 @@ import numpy as np
 import scipy as sci
 from tabulate import tabulate
 import mayavi.mlab as mlab
+from scipy import linalg
 from Aerodynamics import calcAIC as jAIC
 
 # =============================================================================
@@ -693,9 +694,9 @@ class Model:
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         self.assembleGlobalModel(1,LID=LID)
         # Prepare the reduced stiffness matrix for efficient LU decomposition solution
-        lu,piv = sci.linalg.lu_factor(self.Kgr)
+        lu,piv = linalg.lu_factor(self.Kgr)
         # Solve global displacements
-        u = sci.linalg.lu_solve((lu,piv),self.Fgr)
+        u = linalg.lu_solve((lu,piv),self.Fgr)
         self.ur = u
         # Generate list of constraint keys
         ckeys = sorted(list(self.const.keys()))
@@ -736,7 +737,7 @@ class Model:
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         self.staticAnalysis(LID,analysis_name=static_analysis_name)
         self.assembleGlobalModel(2,static4BuckName=static_analysis_name)
-        Fscale,umode = sci.linalg.eig(self.Kgr,-self.Kggr)
+        Fscale,umode = linalg.eig(self.Kgr,-self.Kggr)
         idx = Fscale.argsort()
         self.Fscale = np.array(Fscale[idx],dtype=float)
         umode = np.array(umode[:,idx],dtype=float)
@@ -788,7 +789,7 @@ class Model:
         # Create Analysis Name
         analysis_name = kwargs.pop('analysis_name','analysis_untitled')
         self.assembleGlobalModel(3)
-        eigs,umode = sci.linalg.eig(self.Kgr,self.Mgr)
+        eigs,umode = linalg.eig(self.Kgr,self.Mgr)
         idx = eigs.argsort()
         self.freqs = np.sqrt(np.array(eigs[idx].real,dtype=float))/(2*np.pi)
         umode = np.array(umode[:,idx],dtype=float)
@@ -895,7 +896,7 @@ class Model:
             for U, rhoRat in zip(U_vec, rho_rat):
                 # Calculate the Qaic multiplied by dynamic pressure
                 Qaicm = np.dot(nrmModes.T,np.dot(Qaic*0.5*rhoRat*rho_0*U**2,nrmModes))
-                eigs, modes = sci.linalg.eig(-np.dot(np.linalg.inv(Mgm),(1+1j*g)*Kgm-Qaicm))
+                eigs, modes = linalg.eig(-np.dot(np.linalg.inv(Mgm),(1+1j*g)*Kgm-Qaicm))
                 eigs = np.sqrt(eigs)
                 for k in range(0,len(eigs)):
                     if np.imag(eigs[k])<0:

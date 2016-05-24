@@ -45,6 +45,17 @@ necessary, so try to update numpy after installing MayaVi by executing:
 
    conda update numpy
 
+Finally, in order to install AeromComBAT, download the zip file from GitHub.
+Once downloaded, unzip the package and navigate to the folder where you
+downloaded AeroComBAT using the command prompt tool for windows or terminal for
+Mac. Once in the root AeroComBAT folder, run:
+
+.. code-block:: python
+
+   python setup.py install
+
+AeroComBAT should now be installed!
+
 Documentation and tutorials
 ===========================
 

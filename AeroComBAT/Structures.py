@@ -59,12 +59,14 @@ from Aerodynamics import Airfoil
 # =============================================================================
 import numpy as np
 import scipy as sci
+from scipy import linalg
 from tabulate import tabulate
 import mayavi.mlab as mlab
 # =============================================================================
 # IMPORT PYTHON MODULES
 # =============================================================================
 import collections as coll
+from memory_profiler import profile
 # =============================================================================
 # DEFINE AeroComBAT STRUCTURES CLASSES
 # =============================================================================
@@ -829,6 +831,667 @@ class CQUADX:
         self.Eps = np.zeros((6,4))
         # Initialize stress vectors
         self.Sig = np.zeros((6,4))
+    def getDeformed(self,**kwargs):
+        """Returns the warping displacement of the element.
+        
+        Provided an analysis has been conducted, this method
+        returns 3 2x2 np.array[float] containing the element warped
+        displacements in the local xsect CSYS.
+        
+        :Args:
+        
+        - `warpScale (float)`: A multiplicative scaling factor intended to
+            exagerate the warping displacement within the cross-section.
+            
+        :Returns:
+        
+        - `xdef (2x2 np.array[float])`: warped x-coordinates at the four corner
+            points.
+        - `ydef (2x2 np.array[float])`: warped y-coordinates at the four corner
+            points.
+        - `zdef (2x2 np.array[float])`: warped z-coordinates at the four corner
+            points.
+            
+        """
+        # Initialize the scaled value of the 
+        warpScale = kwargs.pop('warpScale',1)
+        # Initialize the full warping displacement vector
+        utmp = self.U
+        # Initialize the local node ordering
+        nodeInd = np.array([[3,2],[0,1]])
+        # Initialize the blank x-displacement 2x2 array
+        xdef = np.zeros((2,2))
+        # Initialize the blank y-displacement 2x2 array
+        ydef = np.zeros((2,2))
+        # Initialize the blank z-displacement 2x2 array
+        zdef = np.zeros((2,2))
+        # For all four points
+        for i in range(0,2):
+            for j in range(0,2):
+                # Determine the local node index
+                tmpInd = nodeInd[i,j]
+                # Determine the rigid coordinate at the point
+                x0 = self.nodes[tmpInd].x
+                # Add the warping displacement and the rigid coordinate
+                xdef[i,j] = warpScale*utmp[3*tmpInd,0]+x0[0]
+                ydef[i,j] = warpScale*utmp[3*tmpInd+1,0]+x0[1]
+                zdef[i,j] = warpScale*utmp[3*tmpInd+2,0]+x0[2]
+        # Return the 3 displacement arrays
+        return xdef,ydef,zdef
+    
+    def getStressState(self,crit='VonMis'):
+        """Returns the stress state of the element.
+        
+        Provided an analysis has been conducted, this method
+        returns a 2x2 np.array[float] containing the element the 3D stress
+        state at the four guass points by default.*
+        
+        :Args:
+        
+        - `crit (str)`: Determines what criteria is used to evaluate the 3D
+            stress state at the sample points within the element. By
+            default the Von Mises stress is returned. Currently supported
+            options include: Von Mises ('VonMis'), maximum principle stress
+            ('MaxPrin'), the minimum principle stress ('MinPrin'), and the
+            local cross-section stress states 'sig_xx' where the subindeces can
+            go from 1-3. The keyword 'none' is also an option.
+            
+        :Returns:
+        
+        - `sigData (2x2 np.array[float])`: The stress state evaluated at four
+            points within the CQUADX element.
+            
+        .. Note:: The XSect method calcWarpEffects is what determines where strain
+        and stresses are sampled. By default it samples this information at the
+        Guass points where the stress/strain will be most accurate.
+        
+        """
+        #TODO: Make this method the plotting method so that stress can be
+        # written to a file using another method.
+        #TODO: Add routines for the determining composite failure criteria
+        # such as the Tsai-Wu, Hoffman, or Puc criteria
+        # Initialize the last saved 3D stress state
+        sigState = self.Sig
+        # Initialize the local node ordering
+        nodeInd = np.array([[3,2],[0,1]])
+        # Initialize the blank stress 2x2 array
+        sigData = np.zeros((2,2))
+        # For all four points
+        for i in range(0,2):
+            for j in range(0,2):
+                # Determine the local node index
+                tmpInd = nodeInd[i,j]
+                # Determine what criteria is to be used to evaluate the stress
+                # State
+                if crit=='VonMis':
+                    sigData[i,j] = np.sqrt(0.5*((sigState[0,tmpInd]-sigState[1,tmpInd])**2+\
+                        (sigState[1,tmpInd]-sigState[5,tmpInd])**2+\
+                        (sigState[5,tmpInd]-sigState[0,tmpInd])**2+\
+                        6*(sigState[2,tmpInd]**2+sigState[3,tmpInd]**2+sigState[4,tmpInd]**2)))
+                elif crit=='MaxPrin':
+                    tmpSig = sigState[:,tmpInd]
+                    tmpSigTens = np.array([[tmpSig[0],tmpSig[2],tmpSig[3]],\
+                        [tmpSig[2],tmpSig[1],tmpSig[4]],\
+                        [tmpSig[3],tmpSig[4],tmpSig[5]]])
+                    eigs,trash = np.linalg.eig(tmpSigTens)
+                    sigData[i,j] = max(eigs)
+                elif crit=='MinPrin':
+                    tmpSig = sigState[:,tmpInd]
+                    tmpSigTens = np.array([[tmpSig[0],tmpSig[2],tmpSig[3]],\
+                        [tmpSig[2],tmpSig[1],tmpSig[4]],\
+                        [tmpSig[3],tmpSig[4],tmpSig[5]]])
+                    eigs,trash = np.linalg.eig(tmpSigTens)
+                    sigData[i,j] = min(eigs)
+                elif crit=='sig_11':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[0]
+                elif crit=='sig_22':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[1]
+                elif crit=='sig_12':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[2]
+                elif crit=='sig_13':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[3]
+                elif crit=='sig_23':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[4]
+                elif crit=='sig_33':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = tmpSig[5]
+                elif crit=='none':
+                    sigData[i,j] = 0.
+                
+                    
+        return sigData
+    
+    def printSummary(self,nodes=False):
+        """A method for printing a summary of the CQUADX element.
+        
+        Prints out a tabulated form of the element ID, as well as the node ID's
+        referenced by the element.
+        
+        :Args:
+        
+        - None
+            
+        :Returns:
+        
+        - `summary (str)`: Prints the tabulated EID, node IDs and material IDs
+            associated with the CQUADX element.
+            
+        """
+        print('CQUADX Summary:')
+        headers = ('EID','NID 1','NID 2','NID 3','NID 4','MID')
+        print(tabulate([[self.EID]+self.NIDs+[self.MID]],headers,tablefmt="fancy_grid"))
+        if nodes:
+            for node in self.nodes:
+                node.printSummary()
+    def clearXSectionMatricies(self):
+        """Clears large matricies associated with cross-sectional analaysis.
+        
+        Intended primarily as a private method but left public, this method
+        clears the matricies associated with cross-sectional analysis. This is
+        mainly done as a way of saving memory.
+        
+        """
+        self.Ae = None
+        self.Ce = None
+        self.Ee = None
+        self.Le = None
+        self.Me = None
+        self.Re = None
+# 2-D CQUADX class, can be used for cross-sectional analysis
+class CQUADX9:
+    """ Creates a linear, 2D 4 node quadrilateral element object.
+    
+    The main purpose of this class is to assist in the cross-sectional
+    analysis of a beam, however it COULD be modified to serve as an element for
+    2D plate or laminate FE analysis.
+    
+    :Attributes:
+    
+    - `type (str)`: A string designating it a CQUADX element.
+    - `xsect (bool)`: States whether the element is to be used in cross-
+        sectional analysis.
+    - `th (1x3 Array[float])`: Array containing the Euler-angles expressing how
+        the element constitutive relations should be rotated from the
+        material fiber frame to the global CSYS. In degrees.
+    - `EID (int)`: An integer identifier for the CQUADX element.
+    - `MID (int)`: An integer refrencing the material ID used for the
+        constitutive relations.
+    - `NIDs (1x4 Array[int])`: Contains the integer node identifiers for the
+        node objects used to create the element.
+    - `nodes (1x4 Array[obj])`: Contains the properly ordered nodes objects
+        used to create the element.
+    - `xs (1x4 np.array[float])`: Array containing the x-coordinates of the
+        nodes used in the element
+    - `ys (1x4 np.array[float])`: Array containing the y-coordinates of the
+        nodes used in the element
+    - `rho (float)`: Density of the material used in the element.
+    - `mass (float)`: Mass per unit length (or thickness) of the element.
+    - `U (12x1 np.array[float])`: This column vector contains the CQUADXs
+        3 DOF (x-y-z) displacements in the local xsect CSYS due to cross-
+        section warping effects.
+    - `Eps (6x4 np.array[float])`: A matrix containing the 3D strain state
+        within the CQUADX element.
+    - `Sig (6x4 np.array[float])`: A matrix containing the 3D stress state
+        within the CQUADX element.
+        
+    :Methods:
+    
+    - `x`: Calculates the local xsect x-coordinate provided the desired master
+        coordinates eta and xi.
+    - `y`: Calculates the local xsect y-coordinate provided the desired master
+        coordinates eta and xi.
+    - `J`: Calculates the jacobian of the element provided the desired master
+        coordinates eta and xi.
+    - `resetResults`: Initializes the displacement (U), strain (Eps), and
+        stress (Sig) attributes of the element.
+    - `getDeformed`: Provided an analysis has been conducted, this method
+        returns 3 2x2 np.array[float] containing the element warped
+        displacements in the local xsect CSYS.
+    - `getStressState`: Provided an analysis has been conducted, this method
+        returns 3 2x2 np.array[float] containing the element stress at four
+        points. The 3D stress state is processed to return the Von-Mises
+        or Maximum Principal stress state.
+    - `printSummary`: Prints out a tabulated form of the element ID, as well
+        as the node ID's referenced by the element.
+        
+    """
+    def __init__(self,EID,nodes,MID,matLib,**kwargs):
+        """ Initializes the element.
+        
+        :Args:
+        
+        - `EID (int)`: An integer identifier for the CQUADX element.
+        - `nodes (1x4 Array[obj])`: Contains the properly ordered nodes objects
+            used to create the element.
+        - `MID (int)`: An integer refrencing the material ID used for the
+            constitutive relations.
+        - `matLib (obj)`: A material library object containing a dictionary
+            with the material corresponding to the provided MID.
+        - `xsect (bool)`: A boolean to determine whether this quad element is
+            to be used for cross-sectional analysis. Defualt value is True.
+        - `th (1x3 Array[float])`: Array containing the Euler-angles expressing
+            how the element constitutive relations should be rotated from
+            the material fiber frame to the global CSYS. In degrees.
+            
+        :Returns:
+        
+        - None
+            
+        .. Note:: The reference coordinate system for cross-sectional analysis is a
+        local coordinate system in which the x and y axes are planer with the
+        element, and the z-axis is perpendicular to the plane of the element.
+        
+        """
+        # Initialize type
+        self.type = 'CQUADX9'
+        # Used for xsect analysis?
+        xsect = kwargs.pop('xsect', True)
+        self.xsect = xsect
+        # Initialize Euler-angles for material orientation in the xsect CSYS
+        th = kwargs.pop('th', [0.,0.,0.])
+        self.th = th
+        # Error checking on EID input
+        if type(EID) is int:
+            self.EID = EID
+        else:
+            raise TypeError('The element ID given was not an integer')
+        if not len(nodes) == 9:
+            raise ValueError('A CQUADX element requires 9 nodes, %d were'+
+                'supplied in the nodes array' % (len(nodes)))
+        nids = []
+        for node in nodes:
+            nids+= [node.NID]
+        if not len(np.unique(nids))==9:
+            raise ValueError('The node objects used to create this CQUADX '+
+                'share at least 1 NID. Make sure that no repeated node '+
+                'objects were used.')
+        # Error checking on MID input
+        if not MID in matLib.matDict.keys():
+            raise KeyError('The MID provided is not linked with any materials'+
+                'within the supplied material library.')
+        # Initialize the warping displacement, strain and stress results
+        self.resetResults()
+        # Store the MID
+        self.MID = MID
+        # Populate the NIDs array with the IDs of the nodes used by the element
+        self.NIDs = []
+        self.nodes = nodes
+        for node in nodes:
+            self.NIDs += [node.NID]
+        
+        # INITIALIZE THE ELEMENT CONSTITUTIVE MATRIX:
+        # Select the element material object from the material dictionary:
+        material = matLib.getMat(MID)
+        # Initialize the volume density of the element
+        self.rho = material.rho
+        # Initialize the mass per unit length (or thickness) of the element
+        self.mass = 0
+        # Create a rotation helper to rotate the compliance matrix:
+        rh = RotationHelper()
+        # Rotate the materials compliance matrix as necessary:
+        Selem = rh.transformCompl(np.copy(material.Smat),th,xsect=xsect)
+        # Reorder Selem for cross-sectional analysis:
+        # Initialize empty compliance matrix
+        Sxsect = np.zeros((6,6))
+        # Initialize reorganization key
+        shuff = [0,1,5,4,3,2]
+        for i in range(0,6):
+            for j in range(0,6):
+                Sxsect[shuff[i],shuff[j]] = Selem[i,j]
+        # Store the re-ordered material stiffness matrix:
+        self.Q = np.linalg.inv(Sxsect)
+        
+        # Initialize Matricies for later use in xsect equilibrium solution:
+        self.Ae = np.zeros((6,6))
+        self.Re = np.zeros((27,6))
+        self.Ee = np.zeros((27,27))
+        self.Ce = np.zeros((27,27))
+        self.Le = np.zeros((27,6))
+        self.Me = np.zeros((27,27))
+        # Generate X and Y coordinates of the nodes
+        xs = np.zeros(9)
+        ys = np.zeros(9)
+        for i in range(len(nodes)):
+            tempxyz = nodes[i].x
+            xs[i] = tempxyz[0]
+            ys[i] = tempxyz[1]
+        # Save for ease of strain calculation on strain recovery
+        self.xs = xs
+        self.ys = ys
+        # Initialize coordinates for Guass Quadrature Integration
+        etas = np.array([-1,0,1])*np.sqrt(3./5)
+        xis = np.array([-1,0,1])*np.sqrt(3./5)
+        w_etas = np.array([5./9,8./9,5./9])
+        w_xis = np.array([5./9,8./9,5./9])
+        # Evaluate/sum the cross-section matricies at the Guass points
+        for xi, w_xi in zip(xis,w_xis):
+            for eta, w_eta in zip(etas,w_etas):
+                #Get Z Matrix
+                Zmat = self.Z(eta,xi)
+                #Get BN Matricies
+                Jmat = self.J(eta,xi)
+                #Get determinant of the Jacobian Matrix
+                Jdet = abs(np.linalg.det(Jmat))
+                Jmatinv = np.linalg.inv(Jmat)
+                Bxi = np.zeros((6,3))
+                Beta = np.zeros((6,3))
+                Bxi[0,0] = Bxi[2,1] = Bxi[3,2] = Jmatinv[0,0]
+                Bxi[1,1] = Bxi[2,0] = Bxi[4,2] = Jmatinv[1,0]
+                Beta[0,0] = Beta[2,1] = Beta[3,2] = Jmatinv[0,1]
+                Beta[1,1] = Beta[2,0] = Beta[4,2] = Jmatinv[1,1]
+                BN = np.dot(Bxi,self.dNdxi(eta,xi)) + np.dot(Beta,self.dNdeta(eta,xi))
+                
+                #Get a few last minute matricies
+                S = np.zeros((6,3));S[3,0]=1;S[4,1]=1;S[5,2]=1
+                SZ = np.dot(S,Zmat)
+                Nmat = self.N(eta,xi)
+                #print(xi)
+                #print(eta)
+                #print(tabulate(Nmat))
+                SN = np.dot(S,Nmat)
+                
+                
+                # Calculate the mass per unit length of the element
+                self.mass += self.rho*Jdet*w_xi*w_eta
+                
+                #Add to Ae Matrix
+                self.Ae += np.dot(SZ.T,np.dot(self.Q,SZ))*Jdet*w_xi*w_eta
+                #Add to Re Matrix
+                self.Re += np.dot(BN.T,np.dot(self.Q,SZ))*Jdet*w_xi*w_eta
+                #Add to Ee Matrix
+                self.Ee += np.dot(BN.T,np.dot(self.Q,BN))*Jdet*w_xi*w_eta
+                #Add to Ce Matrix
+                self.Ce += np.dot(BN.T,np.dot(self.Q,SN))*Jdet*w_xi*w_eta
+                #Add to Le Matrix
+                self.Le += np.dot(SN.T,np.dot(self.Q,SZ))*Jdet*w_xi*w_eta
+                #Add to Me Matrix
+                self.Me += np.dot(SN.T,np.dot(self.Q,SN))*Jdet*w_xi*w_eta
+    def x(self,eta,xi):
+        """Calculate the x-coordinate within the element.
+        
+        Calculates the local xsect x-coordinate provided the desired master
+        coordinates eta and xi.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `x (float)`: The x-coordinate within the element.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        xs = self.xs
+        N = np.zeros(9)
+        N[0] = .25*(xi**2-xi)*(eta**2-eta)
+        N[1] = .5*(1-xi**2)*(eta**2-eta)
+        N[2] = .25*(xi**2+xi)*(eta**2-eta)
+        N[3] = .5*(xi**2-xi)*(1-eta**2)
+        N[4] = (1-xi**2)*(1-eta**2)
+        N[5] = .5*(xi**2+xi)*(1-eta**2)
+        N[6] = .25*(xi**2-xi)*(eta**2+eta)
+        N[7] = .5*(1-xi**2)*(eta**2+eta)
+        N[8] = .25*(xi**2+xi)*(eta**2+eta)
+        return np.dot(N,xs)
+    def y(self,eta,xi):
+        """Calculate the y-coordinate within the element.
+        
+        Calculates the local xsect y-coordinate provided the desired master
+        coordinates eta and xi.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `y (float)': The y-coordinate within the element.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        ys = self.ys
+        N = np.zeros(9)
+        N[0] = .25*(xi**2-xi)*(eta**2-eta)
+        N[1] = .5*(1-xi**2)*(eta**2-eta)
+        N[2] = .25*(xi**2+xi)*(eta**2-eta)
+        N[3] = .5*(xi**2-xi)*(1-eta**2)
+        N[4] = (1-xi**2)*(1-eta**2)
+        N[5] = .5*(xi**2+xi)*(1-eta**2)
+        N[6] = .25*(xi**2-xi)*(eta**2+eta)
+        N[7] = .5*(1-xi**2)*(eta**2+eta)
+        N[8] = .25*(xi**2+xi)*(eta**2+eta)
+        return np.dot(N,ys)
+    def Z(self,eta,xi):
+        """Calculates transformation matrix relating stress to force-moments.
+        
+        Intended primarily as a private method but left public, this method
+        calculates the transformation matrix that converts stresses to force
+        and moment resultants.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `Z (3x6 np.array[float])`: The stress-resutlant transformation array.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        return np.array([[1.,0,0,0,0,-self.y(eta,xi)],\
+                         [0,1.,0,0,0,self.x(eta,xi)],\
+                         [0,0,1.,self.y(eta,xi),-self.x(eta,xi),0]])
+    def J(self,eta,xi):
+        """Calculates the jacobian at a point in the element.
+        
+        This method calculates the jacobian at a local point within the element
+        provided the master coordinates eta and xi.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `Jmat (3x3 np.array[float])`: The stress-resutlant transformation
+            array.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        xs = self.xs
+        ys = self.ys
+        # DN/Dxi
+        dNdxi = np.zeros(9)
+        dNdxi[0] = .25*(eta**2-eta)*(2*xi-1)
+        dNdxi[1] = -(eta**2-eta)*xi
+        dNdxi[2] = .25*(eta**2-eta)*(2*xi+1)
+        dNdxi[3] = .5*(1-eta**2)*(2*xi-1)
+        dNdxi[4] = -2*(1-eta**2)*xi
+        dNdxi[5] = .5*(1-eta**2)*(2*xi+1)
+        dNdxi[6] = .25*(eta**2+eta)*(2*xi-1)
+        dNdxi[7] = -(eta**2+eta)*xi
+        dNdxi[8] = .25*(eta**2+eta)*(2*xi+1)
+        # DN/Deta
+        dNdeta = np.zeros(9)
+        dNdeta[0] = .25*(xi**2-xi)*(2*eta-1)
+        dNdeta[1] = .5*(2*eta-1)*(1-xi**2)
+        dNdeta[2] = .25*(2*eta-1)*(xi**2+xi)
+        dNdeta[3] = -eta*(xi**2-xi)
+        dNdeta[4] = -2*eta*(1-xi**2)
+        dNdeta[5] = -eta*(xi**2+xi)
+        dNdeta[6] = .25*(1+2*eta)*(xi**2-xi)
+        dNdeta[7] = .5*(2*eta+1)*(1-xi**2)
+        dNdeta[8] = .25*(1+2*eta)*(xi**2+xi)
+        
+        J11 = np.dot(dNdxi,xs)
+        J12 = np.dot(dNdxi,ys)
+        J21 = np.dot(dNdeta,xs)
+        J22 = np.dot(dNdeta,ys)
+        Jmat = np.array([[J11,J12,0],[J21,J22,0],[0,0,1]])
+        return Jmat
+    def N(self,eta,xi):
+        """Generates the shape-function value weighting matrix.
+        
+        Intended primarily as a private method but left public, this method
+        generates the weighting matrix used to interpolate values within the
+        element. This method however is mainly reserved for the cross-sectional
+        analysis process.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `Nmat (3x12 np.array[float])`: The shape-function value weighting
+            matrix.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        Nmat = np.zeros((3,3*9))
+        N1 = .25*(xi**2-xi)*(eta**2-eta)
+        N2 = .5*(1-xi**2)*(eta**2-eta)
+        N3 = .25*(xi**2+xi)*(eta**2-eta)
+        N4 = .5*(xi**2-xi)*(1-eta**2)
+        N5 = (1-xi**2)*(1-eta**2)
+        N6 = .5*(xi**2+xi)*(1-eta**2)
+        N7 = .25*(xi**2-xi)*(eta**2+eta)
+        N8 = .5*(1-xi**2)*(eta**2+eta)
+        N9 = .25*(xi**2+xi)*(eta**2+eta)
+        I3 = np.eye(3)
+        Nmat[0:3,0:3] = N1*I3
+        Nmat[0:3,3:6] = N2*I3
+        Nmat[0:3,6:9] = N3*I3
+        Nmat[0:3,9:12] = N4*I3
+        Nmat[0:3,12:15] = N5*I3
+        Nmat[0:3,15:18] = N6*I3
+        Nmat[0:3,18:21] = N7*I3
+        Nmat[0:3,21:24] = N8*I3
+        Nmat[0:3,24:27] = N9*I3
+        return Nmat
+    def dNdxi(self,eta,xi):
+        """Generates a gradient of the shape-function value weighting matrix.
+        
+        Intended primarily as a private method but left public, this method
+        generates the gradient of the weighting matrix with respect to xi and
+        is used to interpolate values within the element. This method however
+        is mainly reserved for the cross-sectional analysis process.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `dNdxi_mat (3x12 np.array[float])`: The gradient of the shape-
+            function value weighting matrix with respect to xi.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        dNdxi_mat = np.zeros((3,3*9))
+        # DN/Dxi
+        dNdxi1 = .25*(eta**2-eta)*(2*xi-1)
+        dNdxi2 = -(eta**2-eta)*xi
+        dNdxi3 = .25*(eta**2-eta)*(2*xi+1)
+        dNdxi4 = .5*(1-eta**2)*(2*xi-1)
+        dNdxi5 = -2*(1-eta**2)*xi
+        dNdxi6 = .5*(1-eta**2)*(2*xi+1)
+        dNdxi7 = .25*(eta**2+eta)*(2*xi-1)
+        dNdxi8 = -(eta**2+eta)*xi
+        dNdxi9 = .25*(eta**2+eta)*(2*xi+1)
+        I3 = np.eye(3)
+        dNdxi_mat[0:3,0:3] = dNdxi1*I3
+        dNdxi_mat[0:3,3:6] = dNdxi2*I3
+        dNdxi_mat[0:3,6:9] = dNdxi3*I3
+        dNdxi_mat[0:3,9:12] = dNdxi4*I3
+        dNdxi_mat[0:3,12:15] = dNdxi5*I3
+        dNdxi_mat[0:3,15:18] = dNdxi6*I3
+        dNdxi_mat[0:3,18:21] = dNdxi7*I3
+        dNdxi_mat[0:3,21:24] = dNdxi8*I3
+        dNdxi_mat[0:3,24:27] = dNdxi9*I3
+        return dNdxi_mat
+    def dNdeta(self,eta,xi):
+        """Generates a gradient of the shape-function value weighting matrix.
+        
+        Intended primarily as a private method but left public, this method
+        generates the gradient of the weighting matrix with respect to eta and
+        is used to interpolate values within the element. This method however
+        is mainly reserved for the cross-sectional analysis process.
+        
+        :Args:
+        
+        - `eta (float)`: The eta coordinate in the master coordinate domain.*
+        - `xi (float)`: The xi coordinate in the master coordinate domain.*
+            
+        :Returns:
+        
+        - `dNdeta_mat (3x12 np.array[float])`: The gradient of the shape-
+            function value weighting matrix with respect to eta.
+            
+        .. Note:: Xi and eta can both vary between -1 and 1 respectively.
+        
+        """
+        dNdeta_mat = np.zeros((3,3*9))
+        # DN/Deta
+        dNdeta1 = .25*(xi**2-xi)*(2*eta-1)
+        dNdeta2 = .5*(2*eta-1)*(1-xi**2)
+        dNdeta3 = .25*(2*eta-1)*(xi**2+xi)
+        dNdeta4 = -eta*(xi**2-xi)
+        dNdeta5 = -2*eta*(1-xi**2)
+        dNdeta6 = -eta*(xi**2+xi)
+        dNdeta7 = .25*(1+2*eta)*(xi**2-xi)
+        dNdeta8 = .5*(2*eta+1)*(1-xi**2)
+        dNdeta9 = .25*(1+2*eta)*(xi**2+xi)
+        I3 = np.eye(3)
+        dNdeta_mat[0:3,0:3] = dNdeta1*I3
+        dNdeta_mat[0:3,3:6] = dNdeta2*I3
+        dNdeta_mat[0:3,6:9] = dNdeta3*I3
+        dNdeta_mat[0:3,9:12] = dNdeta4*I3
+        dNdeta_mat[0:3,12:15] = dNdeta5*I3
+        dNdeta_mat[0:3,15:18] = dNdeta6*I3
+        dNdeta_mat[0:3,18:21] = dNdeta7*I3
+        dNdeta_mat[0:3,21:24] = dNdeta8*I3
+        dNdeta_mat[0:3,24:27] = dNdeta9*I3
+        return dNdeta_mat
+    def resetResults(self):
+        """Resets stress, strain and warping displacement results.
+        
+        Method is mainly intended to prevent results for one analysis or
+        sampling location in the matrix to effect the results in another.
+        
+        :Args:
+        
+        - None
+            
+        :Returns:
+        
+        - None
+            
+        """
+        # Initialize array for element warping displacement results
+        self.U = np.zeros((27,1))
+        # Initialize strain vectors
+        self.Eps = np.zeros((6,9))
+        # Initialize stress vectors
+        self.Sig = np.zeros((6,9))
     def getDeformed(self,**kwargs):
         """Returns the warping displacement of the element.
         
@@ -2155,6 +2818,88 @@ class Mesher:
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
         del xsect.elemDict[-1]
+    def solidBox(self,xsect, elemX, elemY, L1, L2, MID, matlib, elemOrder):
+        """Meshes a box beam cross-section.
+        
+        This method meshes a similar cross-section as the boxBeam method. The
+        geometry of this cross-section can be seen below. The interfaces
+        between the laminates is different, and more restrictive. In this case
+        all of the laminates must have the same number of plies, which must
+        also all be the same thickness.
+        
+        .. image:: images/rectBoxGeom.png
+            :align: center
+        
+        :Args:
+        
+        - `xsect (obj)`: The cross-section object to be meshed.
+        - `meshSize (int)`: The maximum aspect ratio an element can have
+        - `x0 (float)`: The non-dimensional starting point of the cross-section
+            on the airfoil.
+        - `xf (float)`: The non-dimesnional ending point of the cross-section
+            on the airfoil.
+        - `matlib (obj)`: The material library object used to create CQUADX
+            elements.
+            
+        :Returns:
+        
+        - None
+            
+        """
+        print('Box Meshing Commencing')
+        # INITIALIZE INPUTS
+        # Initialize the node dictionary containing all nodes objects used by
+        # the cross-section
+        nodeDict = {-1:None}
+        # Initialize the element dictionary containing all element objects used
+        # by the cross-section
+        elemDict = {-1:None}
+        # Initialize the z location of the cross-section
+        zc = 0
+        if elemOrder==1:
+            nnx = elemX+1
+            nny = elemY+1
+        else:
+            nnx = 2*elemX+1
+            nny = 2*elemY+1
+        # Create Mesh
+        xvec = np.linspace(-L1/2,L1/2,nnx)
+        yvec = np.linspace(-L2/2,L2/2,nny)[::-1]
+        # NID Mesh
+        Mesh = np.zeros((nny,nnx),dtype=int)
+        EIDmesh = np.zeros((elemY,elemX),dtype=int)
+        xmesh,ymesh = np.meshgrid(xvec,yvec)
+        for i in range(0,nny):
+            for j in range(0,nnx):
+                newNID = int(max(nodeDict.keys())+1)
+                Mesh[i,j] = newNID
+                #Add node to NID Dictionary
+                nodeDict[newNID] = Node(newNID,np.array([xmesh[i,j],ymesh[i,j],zc]))
+                
+        xsect.nodeDict = nodeDict
+        
+        if elemOrder==1:
+            for i in range(0,elemY):
+                for j in range(0,elemX):
+                    newEID = int(max(elemDict.keys())+1)
+                    NIDs = [Mesh[i+1,j],Mesh[i+1,j+1],Mesh[i,j+1],Mesh[i,j]]
+                    nodes = [xsect.nodeDict[NID] for NID in NIDs]
+                    elemDict[newEID] = CQUADX(newEID,nodes,MID,matlib)
+                    EIDmesh[i,j] = newEID
+        else:
+            for i in range(0,elemY):
+                for j in range(0,elemX):
+                    newEID = int(max(elemDict.keys())+1)
+                    NIDs = [Mesh[2*i+2,2*j],Mesh[2*i+2,2*j+1],Mesh[2*i+2,2*j+2],\
+                    Mesh[2*i+1,2*j],Mesh[2*i+1,2*j+1],Mesh[2*i+1,2*j+2],\
+                    Mesh[2*i,2*j],Mesh[2*i,2*j+1],Mesh[2*i,2*j+2]]
+                    nodes = [xsect.nodeDict[NID] for NID in NIDs]
+                    elemDict[newEID] = CQUADX9(newEID,nodes,MID,matlib)
+                    EIDmesh[i,j] = newEID
+        
+        xsect.elemDict = elemDict
+        del xsect.nodeDict[-1]
+        del xsect.elemDict[-1]
 class XSect:
     """Creates a beam cross-section object,
     
@@ -2287,6 +3032,10 @@ class XSect:
         meshSize = kwargs.pop('meshSize',4)
         # Initialize plotting color for the cross-section
         self.color = kwargs.pop('color',np.random.rand(3))
+        elemX = kwargs.pop('elemX',1)
+        elemY = kwargs.pop('elemY',1)
+        MID = kwargs.pop('MID',1)
+        elemOrder = kwargs.pop('elemOrder',1)
         # Save the airfoil object used to define the OML of the cross-section
         self.airfoil = Airfoil
         # Save the laminate array (and thus laminate objects) to be used
@@ -2308,6 +3057,8 @@ class XSect:
             mesher.laminate(self, meshSize, x0, xf, matlib)
         elif self.typeXSect=='rectBox':
             mesher.rectBoxBeam(self, meshSize, x0, xf, matlib)
+        elif self.typeXSect=='solidBox':
+            mesher.solidBox(self,elemX, elemY, x0, xf, MID, matlib, elemOrder)
             
     def xSectionAnalysis(self,**kwargs):
         """Analyzes an initialized corss-section.
@@ -2393,7 +3144,7 @@ class XSect:
             # Update the first mass moment of ineratia about y
             ym+= elem.mass*elem.y(0.,0.)
             # If the 2D element is a CQUADX
-            if (str(elem.type)=='CQUADX'):
+            if (str(elem.type)=='CQUADX') or (str(elem.type)=='CQUADX9'):
                 # Create local references to the element equilibrium matricies
                 A = A + elem.Ae
                 Re = elem.Re
@@ -2401,7 +3152,6 @@ class XSect:
                 Ce = elem.Ce
                 Le = elem.Le
                 Me = elem.Me
-                
                 # Cross-section finite element matrix assembely
                 for j in range(0,len(tempNodes)):
                     row = tempNodes[j]
@@ -2417,12 +3167,14 @@ class XSect:
                 pass
         # Cross-section matricies currently not saved to xsect object to save
         # memory.
-        #self.A = A
-        #self.R = R
-        #self.E = E
-        #self.C = C
-        #self.L = L
-        #self.M = M
+#        self.A = A
+#        self.R = R
+#        self.E = E
+#        self.C = C
+#        self.L = L
+#        self.M = M
+#        self.D = D
+        
                 
         # SOLVING THE EQUILIBRIUM EQUATIONS
         # Assemble state matrix for first equation
@@ -2431,9 +3183,11 @@ class XSect:
         # Assemble solution vector for first equation
         Equib1 = np.vstack((np.zeros((nd,6)),Tr.T,Z6))
         # LU factorize state matrix as it will be used twice
-        lu,piv = sci.linalg.lu_factor(EquiA1)
+        lu,piv = linalg.lu_factor(EquiA1)
+        del EquiA1
         # Solve system
-        sol1 = sci.linalg.lu_solve((lu,piv),Equib1,check_finite=False)
+        sol1 = linalg.lu_solve((lu,piv),Equib1,check_finite=False)
+        del Equib1
         # Recover gradient of displacement as a function of force and moment
         # resutlants
         dXdz = sol1[0:nd,:]
@@ -2445,18 +3199,28 @@ class XSect:
         Equib2_1 = np.vstack((np.hstack((-(C-C.T),L)),np.hstack((-L.T,Z6)),np.zeros((6,nd+6))))
         # Set up the second of two solution vectors for second equation
         Equib2_2 = np.vstack((np.zeros((nd,6)),np.eye(6,6),Z6))
+        Equib2 = np.dot(Equib2_1,sol1[0:nd+6,:])+Equib2_2
+        del Equib2_1
+        del Equib2_2
         # Add solution vectors and solve second equillibrium equation
-        sol2 = sci.linalg.lu_solve((lu,piv),np.dot(Equib2_1,sol1[0:nd+6,:])+Equib2_2)
+        sol2 = linalg.lu_solve((lu,piv),Equib2)
+        
         X = sol2[0:nd,0:6]
         # Store the warping displacement as a funtion of force and moment
         # resultants
         self.X = X
         # Store the section strain as a function of force and moment resultants
-        self.Y = Y = sol2[nd:nd+6,0:6]
+        Y = sol2[nd:nd+6,0:6]
+        self.Y = Y
         #Solve for the cross-section compliance
-        comp1 = np.vstack((X,dXdz,Y))
-        comp2 = np.vstack((np.hstack((E,C,R)),np.hstack((C.T,M,L)),np.hstack((R.T,L.T,A))))
-        F = np.dot(comp1.T,np.dot(comp2,comp1))
+        #comp1 = np.vstack((X,dXdz,Y))
+        #comp2 = np.vstack((np.hstack((E,C,R)),np.hstack((C.T,M,L)),np.hstack((R.T,L.T,A))))
+        #F = np.dot(comp1.T,np.dot(comp2,comp1))
+        #del comp2
+        t1 = np.dot(E,X)+np.dot(C,dXdz)+np.dot(R,Y)
+        t2 = np.dot(C.T,X)+np.dot(M,dXdz)+np.dot(L,Y)
+        t3 = np.dot(R.T,X)+np.dot(L.T,dXdz)+np.dot(A,Y)
+        F = np.dot(X.T,t1)+np.dot(dXdz.T,t2)+np.dot(Y.T,t3)
         # Store the compliance matrix taken about the xsect origin
         self.F_raw = F
         # Store the stiffness matrix taken about the xsect origin
@@ -2468,7 +3232,7 @@ class XSect:
         if np.abs(self.K_raw[3,4])<0.1:
             self.bendAxes = np.array([[1.,0.,0.,],[0.,1.,0.]])
         else:
-            trash,axes = sci.linalg.eig(np.array([[self.K_raw[3,3],self.K_raw[3,4]],\
+            trash,axes = linalg.eig(np.array([[self.K_raw[3,3],self.K_raw[3,4]],\
                         [self.K_raw[4,3],self.K_raw[4,4]]]))
             self.bendAxes = np.array([[axes[0,0],axes[1,0],0.,],[axes[0,1],axes[1,1],0.]])
         # Calculate the location of the shear center neglecting the bending
@@ -2862,7 +3626,7 @@ class XSect:
         # Establish the warping scaling factor
         warpScale = kwargs.pop('warpScale',1.)
         # Establish if the colorbar should be generated:
-        colorbar = kwargs.pop('colorbar',False)
+        colorbar = kwargs.pop('colorbar',True)
         plots = kwargs.pop('plots',[])
         # Initialize on what figure the cross-section is to be plotted
         mlab.figure(figure=figName)

@@ -34,16 +34,16 @@ matLib.addMat(3,'AL','iso',[71.7e9,.33,2810],.005)
 
 # CREATE A LAMINATE CROSS-SECTION
 # ===============================
-# Create a box airfoil object. Note that when creating an airfoil object, only
-# the chord length is used. As such, it doesn't truly matter if the airfoil
-# has an airfoil profile or a box profile. In this case we will just give it a
-# box profile.
+# Create a box airfoil object. Note that when creating a box airfoil object,
+# only the chord length is used. As such, it doesn't truly matter if the
+# airfoil has an airfoil profile or a box profile. In this case we will just
+# give it a box profile.
 # Initialize the chord length
 c1 = 1.
 # Initialize the non-dimensional starting and stopping points of the cross-
 # section. These bounds when dimensionalized will determine the overall
 # dimesions of the cross-section. Therefore the total width of the laminate is:
-# xdim[1]*c1-xdim[0]*x. In this case, the total width is 2!
+# xdim[1]*c1-xdim[0]*c1. In this case, the total width is 2!
 xdim1 = [-1.,1.]
 af1 = Airfoil(c1,name='box')
 # Create a layup schedule for the laminate. In this case, we will select a

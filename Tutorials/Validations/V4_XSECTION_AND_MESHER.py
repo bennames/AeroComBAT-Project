@@ -7,7 +7,7 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('..\..'))
 
 from AeroComBAT.Structures import MaterialLib, Laminate, XSect
 from AeroComBAT.Aerodynamics import Airfoil
@@ -18,15 +18,15 @@ import numpy as np
 # Add the material property
 matLib = MaterialLib()
 matLib.addMat(1,'AS43501-6','trans_iso',[20.6e6,1.42e6,.3,.34,.87e6,0.00177],0.005)
-matLib.addMat(3,'AS43501-6*','trans_iso',[20.6e6,1.42e6,.34,.42,.87e6,0.00177],0.005)
-matLib.addMat(2,'AL','iso',[71.7e9,.33,2810],.005)
+matLib.addMat(2,'AS43501-6*','trans_iso',[20.6e6,1.42e6,.34,.42,.87e6,0.00177],0.005)
+matLib.addMat(3,'AL','iso',[71.7e9,.33,2810],.005)
 
 # Box Configuration 2
 c2 = 0.53
 xdim2 = [-0.8990566037735849,0.8990566037735849]
 af2 = Airfoil(c2,name='box')
-#force = np.array([100,100,10000,-400.89,400.89,0.])
-force = np.array([0,0,0,0,0,50])
+force = np.array([100,100,10000,-400.89,400.89,0.])
+#force = np.array([0,0,0,0,0,50])
 
 '''
 # B1 Box beam (0.5 x 0.923 in^2 box with laminate schedule [15]_6)
@@ -39,14 +39,14 @@ lam3_B1 = Laminate(n_i_B1, m_i_B1, matLib, th=th_B1)
 lam4_B1 = Laminate(n_i_B1, m_i_B1, matLib, th=th_B1)
 lam1_B1.printSummary()
 laminates_B1 = [lam1_B1,lam2_B1,lam3_B1,lam4_B1]
-xsect_B1 = XSect(1,af2,xdim2,laminates_B1,matLib,typeXsect='box',meshSize=4)
+xsect_B1 = XSect(1,af2,xdim2,laminates_B1,matLib,typeXSect='rectBox',meshSize=1)
 xsect_B1.xSectionAnalysis()
 xsect_B1.printSummary(stiffMat=True)
 xsect_B1.calcWarpEffects(force=force)
 xsect_B1.plotWarped(figName='Validation Case B1',warpScale=10,contLim=[0,500000])
 K = xsect_B1.K_raw
-
-
+'''
+'''
 # Layup 1 Box beam (0.5 x 0.923 in^2 box with laminate schedule [0]_6)
 n_i_Lay1 = [6]
 m_i_Lay1 = [2]
@@ -159,32 +159,37 @@ lam2.printSummary()
 lam3.printSummary()
 lam4.printSummary()
 laminates_Lay3 = [lam1,lam2,lam3,lam4]
-xsect_Lay3 = XSect(4,af2,xdim2,laminates_Lay3,matLib,typeXSect='rectBox',meshSize=1)
+xsect_Lay3 = XSect(4,af2,xdim2,laminates_Lay3,matLib,typeXSect='rectBox',meshSize=1.87)
 xsect_Lay3.xSectionAnalysis()
 xsect_Lay3.printSummary(stiffMat=True)
 xsect_Lay3.calcWarpEffects(force=force)
 
-import mayavi.mlab as mlab
+#import mayavi.mlab as mlab
 
-#xsect_Lay3.plotWarped(figName='Stress sig_11',warpScale=1,contLim=[-4540,3908],contour='sig_11')
-xsect_Lay3.plotWarped(figName='Stress sig_11',warpScale=1e7,contour='sig_11')
-xsect_Lay3.plotRigid(figName='Stress sig_11')
-mlab.colorbar()
-'''
-xsect_Lay3.plotWarped(figName='Stress sig_22',warpScale=1,contLim=[-5075,9365],contour='sig_22')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress sig_11',warpScale=1,contLim=[-500,500],contour='sig_11')
+xsect_Lay3.plotWarped(figName='Stress sig_11',warpScale=0,contour='sig_11')
+#xsect_Lay3.plotRigid(figName='Stress sig_11')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress sig_33',warpScale=1,contLim=[25762,293000],contour='sig_33')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress sig_22',warpScale=1,contLim=[-5075,9365],contour='sig_22')
+xsect_Lay3.plotWarped(figName='Stress sig_22',warpScale=0,contour='sig_22')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress sig_12',warpScale=1,contLim=[-2932,3116],contour='sig_12')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress sig_33',warpScale=1,contLim=[25762,293000],contour='sig_33')
+xsect_Lay3.plotWarped(figName='Stress sig_33',warpScale=0,contour='sig_33')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress sig_13',warpScale=1,contLim=[-35359,33715],contour='sig_13')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress sig_12',warpScale=1,contLim=[-2932,3116],contour='sig_12')
+xsect_Lay3.plotWarped(figName='Stress sig_12',warpScale=0,contour='sig_12')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress sig_23',warpScale=1,contLim=[-57921,78221],contour='sig_23')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress sig_13',warpScale=1,contLim=[-35359,33715],contour='sig_13')
+xsect_Lay3.plotWarped(figName='Stress sig_13',warpScale=0,contour='sig_13')
+#mlab.colorbar()
+
+#xsect_Lay3.plotWarped(figName='Stress sig_23',warpScale=1,contLim=[-57921,78221],contour='sig_23')
+xsect_Lay3.plotWarped(figName='Stress sig_23',warpScale=0,contour='sig_23')
+#mlab.colorbar()
 
 # Import EID Mesh CSV files to do element mapping
 lam1AeroComBATEIDmesh = np.genfromtxt('lam1AeroComBATEIDmesh.csv', delimiter=',',dtype=int)
@@ -255,24 +260,30 @@ for i in range(0,np.size(NASTRANStress,axis=0)):
     tmpElem.Sig[4,:] = np.ones((1,4))*SigyzError
     tmpElem.Sig[5,:] = np.ones((1,4))*SigzzError
 
-xsect_Lay3.plotWarped(figName='Stress Validation sig_11',warpScale=1,contLim=[-15,15],contour='sig_11')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress Validation sig_11',warpScale=1,contLim=[-15,15],contour='sig_11')
+xsect_Lay3.plotWarped(figName='Stress Validation sig_11',warpScale=0,contour='sig_11')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress Validation sig_22',warpScale=1,contLim=[-15,15],contour='sig_22')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress Validation sig_22',warpScale=1,contLim=[-15,15],contour='sig_22')
+xsect_Lay3.plotWarped(figName='Stress Validation sig_22',warpScale=0,contour='sig_22')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress Validation sig_33',warpScale=1,contLim=[-15,15],contour='sig_33')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress Validation sig_33',warpScale=1,contLim=[-2,2],contour='sig_33')
+xsect_Lay3.plotWarped(figName='Stress Validation sig_33',warpScale=0,contour='sig_33')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress Validation sig_12',warpScale=1,contLim=[-15,15],contour='sig_12')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress Validation sig_12',warpScale=1,contLim=[-15,15],contour='sig_12')
+xsect_Lay3.plotWarped(figName='Stress Validation sig_12',warpScale=0,contour='sig_12')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress Validation sig_13',warpScale=1,contLim=[-15,15],contour='sig_13')
-mlab.colorbar()
+#xsect_Lay3.plotWarped(figName='Stress Validation sig_13',warpScale=1,contLim=[-5,5],contour='sig_13')
+xsect_Lay3.plotWarped(figName='Stress Validation sig_13',warpScale=0,contour='sig_13')
+#mlab.colorbar()
 
-xsect_Lay3.plotWarped(figName='Stress Validation sig_23',warpScale=1,contLim=[-15,15],contour='sig_23')
-mlab.colorbar()
-
+#xsect_Lay3.plotWarped(figName='Stress Validation sig_23',warpScale=1,contLim=[-2,2],contour='sig_23')
+xsect_Lay3.plotWarped(figName='Stress Validation sig_23',warpScale=0,contour='sig_23')
+#mlab.colorbar()
+'''
 from AeroComBAT.AircraftParts import Wing
 from AeroComBAT.FEM import Model
 
@@ -451,7 +462,8 @@ pl.legend(loc=2,fontsize=10)
 pl.title('Beam Rotation')
 pl.xlabel('Non-dimensional position along the beam')
 pl.ylabel('Rotation, rad')
-pl.hold(False)'''
+pl.hold(False)
+'''
 '''
 def reorder(Q):
     scram_vec = [0,1,5,2,4,3]
