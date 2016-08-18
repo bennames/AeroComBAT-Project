@@ -58,7 +58,8 @@ from Aerodynamics import Airfoil
 # IMPORT ANACONDA ASSOCIATED MODULES
 # =============================================================================
 import numpy as np
-import scipy as sci
+from scipy.sparse import csr_matrix, vstack, hstack, lil_matrix, eye
+from scipy.sparse.linalg import lgmres, minres, spsolve
 from scipy import linalg
 from tabulate import tabulate
 import mayavi.mlab as mlab
@@ -66,7 +67,7 @@ import mayavi.mlab as mlab
 # IMPORT PYTHON MODULES
 # =============================================================================
 import collections as coll
-from memory_profiler import profile
+#from memory_profiler import profile
 # =============================================================================
 # DEFINE AeroComBAT STRUCTURES CLASSES
 # =============================================================================
@@ -962,6 +963,9 @@ class CQUADX:
                     sigData[i,j] = tmpSig[5]
                 elif crit=='none':
                     sigData[i,j] = 0.
+                elif crit=='rss_shear':
+                    tmpSig = sigState[:,tmpInd]
+                    sigData[i,j] = np.sqrt(tmpSig[3]**2+tmpSig[4]**2)
                 
                     
         return sigData
@@ -2359,6 +2363,10 @@ class Mesher:
         xsect.laminates[3].zmesh = np.zeros((meshLen4,nlam4+1))
         
         xsect.nodeDict = nodeDict
+        xsect.xdim = max([np.max(lam1xMesh),np.max(lam2xMesh),np.max(lam3xMesh),np.max(lam4xMesh)])\
+            -max([np.min(lam1xMesh),np.min(lam2xMesh),np.min(lam3xMesh),np.min(lam4xMesh)])
+        xsect.ydim = max([np.max(lam1yMesh),np.max(lam2yMesh),np.max(lam3yMesh),np.max(lam4yMesh)])\
+            -max([np.min(lam1yMesh),np.min(lam2yMesh),np.min(lam3yMesh),np.min(lam4yMesh)])
         
         for k in range(0,len(xsect.laminates)):
             ylen = np.size(xsect.laminates[k].mesh,axis=0)-1
@@ -2900,6 +2908,110 @@ class Mesher:
         xsect.elemDict = elemDict
         del xsect.nodeDict[-1]
         del xsect.elemDict[-1]
+        
+    def rectangleHole(self,xsect, nelem, a, b, r, MID, matlib):
+        """Meshes a box beam cross-section.
+        
+        This method meshes a similar cross-section as the boxBeam method. The
+        geometry of this cross-section can be seen below. The interfaces
+        between the laminates is different, and more restrictive. In this case
+        all of the laminates must have the same number of plies, which must
+        also all be the same thickness.
+        
+        .. image:: images/rectBoxGeom.png
+            :align: center
+        
+        :Args:
+        
+        - `xsect (obj)`: The cross-section object to be meshed.
+        - `meshSize (int)`: The maximum aspect ratio an element can have
+        - `x0 (float)`: The non-dimensional starting point of the cross-section
+            on the airfoil.
+        - `xf (float)`: The non-dimesnional ending point of the cross-section
+            on the airfoil.
+        - `matlib (obj)`: The material library object used to create CQUADX
+            elements.
+            
+        :Returns:
+        
+        - None
+            
+        """
+        print('Box Meshing Commencing')
+        # INITIALIZE INPUTS
+        # Initialize the node dictionary containing all nodes objects used by
+        # the cross-section
+        nodeDict = {-1:None}
+        # Initialize the element dictionary containing all element objects used
+        # by the cross-section
+        elemDict = {-1:None}
+        nelem=nelem*8+1
+        laminate = xsect.laminates[0]
+        # Initialize the z location of the cross-section
+        xs = [a/2.,a/2.,0.,-a/2.,-a/2.,-a/2.,0.,a/2.,a/2.]
+        ys = [0.,b/2.,b/2.,b/2.,0.,-b/2.,-b/2.,-b/2.,0.]
+        
+        xsvec = np.array([])
+        ysvec = np.array([])
+        
+        for i in range(0,len(xs)-1):
+            xsvec = np.append(xsvec,np.linspace(xs[i],xs[i+1],nelem/8.+1)[:-1])
+            ysvec = np.append(ysvec,np.linspace(ys[i],ys[i+1],nelem/8.+1)[:-1])
+        
+        xc = r*np.cos(np.linspace(0,2*np.pi,nelem))[:-1]
+        yc = r*np.sin(np.linspace(0,2*np.pi,nelem))[:-1]
+        
+        if not len(xc)==len(xsvec):
+            raise ValueError('Circle and square vectors dont match length.')
+        
+        xmesh = np.zeros((int(nelem/8-1),len(xc)))
+        ymesh = np.zeros((int(nelem/8-1),len(xc)))
+        zmesh = np.zeros((int(nelem/8-1),len(xc)))
+        Mesh = np.zeros((int(nelem/8-1),len(xc)),dtype=int)
+        
+        for i in range(0,len(xc)):
+            xmesh[:,i]=np.linspace(xc[i],xsvec[i],nelem/8-1)
+            ymesh[:,i]=np.linspace(yc[i],ysvec[i],nelem/8-1)
+        
+        for i in range(0,np.size(xmesh,axis=0)):
+            for j in range(0,np.size(xmesh,axis=1)):
+                newNID = int(max(nodeDict.keys())+1)
+                Mesh[i,j] = newNID
+                #Add node to NID Dictionary
+                nodeDict[newNID] = Node(newNID,np.array([xmesh[i,j],ymesh[i,j],zmesh[i,j]]))
+        
+        xmesh = np.hstack((xmesh,np.array([xmesh[:,0]]).T))
+        ymesh = np.hstack((ymesh,np.array([ymesh[:,0]]).T))
+        zmesh = np.hstack((zmesh,np.array([zmesh[:,0]]).T))
+        Mesh = np.hstack((Mesh,np.array([Mesh[:,0]],dtype=int).T))
+        
+        xsect.nodeDict = nodeDict
+        laminate.mesh = Mesh
+        laminate.xmesh = xmesh
+        laminate.ymesh = ymesh
+        laminate.zmesh = zmesh
+        
+        EIDmesh = np.zeros((np.size(xmesh,axis=0)-1,np.size(xmesh,axis=1)-1),dtype=int)
+        
+        for i in range(0,np.size(xmesh,axis=0)-1):
+            for j in range(0,np.size(xmesh,axis=1)-1):
+                newEID = int(max(elemDict.keys())+1)
+                NIDs = [Mesh[i+1,j],Mesh[i+1,j+1],Mesh[i,j+1],Mesh[i,j]]
+                nodes = [xsect.nodeDict[NID] for NID in NIDs]
+                elemDict[newEID] = CQUADX(newEID,nodes,MID,matlib)
+                EIDmesh[i,j] = newEID
+        
+        xsect.elemDict = elemDict
+        ylen = np.size(xmesh,axis=0)-1
+        xlen = np.size(xmesh,axis=1)-1
+        laminate.plotx = np.zeros((ylen*2,xlen*2))
+        laminate.ploty = np.zeros((ylen*2,xlen*2))
+        laminate.plotz = np.zeros((ylen*2,xlen*2))
+        laminate.plotc = np.zeros((ylen*2,xlen*2))
+        laminate.EIDmesh = EIDmesh
+        
+        del xsect.nodeDict[-1]
+        del xsect.elemDict[-1]
 class XSect:
     """Creates a beam cross-section object,
     
@@ -3036,6 +3148,7 @@ class XSect:
         elemY = kwargs.pop('elemY',1)
         MID = kwargs.pop('MID',1)
         elemOrder = kwargs.pop('elemOrder',1)
+        nelem = kwargs.pop('nelem',8)
         # Save the airfoil object used to define the OML of the cross-section
         self.airfoil = Airfoil
         # Save the laminate array (and thus laminate objects) to be used
@@ -3059,6 +3172,8 @@ class XSect:
             mesher.rectBoxBeam(self, meshSize, x0, xf, matlib)
         elif self.typeXSect=='solidBox':
             mesher.solidBox(self,elemX, elemY, x0, xf, MID, matlib, elemOrder)
+        elif self.typeXSect=='rectHole':
+            mesher.rectangleHole(self, nelem, xdim[0], xdim[1], xdim[2], MID, matlib)
             
     def xSectionAnalysis(self,**kwargs):
         """Analyzes an initialized corss-section.
@@ -3103,27 +3218,27 @@ class XSect:
         # Initialize the D matrix, responsible for decoupling rigid cross-
         # section displacement from warping cross-section displacement
         nd = 3*len(nodeDict.keys())
-        D = np.zeros((6,nd))
+        D = lil_matrix((6,nd), dtype=np.float64)
         for i in range(0,len(nodeDict.keys())):
             tmpNode = nodeDict[i]
             tempx = tmpNode.x[0]
             tempy = tmpNode.x[1]
-            D[:,3*i:3*i+3] = np.array([[1,0,0],\
+            D[:,3*i:3*i+3] = lil_matrix(np.array([[1,0,0],\
                                        [0,1,0],\
                                        [0,0,1],\
                                        [0,0,tempy],\
                                        [0,0,-tempx],\
-                                       [-tempy,tempx,0]])
+                                       [-tempy,tempx,0]]))
         D = D.T
         # Initialize Matricies used in solving the equilibruim equations:
-        Tr = np.zeros((6,6));Tr[0,4] = -1;Tr[1,3] = 1
+        Tr =csr_matrix((6,6));Tr[0,4] = -1;Tr[1,3] = 1
         A = np.zeros((6,6))
         E = np.zeros((nd,nd))
         L = np.zeros((nd,6))
         R = np.zeros((nd,6))
         C = np.zeros((nd,nd))
         M = np.zeros((nd,nd))
-        Z6 = np.zeros((6,6))
+        Z6 = csr_matrix((6,6))
         # Initialize the cross-section mass per unit length
         m = 0.
         # Initialize the first mass moment of inertia about x
@@ -3146,7 +3261,7 @@ class XSect:
             # If the 2D element is a CQUADX
             if (str(elem.type)=='CQUADX') or (str(elem.type)=='CQUADX9'):
                 # Create local references to the element equilibrium matricies
-                A = A + elem.Ae
+                A += elem.Ae
                 Re = elem.Re
                 Ee = elem.Ee
                 Ce = elem.Ce
@@ -3174,20 +3289,38 @@ class XSect:
 #        self.L = L
 #        self.M = M
 #        self.D = D
+        # Convert to sparse matricies:
+        A = csr_matrix(A)
+        R = csr_matrix(R)
+        E = csr_matrix(E)
+        C = csr_matrix(C)
+        L = csr_matrix(L)
+        M = csr_matrix(M)
+        D = csr_matrix(D)
+        #TrT = csc_matrix(Tr.T)
+        #Z6 = csc_matrix(Z6)
+        
         
                 
         # SOLVING THE EQUILIBRIUM EQUATIONS
         # Assemble state matrix for first equation
-        EquiA1 = np.vstack((np.hstack((E,R,D)),np.hstack((R.T,A,Z6)),\
-                                        np.hstack((D.T,Z6,Z6))))
+        EquiA1 = vstack((hstack((E,R,D)),hstack((R.T,A,Z6)),\
+                                        hstack((D.T,Z6,Z6))))
         # Assemble solution vector for first equation
-        Equib1 = np.vstack((np.zeros((nd,6)),Tr.T,Z6))
+        Equib1 = np.vstack((np.zeros((nd,6)),Tr.T.toarray(),Z6.toarray()))
         # LU factorize state matrix as it will be used twice
-        lu,piv = linalg.lu_factor(EquiA1)
-        del EquiA1
+        #lu,piv = linalg.lu_factor(EquiA1)
+        #del EquiA1
         # Solve system
-        sol1 = linalg.lu_solve((lu,piv),Equib1,check_finite=False)
-        del Equib1
+        #sol1 = linalg.lu_solve((lu,piv),Equib1,check_finite=False)
+        #del Equib1
+        sol1_1 = np.matrix(minres(EquiA1,Equib1[:,0],tol=1e-10)[0]).T
+        sol1_2 = np.matrix(minres(EquiA1,Equib1[:,1],tol=1e-10)[0]).T
+        sol1_3 = np.matrix(minres(EquiA1,Equib1[:,2],tol=1e-10)[0]).T
+        sol1_4 = np.matrix(minres(EquiA1,Equib1[:,3],tol=1e-10)[0]).T
+        sol1_5 = np.matrix(minres(EquiA1,Equib1[:,4],tol=1e-10)[0]).T
+        sol1_6 = np.matrix(minres(EquiA1,Equib1[:,5],tol=1e-10)[0]).T
+        sol1 = np.hstack((sol1_1,sol1_2,sol1_3,sol1_4,sol1_5,sol1_6))
         # Recover gradient of displacement as a function of force and moment
         # resutlants
         dXdz = sol1[0:nd,:]
@@ -3196,14 +3329,22 @@ class XSect:
         # moment resultants
         self.dYdz = sol1[nd:nd+6,:]
         # Set up the first of two solution vectors for second equation
-        Equib2_1 = np.vstack((np.hstack((-(C-C.T),L)),np.hstack((-L.T,Z6)),np.zeros((6,nd+6))))
+        Equib2_1 = vstack((hstack((-(C-C.T),L))\
+            ,hstack((-L.T,Z6)),csr_matrix((6,nd+6),dtype=np.float64)))
         # Set up the second of two solution vectors for second equation
-        Equib2_2 = np.vstack((np.zeros((nd,6)),np.eye(6,6),Z6))
-        Equib2 = np.dot(Equib2_1,sol1[0:nd+6,:])+Equib2_2
+        Equib2_2 = vstack((csr_matrix((nd,6),dtype=np.float64),eye(6,6),Z6))
+        Equib2 = Equib2_1*csr_matrix(sol1[0:nd+6,:])+Equib2_2
         del Equib2_1
         del Equib2_2
         # Add solution vectors and solve second equillibrium equation
-        sol2 = linalg.lu_solve((lu,piv),Equib2)
+        sol2_1 = np.matrix(minres(EquiA1,Equib2[:,0].toarray(),tol=1e-10)[0]).T
+        sol2_2 = np.matrix(minres(EquiA1,Equib2[:,1].toarray(),tol=1e-10)[0]).T
+        sol2_3 = np.matrix(minres(EquiA1,Equib2[:,2].toarray(),tol=1e-10)[0]).T
+        sol2_4 = np.matrix(minres(EquiA1,Equib2[:,3].toarray(),tol=1e-10)[0]).T
+        sol2_5 = np.matrix(minres(EquiA1,Equib2[:,4].toarray(),tol=1e-10)[0]).T
+        sol2_6 = np.matrix(minres(EquiA1,Equib2[:,5].toarray(),tol=1e-10)[0]).T
+        
+        sol2 = np.hstack((sol2_1,sol2_2,sol2_3,sol2_4,sol2_5,sol2_6))
         
         X = sol2[0:nd,0:6]
         # Store the warping displacement as a funtion of force and moment
@@ -3217,10 +3358,14 @@ class XSect:
         #comp2 = np.vstack((np.hstack((E,C,R)),np.hstack((C.T,M,L)),np.hstack((R.T,L.T,A))))
         #F = np.dot(comp1.T,np.dot(comp2,comp1))
         #del comp2
-        t1 = np.dot(E,X)+np.dot(C,dXdz)+np.dot(R,Y)
-        t2 = np.dot(C.T,X)+np.dot(M,dXdz)+np.dot(L,Y)
-        t3 = np.dot(R.T,X)+np.dot(L.T,dXdz)+np.dot(A,Y)
-        F = np.dot(X.T,t1)+np.dot(dXdz.T,t2)+np.dot(Y.T,t3)
+        Xcompr = csr_matrix(X)
+        Ycompr = csr_matrix(Y)
+        dXdzcompr = csr_matrix(dXdz)
+        t1 = E*Xcompr+C*dXdzcompr+R*Ycompr
+        t2 = C.T*Xcompr+M*dXdzcompr+L*Ycompr
+        t3 = R.T*Xcompr+L.T*dXdzcompr+A*Ycompr
+        F = Xcompr.T*t1+dXdzcompr.T*t2+Ycompr.T*t3
+        F = F.toarray()
         # Store the compliance matrix taken about the xsect origin
         self.F_raw = F
         # Store the stiffness matrix taken about the xsect origin
@@ -3705,6 +3850,8 @@ class XSect:
                     representation='wireframe',color=tuple(self.color[::-1]))
                 plots += [mesh]
             plots += [surf]
+            print('Max Criteria: %7.3f'% np.max(plotc))
+            print('Min Criteria: %7.3f'% np.min(plotc))
 class Beam(object):
     """The parent class for all beams finite elements.
     
@@ -4289,7 +4436,10 @@ class TBeam(Beam):
         x1r = self.n1.x
         x2r = self.n2.x
         # Determine the tube radius:
-        tube_radius = np.linalg.norm([x2r-x1r])/4
+        if hasattr(self.xsect, 'xdim'):
+            tube_radius = min([self.xsect.xdim,self.xsect.ydim])
+        else:
+            tube_radius = np.linalg.norm([x2r-x1r])/4
         if not (analysis_name in self.F1.keys() or self.Fmode1.keys()):
             print('Warning, the analysis name for the results you are trying'+
             'to plot does not exist. The rigid beam will instead be plotted')

@@ -111,7 +111,7 @@ model.applyConstraints(0,'fix')
 model.plotRigidModel(numXSects=10)
 # Conduct a normal modes analysis. Since the normal mode shapes are used in the
 # flutter analysis it is good to run this ahead of time to make sure you are
-# selecting enough mode shapes to include any relevant torsional and bending
+        # selecting enough mode shapes to include any relevant torsional and bending
 # mode shapes.
 model.normalModesAnalysis()
 # Save the frequencies of the modal analysis
