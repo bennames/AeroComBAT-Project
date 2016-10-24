@@ -32,7 +32,7 @@ __docformat__ = 'restructuredtext'
 # IMPORT ANACONDA ASSOCIATED MODULES
 # =============================================================================
 import numpy as np
-import mayavi.mlab as mlab
+#import mayavi.mlab as mlab
 from numba import jit
 # =============================================================================
 # IMPORT ADDITIONAL MODULES

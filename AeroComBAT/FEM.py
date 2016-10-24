@@ -36,9 +36,10 @@ __docformat__ = 'restructuredtext'
 import numpy as np
 import scipy as sci
 from tabulate import tabulate
-import mayavi.mlab as mlab
+#import mayavi.mlab as mlab
 from scipy import linalg
 from Aerodynamics import calcAIC as jAIC
+from Structures import MaterialLib
 
 # =============================================================================
 # DEFINE AeroComBAT FEM CLASS
@@ -169,6 +170,8 @@ class Model:
         self.Loads = {}
         self.aeroBox = {}
         self.SuperBeams = []
+        self.laminates = {}
+        self.materials = MaterialLib()
     def addElements(self, elemarray):
         """A method to add elements to the model.
         

@@ -62,7 +62,7 @@ from scipy.sparse import csr_matrix, vstack, hstack, lil_matrix, eye
 from scipy.sparse.linalg import lgmres, minres, spsolve
 from scipy import linalg
 from tabulate import tabulate
-import mayavi.mlab as mlab
+#import mayavi.mlab as mlab
 # =============================================================================
 # IMPORT PYTHON MODULES
 # =============================================================================
@@ -1705,7 +1705,7 @@ class MaterialLib:
             
         """
         self.matDict = {}
-    def addMat(self,MID, mat_name, mat_type, mat_constants,mat_t,**kwargs):
+    def addMat(self,MID, mat_name, mat_type, mat_constants,mat_t=0.,**kwargs):
         """Add a material to the MaterialLib object.
         
         This is the primary method of the class, used to create new material

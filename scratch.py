@@ -38,7 +38,7 @@ af3 = Airfoil(c3,name='NACA2412')
 # Create the laminates to make up the cross-section
 n_i_1 = [8]
 m_i_1 = [1]
-th_1 = [20]
+th_1 = [10]
 lam1 = Laminate(n_i_1, m_i_1, matLib, th=th_1)
 n_i_2 = [1,1,1,1]
 m_i_2 = [1,1,1,1]
@@ -46,7 +46,7 @@ th_2 = [45,-45,45,-45]
 lam2 = Laminate(n_i_2, m_i_2, matLib, th=th_2)
 n_i_3 = [8]
 m_i_3 = [1]
-th_3 = [-20]
+th_3 = [-10]
 lam3 = Laminate(n_i_3, m_i_3, matLib, th=th_3)
 n_i_4 = [1,1,1,1]
 m_i_4 = [1,1,1,1]
@@ -60,6 +60,10 @@ xsect_Lay3 = XSect(4,af3,xdim3,laminates_Lay3,matLib,typeXSect='box',meshSize=4)
 # symmetric airfoils the AC is at the 1/c chord, we will put the reference axis
 # here
 xsect_Lay3.xSectionAnalysis()#ref_ax=[0.25*c3,0.])
+K_tmp = xsect_Lay3.K
+F_tmp = xsect_Lay3.F
+xs_tmp = xsect_Lay3.xs
+ys_tmp = xsect_Lay3.ys
 # Let's see what the rigid cross-section looks like:
 xsect_Lay3.plotRigid()
 # Print the stiffness matrix
